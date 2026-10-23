@@ -12,6 +12,11 @@
 ##
 ## A card's key is where it came from and its name as it came ("master|Rictus");
 ## a card made here is "sandbox|<its id>", and keeps that key when renamed.
+##
+## (0.28) Chassis too, under "chassis", by their ids: {"item": {...}, "own": true
+## for one made here} or {"deleted": true}. KeterExport.content("chassis")
+## lays them over the export's, so the Workshop, the drops and the Exchange
+## have them.
 class_name Sandbox
 extends RefCounted
 
@@ -25,7 +30,7 @@ static var error := ""
 
 
 static func blank() -> Dictionary:
-	return {"v": 1, "cards": {}, "made": 0}
+	return {"v": 2, "cards": {}, "chassis": {}, "made": 0}
 
 
 static func load_saved() -> void:
@@ -37,6 +42,8 @@ static func load_saved() -> void:
 	if d is Dictionary and d.get("cards") is Dictionary:
 		data = Rules.ints(d)
 		data["made"] = int(d.get("made", 0))
+		if not (data.get("chassis") is Dictionary):
+			data["chassis"] = {}
 	else:
 		error = "Your Sandbox couldn't be read, so it starts empty."
 
@@ -162,15 +169,17 @@ static func counts() -> Dictionary:
 
 
 # ---------------------------------------------------------------- back to the Companion
-## Every card as it now stands, as a Compendium file the Companion's Card Forge imports.
-static func compendium(all_cards: Array, version := 0) -> Dictionary:
-	return {"schema": SCHEMA, "version": str(version), "made": "KETER, the game's Sandbox",
+## Every card as it now stands, as a Compendium file the Companion's Card Forge
+## imports; (0.28) with every chassis as it stands, which the Companion's
+## import installs in its Chassis library.
+static func compendium(all_cards: Array, version := 0, all_chassis: Array = []) -> Dictionary:
+	return {"schema": SCHEMA, "version": str(version), "made": "KETER, the game's Sandbox", "chassis": all_chassis.map(func(c): return stripped(c)),
 		"cards": all_cards.filter(func(c): return c is Dictionary and str(c.get("_src", "")) != "workshop" and str(c.get("_src", "")) != "design" and str(c.get("_src", "")) != "prebuilt").map(func(c): return stripped(c))}
 
 
 ## Writes it where the Companion can pick it up: the phone's Downloads when the
 ## game may write there, else beside its saves. Returns the file, or "".
-static func export_to(all_cards: Array, where := "") -> String:
+static func export_to(all_cards: Array, where := "", all_chassis: Array = []) -> String:
 	var dir := where
 	if dir == "":
 		dir = OS.get_system_dir(OS.SYSTEM_DIR_DOWNLOADS) if OS.has_feature("android") else ProjectSettings.globalize_path("user://")
@@ -181,6 +190,79 @@ static func export_to(all_cards: Array, where := "") -> String:
 		f = FileAccess.open(file, FileAccess.WRITE)
 		if f == null:
 			return ""
-	f.store_string(JSON.stringify(compendium(all_cards), " "))
+	f.store_string(JSON.stringify(compendium(all_cards, 0, all_chassis), " "))
 	f.close()
 	return file
+
+
+# ---------------------------------------------------------------- (0.28) chassis
+## The export's chassis as they now stand: yours in place of theirs, the deleted
+## left out, the ones made here after them. One of yours carries _sandbox:
+## "edited" or "made"; the rest are the export's own, untouched.
+static func apply_chassis(export_chassis: Array) -> Array:
+	var cs: Dictionary = data.get("chassis", {})
+	if cs.is_empty():
+		return export_chassis
+	var out := []
+	var had := {}
+	for c in export_chassis:
+		if not (c is Dictionary):
+			continue
+		var id := str(c.get("id", ""))
+		had[id] = true
+		var o = cs.get(id)
+		if o is Dictionary and Rules.truthy(o.get("deleted")):
+			continue
+		if o is Dictionary and o.get("item") is Dictionary:
+			var e: Dictionary = o["item"].duplicate(true)
+			e["id"] = id
+			e["_sandbox"] = "edited"
+			out.append(e)
+		else:
+			out.append(c)
+	for id in cs:
+		var o = cs[id]
+		if not had.has(str(id)) and o is Dictionary and o.get("item") is Dictionary:
+			var e: Dictionary = o["item"].duplicate(true)
+			e["id"] = str(id)
+			e["_sandbox"] = "made"
+			out.append(e)
+	return out
+
+
+## Keeps a chassis: the export's or yours under its id, or a new one (id ""). Returns its id.
+static func put_chassis(ch: Dictionary, id := "") -> String:
+	var own := id == "" or chassis_own(id)
+	if id == "":
+		data["made"] = int(data.get("made", 0)) + 1
+		id = "ch_sb%d_%d" % [int(Time.get_unix_time_from_system()), int(data["made"])]
+	var item := stripped(ch)
+	item["id"] = id
+	data["chassis"][id] = {"item": item, "own": own}
+	return id
+
+
+static func chassis_own(id: String) -> bool:
+	var o = data.get("chassis", {}).get(id)
+	return o is Dictionary and Rules.truthy(o.get("own"))
+
+
+static func chassis_changed(id: String) -> bool:
+	return data.get("chassis", {}).has(id)
+
+
+## Deletes a chassis: one of yours is gone; one of the export's is left out until Reset.
+static func delete_chassis(id: String) -> void:
+	if chassis_own(id):
+		data["chassis"].erase(id)
+	else:
+		data["chassis"][id] = {"deleted": true}
+
+
+static func reset_chassis(id: String) -> void:
+	if not chassis_own(id):
+		data["chassis"].erase(id)
+
+
+static func deleted_chassis() -> Array:
+	return data.get("chassis", {}).keys().filter(func(k): return data["chassis"][k] is Dictionary and Rules.truthy(data["chassis"][k].get("deleted")))

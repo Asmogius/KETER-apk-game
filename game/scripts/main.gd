@@ -108,6 +108,7 @@ var home: HomeScreen
 var teams_screen: TeamsScreen
 var forge_screen: ForgeScreen   # (0.26) the Sandbox: the Card Forge
 var handoff: HandoffScreen      # (0.26) pass and play: the screen covered between turns
+var chassis_screen: ChassisScreen   # (0.28) the Sandbox: the Chassis builder
 var _teams_for_setup := false   # (0.26) Strike Teams was opened from a match's setup: back there after
 var map_view: MapView
 var map_screen: MapScreen
@@ -403,8 +404,17 @@ func open_sandbox() -> void:
 	home.visible = false
 	setup.visible = false
 	teams_screen.visible = false
-	forge_screen.visible = true
-	forge_screen.open(roster)
+	open_sandbox_tool("forge")
+
+
+## (0.28) One of the Sandbox's tools: the Card Forge or the Chassis builder.
+func open_sandbox_tool(k: String) -> void:
+	forge_screen.visible = k == "forge"
+	chassis_screen.visible = k == "chassis"
+	if k == "chassis":
+		chassis_screen.open(roster)
+	else:
+		forge_screen.open(roster)
 
 
 ## (0.26) The Sandbox's cards have changed: the game reads its cards again from the
@@ -417,6 +427,8 @@ func reload_cards() -> void:
 	campaign = Campaign.new(data, roster, data.floors())
 	if forge_screen != null:
 		forge_screen.roster = roster
+	if chassis_screen != null:
+		chassis_screen.roster = roster
 
 
 func show_home() -> void:
@@ -427,6 +439,7 @@ func show_home() -> void:
 	setup.visible = false
 	teams_screen.visible = false
 	forge_screen.visible = false
+	chassis_screen.visible = false
 	home.visible = true
 	# what loading had to say (a new map, a file that couldn't be read) comes before where things stand
 	var world_line := ""
@@ -3023,7 +3036,15 @@ func _build_ui() -> void:
 	forge_screen.visible = false
 	forge_screen.closed.connect(show_home)
 	forge_screen.changed.connect(reload_cards)
+	forge_screen.tool_requested.connect(open_sandbox_tool)
 	ui.add_child(forge_screen)
+
+	chassis_screen = ChassisScreen.new()
+	chassis_screen.visible = false
+	chassis_screen.closed.connect(show_home)
+	chassis_screen.changed.connect(reload_cards)
+	chassis_screen.tool_requested.connect(open_sandbox_tool)
+	ui.add_child(chassis_screen)
 
 	dock_screen = DockScreen.new()
 	dock_screen.visible = false

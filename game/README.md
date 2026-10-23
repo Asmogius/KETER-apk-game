@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.27 brings
-pass and play, two players on one phone; v0.26 opened the Sandbox.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.28 adds
+the Sandbox's Chassis builder; v0.27 brought pass and play.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,25 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.28 (Companion 14.15): **the Chassis builder**, the Sandbox's
+second tool (its Chassis tab), the Companion's Chassis editor made over for
+a thumb:
+
+- **Every chassis**, the export's and your own, grouped by District.
+- **Change any of them**: its name, District, body plan, subtypes (one or
+  two Combat Roles), power cap, ability cap, Troop parts a copy, stats, the
+  most range and AP and the best to-hit its designs' attacks may have, its
+  Aether cost to deploy, and the keywords a design on it may use (each, or a
+  category at once).
+- **Try a design**: abilities checked against the chassis as it stands, built
+  with the keyword builder offering only what it allows.
+- **Save** keeps it over the export, and the Workshop, the drops and the
+  Exchange have it at once; **a chassis you make is yours in the Workshop**
+  without being found. Delete, Reset, Copy and New chassis work as in the
+  Card Forge.
+- **Export** now writes every chassis beside the cards, and the Companion's
+  Import (14.15) puts them in its Chassis library.
 
 New in 0.27 (Companion 14.14): **Pass and play**, on Home: a match between
 two players and their Strike Teams on one phone.
@@ -516,7 +535,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-27_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-28_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -527,7 +546,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-27_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-28_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the

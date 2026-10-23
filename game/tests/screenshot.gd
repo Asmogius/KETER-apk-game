@@ -82,7 +82,7 @@ func _run() -> void:
 	var args := OS.get_cmdline_user_args()
 	var out := args[0] if args.size() > 0 else "user://shot.png"
 	var o := {"step": "battle", "floor": "", "heroes": "", "troops": "", "taps": "", "seed": "7", "place": "", "stage": "", "sure": "",
-		"screen": "battle", "mode": "quick", "tab": "heroes", "card": "", "deckonly": "", "empty": "", "timer": "", "districts": "", "carry": "", "map": "", "ws": "", "stock": "", "pick": "0", "dock": "", "motion": "", "after": "40", "options": "", "scroll": "", "view": "", "atmos": "", "freeze": "", "turns": "", "gen": "", "genchunks": "", "whole": "", "kind": "", "forge": "", "pvp": ""}
+		"screen": "battle", "mode": "quick", "tab": "heroes", "card": "", "deckonly": "", "empty": "", "timer": "", "districts": "", "carry": "", "map": "", "ws": "", "stock": "", "pick": "0", "dock": "", "motion": "", "after": "40", "options": "", "scroll": "", "view": "", "atmos": "", "freeze": "", "turns": "", "gen": "", "genchunks": "", "whole": "", "kind": "", "forge": "", "pvp": "", "chassis": ""}
 	for a in args.slice(1):
 		var kv: PackedStringArray = a.split("=", true, 1)
 		if kv.size() == 2:
@@ -219,6 +219,19 @@ func _run() -> void:
 			var hit = scene.roster.card_named(o["forge"])
 			if hit != null:
 				fs.edit(hit)
+		# (0.28) chassis=<id> opens the Chassis builder on it (chassis=list: its list)
+		if o.get("chassis", "") != "":
+			scene.open_sandbox_tool("chassis")
+			var cs: ChassisScreen = scene.chassis_screen
+			var hc = scene.data.content("chassis")["chassis"].filter(func(c): return c["id"] == o["chassis"])
+			if not hc.is_empty():
+				cs.edit(Rules.ints(hc[0]))
+			for i in 6:
+				await process_frame
+			if o["scroll"] != "":
+				cs.form.scroll_by(float(o["scroll"]))
+			await _shoot(out)
+			return
 		for i in 6:
 			await process_frame
 		if o["scroll"] != "":

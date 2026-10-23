@@ -6,6 +6,12 @@ the Change Log.
 
 <!-- NEWEST ENTRY GOES BELOW THIS LINE -->
 
+## v14.15 — From the game's Sandbox
+
+Alongside game 0.28, whose Sandbox has a Card Forge and a Chassis builder of its own.
+
+- **Import takes a file from the game's Sandbox.** Its cards go through the import review as any others do, and its chassis join your Chassis library (one with the same id is replaced).
+
 ## v14.14 — Recruit Heroes at the dock
 
 Alongside game 0.25.

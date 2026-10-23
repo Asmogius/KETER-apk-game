@@ -11406,6 +11406,7 @@ document.addEventListener("click",function(e){
   }
   if(id==="selImport"){
     pickJSON(function(j){
+      sandboxExtras(j);
       var cards=Array.isArray(j)?j:(j.cards||[]);
       if(!cards.length){ say("Nothing found","<p>That file has no cards in it.</p>"); return; }
       if(!isDev()){
@@ -11480,6 +11481,19 @@ function exportJSON(obj,filename){
   var fixed = filename==="compendium.json" || filename==="handbook.json";
   saveBlob(JSON.stringify(obj,null,2), fixed ? filename : userSlug()+filename);
 }
+/* v14.15: a file exported from the game's Sandbox carries its chassis beside
+   its cards. They join the Chassis library (one of the same id is replaced);
+   the cards then go through the import review as any others do. */
+function sandboxExtras(j){
+  var n=0;
+  try{
+    if(j && Array.isArray(j.chassis) && window.KETER_CHASSIS){
+      j.chassis.forEach(function(c){ if(c && c.id && c.name){ var o=JSON.parse(JSON.stringify(c)); Object.keys(o).forEach(function(k){ if(k.charAt(0)==="_") delete o[k]; }); window.KETER_CHASSIS.put(window.KETER_CHASSIS.upgrade(o)); n++; } });
+    }
+  }catch(e){}
+  return n;
+}
+try{ window.sandboxExtras=sandboxExtras; }catch(e){}
 function pickJSON(cb){
   var inp=document.createElement("input");
   inp.type="file"; inp.accept="application/json,.json";
@@ -11567,6 +11581,7 @@ document.addEventListener("click",function(e){
   }
   if(id==="dImport"){
     pickJSON(function(j){
+      sandboxExtras(j);
       var cards=Array.isArray(j)?j:(j.cards||[]);
       if(!cards.length){ say("Nothing found","<p>That file has no cards in it.</p>"); return; }
       reviewImport(cards,"the imported file");

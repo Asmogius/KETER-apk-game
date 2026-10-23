@@ -110,6 +110,17 @@ func is_open() -> bool:
 
 ## One kind of content (cards, floors, world_map, chassis, pools, tables, skins), or {}.
 func content(kind: String) -> Dictionary:
+	# (0.28) the Sandbox's chassis laid over the export's
+	if kind == "chassis" and not Sandbox.data.get("chassis", {}).is_empty():
+		var raw := _raw_content(kind)
+		var o := raw.duplicate()
+		o["chassis"] = Sandbox.apply_chassis(raw.get("chassis", []) if raw.get("chassis") is Array else [])
+		return o
+	return _raw_content(kind)
+
+
+## One kind of content, as the export has it.
+func _raw_content(kind: String) -> Dictionary:
 	if _content.has(kind):
 		return _content[kind]
 	var out := {}

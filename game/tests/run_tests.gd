@@ -24,6 +24,16 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	if OS.get_cmdline_user_args().has("twentyeight"):
+		# (only 0.28's, while working on them)
+		Kit.fresh()
+		_twentyeight()
+		await _twentyeight_scene()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("twentysix"):
 		# (only 0.26's, while working on them)
 		Kit.fresh()
@@ -226,6 +236,7 @@ func _run() -> void:
 	_twentyfive()
 	_twentysix()
 	_twentysix_pvp()
+	_twentyeight()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -252,6 +263,7 @@ func _run() -> void:
 	await _twentyfive_scene()
 	await _twentysix_scene()
 	await _twentysix_pvp_scene()
+	await _twentyeight_scene()
 	Kit.fresh()
 	print("\nGAME PASS %d  FAIL %d" % [ok, bad])
 	Rules.hooks = {}              # the rules let go of the last battle
@@ -8549,6 +8561,127 @@ func _twentysix_pvp_scene() -> void:
 	await _frames(3)
 	ck("pvp screen: Rematch: the same two teams again, Player 1 first", scene.battle != b and scene.battle.pvp == 1 and scene.handoff.visible and scene.battle.round == 1)
 	scene.handoff.ready_btn.pressed.emit()
+	scene.queue_free()
+	await _frames(2)
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- 0.28: the Sandbox's Chassis builder
+func _twentyeight() -> void:
+	Kit.fresh()
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var raw: Array = x.content("chassis")["chassis"]
+	ck("0.28 sandbox: empty, it leaves the export's chassis as they came", x.content("chassis")["chassis"] == raw and raw.size() >= 5)
+	var mine := ChassisScreen.blank()
+	mine["name"] = "Sandbox Frame"
+	mine["allowed"] = ["target enemy", "damage"]
+	var id := Sandbox.put_chassis(mine)
+	var now: Array = x.content("chassis")["chassis"]
+	var got = now.filter(func(c): return c["id"] == id)
+	ck("0.28 sandbox: a chassis made there joins the export's, under an id of its own", Sandbox.chassis_own(id) and now.size() == raw.size() + 1 and got.size() == 1 and got[0]["name"] == "Sandbox Frame" and got[0]["_sandbox"] == "made", id)
+	var p := Progress.new(Loot.new(null, 1), x.content("pools"), x.content("chassis"), x.content("tables"))
+	ck("0.28 sandbox: and it is yours in the Workshop at once, where the export's must still be found", p.has_chassis(id) and not p.has_chassis("ch_skitter_frame"))
+	var ws := Workshop.new(p, x.content("tables"), null)
+	ck("0.28 workshop: it is among the chassis to build on", ws.chassis_list().any(func(c): return c["id"] == id))
+	# one of the export's, changed
+	var sk: Dictionary = raw.filter(func(c): return c["id"] == "ch_skitter_frame")[0].duplicate(true)
+	sk["powerCap"] = 22
+	Sandbox.put_chassis(sk, "ch_skitter_frame")
+	var sk2 = x.content("chassis")["chassis"].filter(func(c): return c["id"] == "ch_skitter_frame")
+	ck("0.28 sandbox: one of the export's, changed, takes its place under its own id", sk2.size() == 1 and int(sk2[0]["powerCap"]) == 22 and sk2[0]["_sandbox"] == "edited" and not Sandbox.chassis_own("ch_skitter_frame"))
+	Sandbox.delete_chassis("ch_skitter_frame")
+	ck("0.28 sandbox: deleted, it leaves the game", not x.content("chassis")["chassis"].any(func(c): return c["id"] == "ch_skitter_frame") and Sandbox.deleted_chassis() == ["ch_skitter_frame"])
+	Sandbox.reset_chassis("ch_skitter_frame")
+	ck("0.28 sandbox: Reset brings it back as it came", x.content("chassis")["chassis"].filter(func(c): return c["id"] == "ch_skitter_frame")[0] == raw.filter(func(c): return c["id"] == "ch_skitter_frame")[0])
+	Sandbox.save()
+	Sandbox.data = Sandbox.blank()
+	Sandbox.load_saved()
+	ck("0.28 sandbox: saved and read back", Sandbox.chassis_own(id) and x.content("chassis")["chassis"].size() == raw.size() + 1)
+	var comp := Sandbox.compendium(x.cards(), 0, x.content("chassis")["chassis"])
+	ck("0.28 export: the Companion's file carries every chassis too, without what the game adds", comp["chassis"].size() == raw.size() + 1 and comp["chassis"].all(func(c): return not c.has("_sandbox")) and comp["chassis"].any(func(c): return c["id"] == id))
+	# Try a design
+	var ok_d := Workshop.chassis_check(mine, {"abilities": [{"text": "[[target enemy]] takes [[damage 2]].", "role": "melee"}]})
+	var bad_d := Workshop.chassis_check(mine, {"abilities": [{"text": "[[target enemy]] gains [[Stunned]] for [[turns 1]].", "role": "ranged"}]})
+	ck("0.28 try a design: what the chassis allows fits; another keyword, or a role it hasn't, doesn't", ok_d["ok"] and not bad_d["ok"] and bad_d["forbidden"].has("Stunned") and not bad_d["wrongKind"].is_empty(), bad_d["reasons"])
+	Sandbox.delete_chassis(id)
+	ck("0.28 sandbox: deleting one of yours is for good", not Sandbox.chassis_changed(id) and x.content("chassis")["chassis"].size() == raw.size())
+	Kit.fresh()
+
+
+func _twentyeight_scene() -> void:
+	Kit.fresh()
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	await _frames(2)
+	scene.open_sandbox()
+	await _frames(1)
+	var fs: ForgeScreen = scene.forge_screen
+	fs.tools["chassis"].pressed.emit()
+	await _frames(2)
+	var cs: ChassisScreen = scene.chassis_screen
+	var n: int = scene.data.content("chassis")["chassis"].size()
+	ck("0.28 screen: the Chassis tab opens the Chassis builder: every chassis, grouped by District", cs.visible and not fs.visible and cs.mode == "list" and cs._shown.filter(func(c): return c != null).size() == n and cs._shown.has(null) and cs.tools["chassis"].button_pressed)
+	cs.tools["forge"].pressed.emit()
+	await _frames(1)
+	ck("0.28 screen: and the Card Forge's tab goes back to it", fs.visible and not cs.visible)
+	fs.tools["chassis"].pressed.emit()
+	await _frames(1)
+	var si: int = cs._shown.find(cs._shown.filter(func(c): return c != null and c["id"] == "ch_skitter_frame")[0])
+	cs._on_list_row(si, Vector2.ZERO)
+	await _frames(1)
+	ck("0.28 chassis: a tap opens it: its body plan drawn, its form beside it", cs.mode == "edit" and cs.id == "ch_skitter_frame" and cs.preview_pic.texture != null and cs.form.visible)
+	var offers := cs.offers()
+	ck("0.28 chassis: its form offers its District, body plan, subtypes, caps, cost, stats, attack limits, Aether cost and every keyword", offers.has(["dist", "3"]) and offers.has(["body", "Quadruped"]) and offers.has(["sub", "Ranged"])
+		and offers.has(["step", "powerCap", 1, 1, 99]) and offers.has(["step", "cost", 1, 0, 30]) and offers.has(["step", "stat:hp", 1, 1, 60]) and offers.has(["step", "bestHit", -1, 1, 20])
+		and offers.has(["step", "ae:affinity", 1, 0, 9]) and offers.has(["kw", "Stunned"]) and offers.has(["all", "status"]) and offers.has(["try_build", 0]), offers.size())
+	var cap0 := int(cs.ch["powerCap"])
+	cs.act(["step", "powerCap", 1, 1, 99])
+	cs.act(["kw", "Stunned"])
+	ck("0.28 chassis: a change shows at once, and isn't kept yet", cs.dirty and int(cs.ch["powerCap"]) == cap0 + 1 and cs.ch["allowed"].has("Stunned") and not Sandbox.chassis_changed("ch_skitter_frame"))
+	cs.tries = [{"role": "Melee", "text": "[[target enemy]] gains [[Stunned]] for [[turns 1]]."}]
+	cs.refresh()
+	ck("0.28 try a design: Stunned, now allowed, fits", cs.check_try()["ok"], cs.check_try()["reasons"])
+	cs.act(["kw", "Stunned"])
+	ck("0.28 try a design: and without it, says why not", not cs.check_try()["ok"] and cs.check_try()["forbidden"].has("Stunned"))
+	cs.act(["try_build", 0])
+	await _frames(1)
+	ck("0.28 try a design: + Build an effect opens the keyword builder, offering only what the chassis allows", cs.sheet != null and cs.sheet.b.opt.get("allowed") == cs.ch["allowed"])
+	if cs.sheet != null:
+		cs.sheet.cancelled.emit()
+	await _frames(1)
+	cs.save_chassis()
+	await _frames(1)
+	var pc = scene.campaign.progress.chassis.get("ch_skitter_frame")
+	ck("0.28 chassis: Save keeps it, and the game has it at once", Sandbox.chassis_changed("ch_skitter_frame") and not cs.dirty and pc is Dictionary and int(pc["powerCap"]) == cap0 + 1 and cs.reset_btn.visible)
+	cs.ask_reset()
+	if cs.dialog is Dialog:
+		cs.dialog.chosen.emit(1)
+	await _frames(1)
+	ck("0.28 chassis: Reset puts it back", not Sandbox.chassis_changed("ch_skitter_frame") and int(scene.campaign.progress.chassis["ch_skitter_frame"]["powerCap"]) == cap0)
+	# a new one, made, is yours in the Workshop
+	cs.show_list()
+	cs.new_btn.pressed.emit()
+	cs.act(["name"])
+	if cs.dialog is NameDialog:
+		cs.dialog.named.emit("Sandbox Strider")
+	cs.act(["sub", "Ranged"])
+	cs.act(["body", "Quadruped"])
+	cs.save_chassis()
+	await _frames(1)
+	var nid := cs.id
+	ck("0.28 chassis: New chassis, named and saved, is yours, and the Workshop builds on it", Sandbox.chassis_own(nid) and scene.campaign.progress.has_chassis(nid) and scene.campaign.workshop.chassis_list().any(func(c): return c["id"] == nid and c["name"] == "Sandbox Strider")
+		and scene.campaign.progress.chassis[nid]["subtypes"] == ["Melee", "Ranged"])
+	cs.ask_delete()
+	if cs.dialog is Dialog:
+		cs.dialog.chosen.emit(1)
+	await _frames(1)
+	ck("0.28 chassis: Delete takes it away", not scene.campaign.progress.chassis.has(nid) and cs.mode == "list")
+	cs.back_btn.pressed.emit()
+	await _frames(1)
+	ck("0.28 screen: Home goes home", scene.home.visible and not cs.visible)
 	scene.queue_free()
 	await _frames(2)
 	Kit.fresh()

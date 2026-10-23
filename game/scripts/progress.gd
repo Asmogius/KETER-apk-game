@@ -224,8 +224,9 @@ func owned(name) -> int:
 	return mini(b["levels"], int(v) if Rules.truthy(v) else 0)
 
 
+## (0.28) A chassis made in the Sandbox is yours as soon as it is made.
 func has_chassis(id) -> bool:
-	return unlock_all() or Rules.truthy(state["ch"].get(str(id))) or str(id) == STARTER
+	return unlock_all() or Rules.truthy(state["ch"].get(str(id))) or str(id) == STARTER or (chassis.get(str(id)) is Dictionary and chassis[str(id)].get("_sandbox") == "made")
 
 
 ## The keywords a set of abilities uses, each at the highest level any use

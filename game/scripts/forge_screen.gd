@@ -16,6 +16,7 @@ extends Control
 
 signal closed
 signal changed                 # the Sandbox's cards have changed: the game reads them again
+signal tool_requested(k: String)   # (0.28) another of the Sandbox's tools
 
 const TOOLS := [["forge", "Card Forge"], ["chassis", "Chassis"], ["poi", "POI Sandbox"], ["studio", "Pixel Studio"]]
 const SHOWS := [["all", "All"], ["changed", "Changed"], ["mine", "Yours"], ["deleted", "Deleted"]]
@@ -132,6 +133,11 @@ func open(r: Roster) -> void:
 func open_tool(k: String) -> void:
 	for t in tools:
 		tools[t].set_pressed_no_signal(t == k)
+	if k == "chassis" and dialog == null:
+		tools["forge"].set_pressed_no_signal(true)
+		tools[k].set_pressed_no_signal(false)
+		tool_requested.emit(k)
+		return
 	if k != "forge":
 		tools["forge"].set_pressed_no_signal(true)
 		tools[k].set_pressed_no_signal(false)
@@ -753,7 +759,8 @@ func ask_new() -> void:
 
 
 func export_all() -> void:
-	var f := Sandbox.export_to(all_cards())
+	var chs = roster.data.content("chassis").get("chassis", [])
+	var f := Sandbox.export_to(all_cards(), "", chs if chs is Array else [])
 	if f == "":
 		say("It couldn't be written.", true)
 	else:
