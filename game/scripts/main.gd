@@ -107,6 +107,8 @@ var overlay: Overlay
 var home: HomeScreen
 var teams_screen: TeamsScreen
 var forge_screen: ForgeScreen   # (0.26) the Sandbox: the Card Forge
+var handoff: HandoffScreen      # (0.26) pass and play: the screen covered between turns
+var _teams_for_setup := false   # (0.26) Strike Teams was opened from a match's setup: back there after
 var map_view: MapView
 var map_screen: MapScreen
 var dock_screen: DockScreen
@@ -444,7 +446,7 @@ func open_setup(mode: String) -> void:
 	home.visible = false
 	teams_screen.visible = false
 	setup.visible = true
-	setup.begin(mode, StrikeTeams.load_all() if mode == "team" else [])
+	setup.begin(mode, StrikeTeams.load_all() if mode == "team" or mode == "pvp" else [])
 
 
 func open_teams() -> void:
@@ -619,6 +621,23 @@ func start_team_battle(fi: int, team: Dictionary, team_setup: Dictionary, seed =
 
 ## Starts a battle on a floor with these cards. A seed deals the same Enemies
 ## and rolls the same dice each time.
+## (0.26) Pass and play: a match between two Strike Teams on a floor. Player 1
+## takes the phone first.
+func start_pvp(fi: int, t1: Dictionary, s1: Dictionary, t2: Dictionary, s2: Dictionary, seed = null) -> void:
+	last_setup = ["pvp", fi, t1, s1, t2, s2]
+	show_battle(Battle.begin_pvp(floors[fi], roster, s1, s2, seed, ["Player 1", "Player 2"]))
+	handoff.show_for(battle.pvp_names[1], 1, true)
+
+
+## (0.26) Back to a match's setup from Strike Teams, where it was.
+func _back_to_setup() -> void:
+	_teams_for_setup = false
+	teams_screen.visible = false
+	home.visible = false
+	setup.visible = true
+	setup.resume(StrikeTeams.load_all())
+
+
 func start_battle(fi: int, hero_cards: Array, troop_cards: Array, seed = null) -> void:
 	last_setup = ["quick", fi, hero_cards, troop_cards]
 	show_battle(Battle.begin(floors[fi], roster, hero_cards, troop_cards, seed))
@@ -714,7 +733,7 @@ func loot_words() -> String:
 func _update_bar() -> void:
 	if battle == null:
 		return
-	round_label.text = "Round %d" % battle.round
+	round_label.text = ("Round %d \u00b7 %s" % [battle.round, battle.pvp_names[battle.pvp]]) if battle.pvp > 0 else "Round %d" % battle.round
 	auto_btn.tooltip_text = "Auto: on" if auto else "Auto: off"
 	auto_btn.set_pressed_no_signal(auto)
 	auto_btn.disabled = busy or walking or battle.over
@@ -767,6 +786,8 @@ func play_again() -> void:
 		return
 	if last_setup[0] == "team":
 		start_team_battle(last_setup[1], last_setup[2], last_setup[3])
+	elif last_setup[0] == "pvp":
+		start_pvp(last_setup[1], last_setup[2], last_setup[3], last_setup[4], last_setup[5])
 	else:
 		start_battle(last_setup[1], last_setup[2], last_setup[3])
 
@@ -778,7 +799,7 @@ func new_battle() -> void:
 	play = {}
 	burst = {}
 	deselect()
-	open_setup("team" if (battle != null and battle.with_cards) else "quick")
+	open_setup("pvp" if (battle != null and battle.pvp > 0) else ("team" if (battle != null and battle.with_cards) else "quick"))
 
 
 ## Leaves the fight for the home screen.
@@ -1669,7 +1690,45 @@ func next_round() -> void:
 func end_turn() -> void:
 	if auto and not await run_auto_phase():
 		return
+	if battle != null and battle.pvp > 0:
+		await run_pvp_hand_over()
+		return
 	await run_enemy_phase()
+
+
+## (0.26) Pass and play: the player whose turn it was ends it, the screen is
+## covered, and once the other player is ready their turn begins: the sides
+## change over, and their Aether, Chips, cards and Recharge play out.
+func run_pvp_hand_over() -> void:
+	if battle == null or busy or battle.over or not burst.is_empty():
+		return
+	if not play.is_empty():
+		_play_cancel()
+	hand_tray.visible = false
+	deselect()
+	busy = true
+	_update_bar()
+	battle.pvp_end_turn()
+	board.refresh_units(battle)
+	if battle.over:
+		busy = false
+		await _wait(0.4)
+		show_result()
+		return
+	handoff.show_for(battle.pvp_names[battle.pvp_other()], battle.round + (1 if battle.pvp == 2 else 0))
+	await handoff.ready_pressed
+	var mk := _mark()
+	battle.pvp_hand_over()
+	board.refresh_units(battle)
+	_start_view()                 # the board as the player taking the phone stands
+	busy = false
+	_update_bar()
+	await _show_halts()
+	if battle.over:
+		await _wait(0.4)
+		show_result()
+		return
+	_say("Round %d: %s's turn. %s" % [battle.round, battle.pvp_names[battle.pvp], _tell(_news(mk), 4)])
 
 
 ## Auto: every Unit of yours that you haven't moved or used this turn takes
@@ -1926,6 +1985,9 @@ func show_result() -> void:
 		return
 	burst = {}
 	deselect()
+	if battle.pvp > 0:
+		show_pvp_result()
+		return
 	if battle.deploy != null and campaign != null:
 		show_deploy_result()
 		return
@@ -1968,7 +2030,7 @@ func show_result() -> void:
 ## when nothing moves): its sign powers on, yours standing (or fallen) under
 ## it. True when it has begun, and show_result is asked again when it is over.
 func _neon_first() -> bool:
-	if not (battle.winner in ["ally", "enemy"]) or not Motion.moving() or _neon_for == battle:
+	if battle.pvp > 0 or not (battle.winner in ["ally", "enemy"]) or not Motion.moving() or _neon_for == battle:
 		return false
 	_neon_for = battle
 	var won: bool = battle.winner == "ally"
@@ -1985,6 +2047,30 @@ func _neon_first() -> bool:
 		show_result())
 	ui.add_child(neon)
 	return true
+
+
+## (0.26) A match is over: who won, by name, and how it stood; Rematch plays
+## the same two teams again.
+func show_pvp_result() -> void:
+	var champ := battle.pvp_winner()
+	var title := ("%s wins" % champ) if champ != "" else "A draw"
+	var standing := func(side: String) -> String:
+		var us: Array = battle.side_units(side)
+		return "%s: %d of %d Units standing" % [battle.pvp_name_of(side), us.filter(func(u): return not Rules.truthy(u.get("down"))).size(), us.size()]
+	var text := "Every Hero of %s's is down.\n\n%s\n%s" % [battle.pvp_name_of("enemy" if battle.winner == "ally" else "ally"), standing.call("ally"), standing.call("enemy")] if champ != "" else "Nobody is left standing."
+	var d := Dialog.new(title, text, ["Rematch", "New match", "Home", "See the board"], Color("#d6a851"))
+	d.add_strip([["Round %d" % battle.round, "#d6a851"]])
+	_open_dialog(d, func(i):
+		_close_dialog()
+		if i == 0:
+			play_again()
+		elif i == 1:
+			new_battle()
+		elif i == 2:
+			leave()
+		else:
+			_say("%s in round %d. Look over the board and the Log; Leave takes you on." % [title, battle.round]))
+	_update_bar()
 
 
 ## (0.15) The strip under a fight's title: [[text, colour], ...].
@@ -2904,6 +2990,10 @@ func _build_ui() -> void:
 	setup.visible = false
 	setup.start_requested.connect(_on_start)
 	setup.team_start_requested.connect(_on_team_start)
+	setup.pvp_start_requested.connect(func(fi, t1, s1, t2, s2): start_pvp(fi, t1, s1, t2, s2))
+	setup.teams_requested.connect(func():
+		_teams_for_setup = true
+		open_teams())
 	setup.look_again_requested.connect(func(): load_export())
 	setup.deploy_start_requested.connect(_on_deploy_start)
 	# Back on a deployment fight's first step goes to the map, where the fight waits
@@ -2922,7 +3012,11 @@ func _build_ui() -> void:
 
 	teams_screen = TeamsScreen.new()
 	teams_screen.visible = false
-	teams_screen.closed.connect(show_home)
+	teams_screen.closed.connect(func():
+		if _teams_for_setup:
+			_back_to_setup()
+		else:
+			show_home())
 	ui.add_child(teams_screen)
 
 	forge_screen = ForgeScreen.new()
@@ -2950,10 +3044,13 @@ func _build_ui() -> void:
 	home.quick_pressed.connect(func(): open_setup("quick"))
 	home.teams_pressed.connect(open_teams)
 	home.sandbox_pressed.connect(open_sandbox)
+	home.pvp_pressed.connect(func(): open_setup("pvp"))
 	home.look_again_pressed.connect(func(): load_export())
 	home.options_pressed.connect(open_options)
 	ui.add_child(home)
 	# (0.12) on top of everything: a new screen fades in through it
+	handoff = HandoffScreen.new()
+	ui.add_child(handoff)
 	curtain = ColorRect.new()
 	curtain.color = Color(UI.BG, 0.0)
 	curtain.set_anchors_preset(Control.PRESET_FULL_RECT)

@@ -29,6 +29,8 @@ func _run() -> void:
 		Kit.fresh()
 		_twentysix()
 		await _twentysix_scene()
+		_twentysix_pvp()
+		await _twentysix_pvp_scene()
 		Kit.fresh()
 		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
 		Rules.hooks = {}
@@ -223,6 +225,7 @@ func _run() -> void:
 	_twentythree()
 	_twentyfive()
 	_twentysix()
+	_twentysix_pvp()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -248,6 +251,7 @@ func _run() -> void:
 	await _twentythree_scene()
 	await _twentyfive_scene()
 	await _twentysix_scene()
+	await _twentysix_pvp_scene()
 	Kit.fresh()
 	print("\nGAME PASS %d  FAIL %d" % [ok, bad])
 	Rules.hooks = {}              # the rules let go of the last battle
@@ -8390,6 +8394,161 @@ func _twentysix_scene() -> void:
 	fs.back_btn.pressed.emit()
 	await _frames(1)
 	ck("0.26 screen: Home goes back home", scene.home.visible and not fs.visible)
+	scene.queue_free()
+	await _frames(2)
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- 0.26: pass and play
+func _pvp_setups(r: Roster, f: FloorData) -> Array:
+	var t1 := Kit.team("Reds")
+	var t2 := Kit.team("Blues")
+	t2["heroes"] = ["Dock Hand", "Field Medic", "Hangar Rifleman"]
+	t2["actions"] = {}
+	var cap := Roster.hero_capacity(f)
+	var h1: Array = StrikeTeams.heroes(t1, r).map(func(c): return str(c["name"])).slice(0, cap)
+	var h2: Array = StrikeTeams.heroes(t2, r).map(func(c): return str(c["name"])).slice(0, cap)
+	return [StrikeTeams.setup_for(t1, r, h1, h1[0], [], 0, 0), StrikeTeams.setup_for(t2, r, h2, h2[0], [], 0, 0)]
+
+
+func _heroes_of(b: Battle, side: String) -> Array:
+	return b.side_units(side).filter(func(u): return str(u.get("cardType", "")).to_lower().contains("hero"))
+
+
+func _twentysix_pvp() -> void:
+	Kit.fresh()
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var r := Roster.new(x)
+	var f: FloorData = _floor_named(x, "TEST · Waves")
+	var ss := _pvp_setups(r, f)
+	var b := Battle.begin_pvp(f, r, ss[0], ss[1], 5)
+	var p1: Array = b.side_units("ally").map(func(u): return u["id"])
+	var p2: Array = b.side_units("enemy").map(func(u): return u["id"])
+	var tiles := {}
+	for u in b.units:
+		tiles[Battle.tile_of(u)] = true
+	ck("pvp: two Strike Teams on one floor: Player 1's on its side, Player 2's on the other, every Unit on a tile of its own", b.pvp == 1 and not p1.is_empty() and not p2.is_empty() and tiles.size() == b.units.size()
+		and b.side_units("enemy").all(func(u): return b.kind_at(Battle.tile_of(u)) != "spawn-ally") and _heroes_of(b, "enemy").map(func(u): return u["name"]).has("Dock Hand"), [p1, p2])
+	ck("pvp: no Enemy waves: nothing in the pile, nothing more to come, and the match goes on", b.waves_total == 0 and b.enemy_pile.is_empty() and b.nothing_more_coming() and not b.over and b.phase == "turn")
+	ck("pvp: Player 1 goes first, with their opening Aether, Chips and six cards; Player 2's are put by", b.hand.size() == 6 and Rules.truthy(Rules.aether_total(b.aether)) and b.pvp_store["hand"].is_empty()
+		and not b.pvp_store["deck"].is_empty() and b.pvp_store["consumables"].is_empty() == false and b.leader_id in p1 and b.pvp_store["leader_id"] in p2, [b.hand.size(), b.pvp_store["hand"].size()])
+	ck("pvp: a held shot waits for an Enemy turn a match never has: nobody holds fire", b.side_units("ally").all(func(u): return b.holdable(u).is_empty()))
+	# Player 1 stuns one of Player 2's Heroes, for a turn
+	var foe: Dictionary = _heroes_of(b, "enemy")[0]
+	b.phase = "turn"
+	b._hook()
+	Rules.add_status(foe, "Stunned", null, "Test", 1)
+	var p1_hand: Array = b.hand.duplicate()
+	var nrg0 := int(foe["nrg"])
+	foe["nrg"] = 0
+	b.pvp_end_turn()
+	ck("pvp: End turn ends Player 1's turn; the match waits for the phone to change hands", b.phase == "handoff" and b.pvp == 1 and not b.over)
+	b.pvp_hand_over()
+	ck("pvp: then Player 2's: every Unit changes side, so theirs are the ones to move", b.pvp == 2 and b.round == 1 and b.side_units("ally").map(func(u): return u["id"]) == p2 and b.side_units("enemy").map(func(u): return u["id"]) == p1 and b.phase == "turn")
+	ck("pvp: Player 2 has their opening Aether, Chips and six cards, and Player 1's hand is put by as it was", b.hand.size() == 6 and b.pvp_store["hand"] == p1_hand and b.leader_id in p2 and b.pvp_store["leader_id"] in p1)
+	ck("pvp: Player 2's Units have their Energy", int(b.unit_by_id(foe["id"])["nrg"]) == int(b.unit_by_id(foe["id"])["nrgMax"]) and int(b.unit_by_id(foe["id"])["nrgMax"]) >= nrg0 - 1)
+	ck("pvp: a Status Player 1 gave for a turn lasts through Player 2's turn", Rules.has_status(b.unit_by_id(foe["id"]), "Stunned"))
+	b.pvp_end_turn()
+	b.pvp_hand_over()
+	ck("pvp: back to Player 1: a new round, a card for each Hero, and the Stun has run out", b.pvp == 1 and b.round == 2 and b.hand.size() == 6 + _heroes_of(b, "ally").size() and not Rules.has_status(b.unit_by_id(foe["id"]), "Stunned")
+		and b.side_units("ally").map(func(u): return u["id"]) == p1, [b.round, b.hand.size()])
+	# a Status Player 2 gives lasts through Player 1's turn, and ticks as Player 2's next turn begins
+	var mine: Dictionary = _heroes_of(b, "ally")[0]
+	b.pvp_end_turn()
+	b.pvp_hand_over()
+	b._hook()
+	Rules.add_status(b.unit_by_id(mine["id"]), "Rooted", null, "Test", 1)
+	b.pvp_end_turn()
+	b.pvp_hand_over()
+	ck("pvp: and one Player 2 gives lasts through Player 1's turn", b.pvp == 1 and Rules.has_status(b.unit_by_id(mine["id"]), "Rooted"))
+	b.pvp_end_turn()
+	b.pvp_hand_over()
+	ck("pvp: then runs out as Player 2's next turn begins", b.pvp == 2 and not Rules.has_status(b.unit_by_id(mine["id"]), "Rooted"))
+	# the match ends when every Hero on a side is down
+	for u in _heroes_of(b, "enemy"):
+		u["hp"] = 0
+	b.fx.check_downs()
+	var loot0 := Loot.count(b.loot)
+	b.settle()
+	ck("pvp: every Hero of Player 1's down on Player 2's turn: Player 2 wins", b.over and b.winner == "ally" and b.pvp_winner() == "Player 2", [b.winner, b.pvp_winner()])
+	ck("pvp: a match keeps nothing: no drops, no reward", Loot.count(b.loot) == loot0 and Loot.is_empty(b.loot_result.get("reward", Loot.bag())) and b.loot_result.get("items", []).is_empty())
+	var b2 := Battle.begin_pvp(f, r, ss[0], ss[1], 6, ["Ana", "Ben"])
+	for u in _heroes_of(b2, "enemy"):
+		u["hp"] = 0
+	b2.fx.check_downs()
+	b2.settle()
+	ck("pvp: and on Player 1's turn, Player 1 wins, by the names given", b2.over and b2.pvp_winner() == "Ana" and b2.pvp_name_of("ally") == "Ana" and b2.pvp_name_of("enemy") == "Ben")
+	var b3 := Battle.begin_pvp(f, r, ss[0], ss[1], 5)
+	ck("pvp: a seed deals the same match", b3.hand.map(func(c): return c["name"]) == Battle.begin_pvp(f, r, ss[0], ss[1], 5).hand.map(func(c): return c["name"]))
+	Kit.fresh()
+
+
+func _twentysix_pvp_scene() -> void:
+	Kit.fresh()
+	var red := Kit.team("Reds")
+	var blue := Kit.team("Blues")
+	blue["heroes"] = ["Dock Hand", "Field Medic"]
+	blue["actions"] = {}
+	Kit.keep([red, blue])
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	await _frames(2)
+	ck("pvp home: Pass and play is on Home, beside the Sandbox", scene.home.pvp_btn.visible and not scene.home.pvp_btn.disabled and scene.home.pvp_btn.get_parent() == scene.home.sandbox_btn.get_parent())
+	scene.home.pvp_btn.pressed.emit()
+	await _frames(2)
+	var s: SetupScreen = scene.setup
+	ck("pvp setup: it asks for a floor, then Player 1's team, Heroes and Troops", s.visible and s.mode == "pvp" and s.step == "floor" and s.steps() == ["floor", "team", "heroes", "troops"] and s.title.text.ends_with("Player 1"))
+	var wi := -1
+	for i in s.floors.size():
+		if s.floors[i].name == "TEST · Waves":
+			wi = i
+	s.choose_floor(wi)
+	s._go(1)
+	ck("pvp setup: every saved team to choose from, and Strike Teams to build one", s.step == "team" and s.teams.size() == 2 and s._rows.any(func(e): return e.has("build")))
+	s.choose_team(0)
+	s._go(1)
+	s._go(1)
+	ck("pvp setup: after Player 1's Troops comes Player 2", s.step == "troops" and s.next_btn.text == "Player 2")
+	s._go(1)
+	ck("pvp setup: Player 2 chooses their own team, Heroes and Troops", s.pvp_player == 2 and s.step == "team" and s.steps() == ["team", "heroes", "troops"] and s.title.text.ends_with("Player 2") and s.team_i == -1
+		and str(s.pvp_first["team"]["name"]) == "Reds")
+	s._go(-1)
+	ck("pvp setup: Back from there returns to Player 1's choices", s.pvp_player == 1 and s.step == "troops" and s.team_i == 0)
+	s._go(1)
+	s.choose_team(1)
+	s._go(1)
+	s._go(1)
+	ck("pvp setup: the last step starts the match", s.next_btn.text == "Start the match")
+	s._go(1)
+	await _frames(3)
+	var b: Battle = scene.battle
+	ck("pvp screen: the match is on the board, covered until Player 1 is ready", b != null and b.pvp == 1 and scene.board.visible and scene.handoff.visible and scene.handoff.title.text == "Player 1's turn")
+	scene.handoff.ready_btn.pressed.emit()
+	await _frames(1)
+	ck("pvp screen: Ready uncovers it: Player 1's round, their hand", not scene.handoff.visible and scene.round_label.text == "Round 1 \u00b7 Player 1" and b.hand.size() == 6)
+	var reds: Array = b.side_units("ally").map(func(u): return u["name"])
+	scene.end_turn()
+	await _frames(2)
+	ck("pvp screen: End turn covers the screen for Player 2", scene.handoff.visible and scene.handoff.title.text == "Player 2's turn" and b.pvp == 1)
+	scene.handoff.ready_btn.pressed.emit()
+	await _frames(3)
+	ck("pvp screen: Ready: Player 2's turn, their Units the ones to move", not scene.handoff.visible and b.pvp == 2 and scene.round_label.text == "Round 1 \u00b7 Player 2" and b.side_units("enemy").map(func(u): return u["name"]) == reds
+		and b.side_units("ally").map(func(u): return u["name"]).has("Dock Hand") and not scene.busy)
+	for u in _heroes_of(b, "enemy"):
+		u["hp"] = 0
+	b.fx.check_downs()
+	b.settle()
+	scene.show_result()
+	await _frames(2)
+	ck("pvp screen: the match won, the winner is named, and Rematch is offered", scene.dialog != null and scene.dialog.title_label.text == "Player 2 wins" and scene.dialog.buttons[0].text == "Rematch", scene.dialog.title_label.text if scene.dialog != null else null)
+	if scene.dialog != null:
+		scene.dialog.buttons[0].pressed.emit()
+	await _frames(3)
+	ck("pvp screen: Rematch: the same two teams again, Player 1 first", scene.battle != b and scene.battle.pvp == 1 and scene.handoff.visible and scene.battle.round == 1)
+	scene.handoff.ready_btn.pressed.emit()
 	scene.queue_free()
 	await _frames(2)
 	Kit.fresh()

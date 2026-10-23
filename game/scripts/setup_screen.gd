@@ -11,12 +11,19 @@
 ## A deployment's fight: the floor is the one the POI or the ambush drew, and
 ## the Strike Team is the one that is out, as it stands. It asks only who
 ## enters, who leads, and the Starting Troops.
+##
+## (0.26) Pass and play: a floor, then Player 1's Strike Team, who enters and
+## leads and its Starting Troops; then Player 2's the same way. Every card is
+## theirs to use: nothing is recruited, researched or paid for. Strike Teams,
+## on a team's step, builds or changes teams and comes back here.
 class_name SetupScreen
 extends Control
 
 signal start_requested(floor_index: int, heroes: Array, troops: Array)
 signal team_start_requested(floor_index: int, team: Dictionary, setup: Dictionary)
 signal deploy_start_requested(team: Dictionary, setup: Dictionary)
+signal pvp_start_requested(floor_index: int, team1: Dictionary, setup1: Dictionary, team2: Dictionary, setup2: Dictionary)
+signal teams_requested                  # (0.26) Strike Teams, to build one for a match, and back
 signal look_again_requested
 signal closed
 
@@ -26,6 +33,7 @@ const WARN := Color("#d6a851")
 const STEPS := ["floor", "heroes", "troops"]
 const TEAM_STEPS := ["floor", "team", "heroes", "troops"]
 const DEPLOY_STEPS := ["heroes", "troops"]
+const PVP_SECOND := ["team", "heroes", "troops"]
 const STEP_NAMES := {"floor": "Floor", "team": "Strike Team", "heroes": "Heroes", "troops": "Troops"}
 
 var roster: Roster = null
@@ -45,6 +53,8 @@ var team_i := -1
 var leader := ""                        # the Hero who leads (a Battle)
 var wave_timer := 3
 var districts_cleared := 0              # Dimensional Instability: 3% for each, set afresh for every Battle
+var pvp_player := 1                     # (0.26) pass and play: whose team is being chosen
+var pvp_first := {}                     # Player 1's choices, kept while Player 2 makes theirs
 
 var title: Label
 var steps_label: Label
@@ -166,6 +176,8 @@ func show_step() -> void:
 		parts.append(("[ %d %s ]" if s == step else "%d %s") % [i + 1, STEP_NAMES[s]])
 	steps_label.text = "   ›   ".join(parts)
 	title.text = "Battle" if mode == "team" else "Quick battle"
+	if mode == "pvp":
+		title.text = "Pass and play  \u00b7  Player %d" % pvp_player
 	back_btn.visible = true
 	back_btn.text = "Home" if step == "floor" else "Back"
 	if mode == "deploy":
@@ -173,6 +185,8 @@ func show_step() -> void:
 		back_btn.text = "Map" if step == "heroes" else "Back"
 	again_btn.visible = false
 	next_btn.text = "Start battle" if step == "troops" else "Next"
+	if mode == "pvp" and step == "troops":
+		next_btn.text = "Player 2" if pvp_player == 1 else "Start the match"
 	match step:
 		"floor": _show_floors()
 		"team": _show_teams()
@@ -184,6 +198,8 @@ func show_step() -> void:
 func steps() -> Array:
 	if mode == "deploy":
 		return DEPLOY_STEPS
+	if mode == "pvp":
+		return TEAM_STEPS if pvp_player == 1 else PVP_SECOND
 	return TEAM_STEPS if mode == "team" else STEPS
 
 
@@ -232,6 +248,8 @@ func begin(new_mode: String, saved_teams: Array = []) -> void:
 	mode = new_mode
 	districts_cleared = 0
 	teams = saved_teams
+	pvp_player = 1
+	pvp_first = {}
 	if team_i >= teams.size():
 		team_i = -1
 	step = "floor"
@@ -246,7 +264,7 @@ func team() -> Variant:
 
 
 func _show_floors() -> void:
-	hint.text = ("Choose where to fight. A floor's size decides how many Heroes may enter; Enemies come to its Enemy spawn tiles in six waves. " if mode == "team" else "Choose where to fight. A floor's size decides how many Heroes may enter; Enemies wait on its Enemy spawn tiles. ") + source
+	hint.text = ("Choose where to fight. Each player's Heroes enter by the floor's size; Player 1's team starts on its Player Spawn Tiles, Player 2's on its Enemy Spawn Tiles. No Enemy waves come. " if mode == "pvp" else "Choose where to fight. A floor's size decides how many Heroes may enter; Enemies come to its Enemy spawn tiles in six waves. " if mode == "team" else "Choose where to fight. A floor's size decides how many Heroes may enter; Enemies wait on its Enemy spawn tiles. ") + source
 	for i in floors.size():
 		var f: FloorData = floors[i]
 		var cap := Roster.hero_capacity(f)
@@ -296,6 +314,10 @@ func _show_troops() -> void:
 # ---------------------------------------------------------------- a Strike Team's steps
 func _show_teams() -> void:
 	hint.text = "Choose the Strike Team that goes in. It brings its Heroes, its Deck, its Aether Pouch and its Prototypes."
+	if mode == "pvp":
+		hint.text = "Player %d: choose your Strike Team. Every card is yours to use here. Strike Teams builds a new one, or changes one, and comes back.%s" % [pvp_player,
+			(" Player 1 has %s." % str(pvp_first["team"].get("name", ""))) if pvp_player == 2 and pvp_first.get("team") is Dictionary else ""]
+		_add_row({"build": true}, "Strike Teams", "Build a team, or change one, then come back to choose it", {}, false, "Open")
 	if teams.is_empty():
 		hint.text = "You have no Strike Teams yet. Go Home and build one under Strike Teams, or fight a Quick battle."
 	for i in teams.size():
@@ -370,7 +392,7 @@ func _show_team_troops() -> void:
 		hint.text = "The Heroes entering have no Leadership, so no Troops can start beside them."
 	if mode == "deploy":
 		hint.text += " A Troop that falls is gone for the rest of the deployment."
-	else:
+	elif mode != "pvp":
 		hint.text += " Below: the wave timer and Districts cleared."
 	for e in ts:
 		var c: Dictionary = e["card"]
@@ -381,8 +403,8 @@ func _show_team_troops() -> void:
 		if u.get("x") != null:
 			sub += " \u00b7 a variable cost: starting here, nobody pays, so X is 1"
 		_add_row({"troop": n, "most": e["copies"]}, n, sub, roster.token_for(c), troops.get(n, 0) > 0, Roster.origin(c), troops.get(n, 0))
-	if mode == "deploy":
-		return                # a deployment sets these itself: the timer is 3, and there is no Instability yet
+	if mode == "deploy" or mode == "pvp":
+		return                # a deployment sets these itself: the timer is 3, and there is no Instability yet; (0.26) a match has no waves
 	_add_row({"timer": true}, "Wave timer", "The next wave arrives when the board is clear, or after this many rounds. The Companion uses 3.", {}, false, "", wave_timer)
 	_add_row({"timer": true, "districts": true}, "Districts cleared", instability_short(), {}, false, "", districts_cleared)
 
@@ -579,6 +601,8 @@ func _on_row(i: int, at: Vector2) -> void:
 		choose_floor(e["floor"])
 	elif e.has("team"):
 		choose_team(e["team"])
+	elif e.has("build"):
+		teams_requested.emit()
 	elif e.has("districts"):
 		set_districts(districts_cleared + (-1 if _hit(e, "minus", at) else (1 if _hit(e, "plus", at) else 0)))
 	elif e.has("timer"):
@@ -599,7 +623,7 @@ func choose_floor(i: int) -> void:
 	floor_i = i
 	# a smaller floor lets fewer Heroes in
 	var cap := Roster.hero_capacity(floors[i])
-	if mode == "team":
+	if mode == "team" or mode == "pvp":
 		_default_entry()
 	elif heroes.size() > cap:
 		heroes = heroes.slice(0, cap)
@@ -682,8 +706,16 @@ func _trim_troops() -> void:
 
 func _go(d: int) -> void:
 	var i := steps().find(step) + d
+	if i < 0 and mode == "pvp" and pvp_player == 2:
+		_pvp_back()
+		return
 	if i < 0:
 		closed.emit()
+		return
+	if i >= steps().size() and mode == "pvp" and pvp_player == 1:
+		if next_btn.disabled:
+			return
+		_pvp_next()
 		return
 	if i >= steps().size():
 		start()
@@ -694,9 +726,54 @@ func _go(d: int) -> void:
 	show_step()
 
 
+## (0.26) Player 1 has chosen: their choices are kept, and Player 2 chooses theirs.
+func _pvp_next() -> void:
+	pvp_first = {"team_i": team_i, "team": team(), "heroes": heroes.duplicate(), "leader": leader, "troops": troops.duplicate(), "troop_order": troop_order.duplicate(),
+		"setup": StrikeTeams.setup_for(team(), roster, heroes, leader, _starters(), 0, 0)}
+	pvp_player = 2
+	team_i = -1
+	heroes = []
+	troops = {}
+	troop_order = []
+	leader = ""
+	step = "team"
+	show_step()
+
+
+## Back from Player 2's first step: Player 1's choices, as they were.
+func _pvp_back() -> void:
+	pvp_player = 1
+	team_i = int(pvp_first.get("team_i", -1))
+	heroes.assign(pvp_first.get("heroes", []))
+	leader = str(pvp_first.get("leader", ""))
+	troops = pvp_first.get("troops", {})
+	troop_order.assign(pvp_first.get("troop_order", []))
+	step = "troops"
+	show_step()
+
+
+## Back from Strike Teams: the teams read again, and the step as it was.
+func resume(saved_teams: Array) -> void:
+	teams = saved_teams
+	if team_i >= teams.size():
+		team_i = -1
+	show_step()
+
+
+func _starters() -> Array:
+	var out := []
+	for n in troop_order:
+		for k in troops.get(n, 0):
+			out.append(n)
+	return out
+
+
 ## The chosen cards, Heroes then Troops (one entry per Troop brought).
 func start() -> void:
 	if the_floor() == null or heroes.is_empty():
+		return
+	if mode == "pvp":
+		pvp_start_requested.emit(floor_i, pvp_first["team"], pvp_first["setup"], team(), StrikeTeams.setup_for(team(), roster, heroes, leader, _starters(), 0, 0))
 		return
 	if mode != "quick":
 		var starters := []

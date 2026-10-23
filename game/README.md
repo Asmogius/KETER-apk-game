@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.26 opens
-the Sandbox, with its Card Forge; v0.25 recruits Heroes at the dock.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.27 brings
+pass and play, two players on one phone; v0.26 opened the Sandbox.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,27 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.27 (Companion 14.14): **Pass and play**, on Home: a match between
+two players and their Strike Teams on one phone.
+
+- **Setting up**: a floor, then Player 1's Strike Team, who enters and leads,
+  and its Starting Troops; then Player 2's. Every card is theirs to use:
+  nothing is recruited, researched or paid for, and Strike Teams (on a team's
+  step) builds or changes a team and comes back.
+- **On the floor**: Player 1's team starts on the Player Spawn Tiles, Player
+  2's on the Enemy Spawn Tiles (or the tiles furthest away). No Enemy waves.
+- **Turns**: Player 1 first. Each player moves, acts and plays cards with
+  their whole side, then ends their turn; the screen is covered until the
+  other player taps Ready, so nobody sees the other's hand. Each player has
+  their own Aether, Chips, Deck, hand, Consumables and Prototypes, and on
+  their turn their own Units are the ones in cyan.
+- **Statuses** last through the other player's turn, as Handbook 15.9 has
+  them; "when the round begins" happens once a round, as Player 1's turn
+  begins. Hold fire waits for an Enemy turn, which a match never has, so it
+  isn't offered.
+- **The winner** is the last side with a Hero standing. Rematch plays the
+  same two teams again. A match keeps nothing.
 
 New in 0.26 (Companion 14.14): **the Sandbox**, beside Strike Teams on Home:
 the game's own tools for making content, the Companion's made over for a
@@ -495,7 +516,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-26_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-27_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -506,7 +527,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-26_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-27_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the

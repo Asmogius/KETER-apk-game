@@ -78,6 +78,16 @@ var _walls := {}              # "q,r|q,r" -> true, both ways round
 var _wall_dict := {}          # as the floor saved them
 var _segs := []               # the walls as line segments, for sight
 var _next := {"ally": 0, "enemy": 0}
+## (0.26) Pass and play: two Strike Teams, two players, one phone. 0 for any
+## other fight; 1 or 2, the player whose turn it is. The engine always sees the
+## player whose turn it is as "ally" and the other as "enemy": at each hand-off
+## every Unit changes side, and the two players' Aether, Chips, Deck, hand,
+## Consumables, Prototypes and leader change places (pvp_store holds the one
+## waiting). No Enemy waves come, and no Enemy turn is played.
+var pvp := 0
+var pvp_store := {}           # the waiting player's: {aether, bank, pouch, deck, hand, discard, consumables, protos, leader_id, player_level, opened}
+var pvp_names := {1: "Player 1", 2: "Player 2"}
+var pvp_opened := {1: true, 2: false}   # whether a player has had the opening Aether, Chips and six cards
 
 ## Cover a Barricade tile gives (Handbook: Half +2, Full +4 to be hit).
 const COVER := {"cover-half": 2, "cover-full": 4}
@@ -134,6 +144,39 @@ static func begin_team(f: FloorData, r: Roster, setup: Dictionary, seed = null) 
 	b.with_cards = true
 	b.waves_total = WAVES_PER_FLOOR
 	b.wave = 0
+	b._build_team(setup, "ally")
+	# The Enemy pile: six for every Spawn Tile at its level, from the floor's District
+	var want := {}
+	for t in b.enemy_spawns():
+		want[t["level"]] = want.get(t["level"], 0) + b.waves_total
+	var levels: Array = want.keys()
+	levels.sort()
+	for level in levels:
+		var pool := r.foe_pool(level, f.district)
+		if pool.is_empty():
+			continue
+		for i in want[level]:
+			var c: Dictionary = pool[int(floor(float(b.dice.roll("d20")) / 21.0 * pool.size()))]
+			b.enemy_pile.append({"name": c["name"], "level": level})
+	b._shuffle(b.enemy_pile)
+	b._place_allies()
+	b.deploy_start()
+	b.spawn_wave()
+	b._income()
+	b.phase_chips()
+	b.phase_draw(true)
+	b.phase = "turn"
+	return b
+
+
+## A Strike Team on one side (0.26: begin_team's, and each side's in a
+## pass-and-play match): its Heroes, each with the Action cards it carries
+## and their Aether costs; its leader; its Starting Troops, out of the Deck;
+## its level, wave timer and Instability; its Deck, shuffled; its Pouch; its
+## Prototypes; and its Consumables. The dice are rolled as begin_team always
+## rolled them: the Deck's shuffle first.
+func _build_team(setup: Dictionary, side: String) -> void:
+	var r := roster
 	var heroes: Array = setup.get("heroes", [])
 	var carried_by: Dictionary = setup.get("actions", {})
 	for i in heroes.size():
@@ -150,7 +193,7 @@ static func begin_team(f: FloorData, r: Roster, setup: Dictionary, seed = null) 
 				copy["name"] = a["name"] if Rules.truthy(a.get("name")) else ac.get("name")
 				copy["from"] = ac.get("name")
 				carried.append(copy)
-		var u := b._add(hc, "ally", r.token_for(hc), carried)
+		var u := _add(hc, side, r.token_for(hc), carried)
 		# An Action card prints its use cost: Energy, Aether, or both. The
 		# Aether part is paid from the Bank at every use. (Handbook, Section 3)
 		for ac in carried_by.get(hc.get("name"), []):
@@ -175,23 +218,23 @@ static func begin_team(f: FloorData, r: Roster, setup: Dictionary, seed = null) 
 							ua["x"] = 1
 							ua["text"] = Keywords.fill_x(ua["textX"], 1)
 						break
-		if hc.get("name") == setup.get("leader") or (b.leader_id == "" and i == 0):
-			b.leader_id = u["id"]
+		if hc.get("name") == setup.get("leader") or (leader_id == "" and i == 0):
+			leader_id = u["id"]
 	# Starting Troops come out of the Deck and begin on Player Spawn Tiles
 	var starters: Array = setup.get("start_troops", [])
 	var started := []
 	for nm in starters:
 		var c = r.card_named(str(nm))
 		if c != null:
-			started.append({"name": str(nm), "unit": x_fill(b._add(c, "ally", r.token_for(c)))})      # nobody paid: X is 1
+			started.append({"name": str(nm), "unit": x_fill(_add(c, side, r.token_for(c)))})      # nobody paid: X is 1
 	var lv = Rules.num(setup.get("level"), 1)
-	b.player_level = clampi(int(lv) if Rules.truthy(lv) else 1, 1, 6)
+	player_level = clampi(int(lv) if Rules.truthy(lv) else 1, 1, 6)
 	var wt = Rules.num(setup.get("wave_timer"), 3)
-	b.wave_timer = int(wt) if Rules.truthy(wt) else 3
+	wave_timer = int(wt) if Rules.truthy(wt) else 3
 	var inst = Rules.num(setup.get("instability"), 0)
-	b.instability = clampi(int(inst) if Rules.truthy(inst) else 0, 0, 100)
-	b.deck = setup.get("deck", []).map(func(c): return Roster.hand_card(c))
-	b._shuffle(b.deck)
+	instability = clampi(int(inst) if Rules.truthy(inst) else 0, 0, 100)
+	deck = setup.get("deck", []).map(func(c): return Roster.hand_card(c))
+	_shuffle(deck)
 	# The Pouch is what the Strike Team carries: each Chip, as many as were packed
 	var packed: Dictionary = setup.get("pouch", {})
 	for k in packed:
@@ -200,34 +243,20 @@ static func begin_team(f: FloorData, r: Roster, setup: Dictionary, seed = null) 
 		var basic := str(k).begins_with("basic|")
 		var card = null if basic else r.card_named(Roster.ref_name(str(k)))
 		for i in qty:
-			b.pouch.append(Roster.chip_of(str(k), card))
-	# The Enemy pile: six for every Spawn Tile at its level, from the floor's District
-	var want := {}
-	for t in b.enemy_spawns():
-		want[t["level"]] = want.get(t["level"], 0) + b.waves_total
-	var levels: Array = want.keys()
-	levels.sort()
-	for level in levels:
-		var pool := r.foe_pool(level, f.district)
-		if pool.is_empty():
-			continue
-		for i in want[level]:
-			var c: Dictionary = pool[int(floor(float(b.dice.roll("d20")) / 21.0 * pool.size()))]
-			b.enemy_pile.append({"name": c["name"], "level": level})
-	b._shuffle(b.enemy_pile)
+			pouch.append(Roster.chip_of(str(k), card))
 	# Prototypes are the Strike Team's, kept apart from the Deck
 	for name in setup.get("protos", []):
 		var c = r.card_named(str(name))
-		var fx: Array = Roster.entries_of(c) if c != null else []
-		b.protos.append({"name": c["name"] if c != null else name,
-			"text": " ".join(fx.map(func(a): return a.get("text")).filter(func(t): return Rules.truthy(t))),
-			"fx": fx.filter(func(a): return str(a.get("text", "") if a.get("text") != null else "").strip_edges() != "").map(func(a):
+		var ents: Array = Roster.entries_of(c) if c != null else []
+		protos.append({"name": c["name"] if c != null else name,
+			"text": " ".join(ents.map(func(a): return a.get("text")).filter(func(t): return Rules.truthy(t))),
+			"fx": ents.filter(func(a): return str(a.get("text", "") if a.get("text") != null else "").strip_edges() != "").map(func(a):
 				return {"kind": a["kind"] if Rules.truthy(a.get("kind")) else (a["tag"] if Rules.truthy(a.get("tag")) else "Passive"), "text": a["text"]})})
 	for nm in starters:
-		for i in b.deck.size():
-			if b.deck[i]["name"] == nm:
+		for i in deck.size():
+			if deck[i]["name"] == nm:
 				# the card goes with its Troop, and to the Discard Pile when it falls
-				var took: Dictionary = b.deck.pop_at(i)
+				var took: Dictionary = deck.pop_at(i)
 				for st in started:
 					if st["name"] == nm and not (st["unit"].get("card") is Dictionary):
 						st["unit"]["card"] = took
@@ -239,16 +268,8 @@ static func begin_team(f: FloorData, r: Roster, setup: Dictionary, seed = null) 
 		var cc = r.card_named(str(name))
 		var n = Rules.num(packed_cons[name], 0)
 		for i in (int(n) if Rules.truthy(n) else 0):
-			b.consumables.append({"name": str(name), "used": false,
+			consumables.append({"name": str(name), "used": false,
 				"text": " ".join(Roster.entries_of(cc).map(func(a): return a.get("text")).filter(func(t): return Rules.truthy(t))) if cc != null else ""})
-	b._place_allies()
-	b.deploy_start()
-	b.spawn_wave()
-	b._income()
-	b.phase_chips()
-	b.phase_draw(true)
-	b.phase = "turn"
-	return b
 
 
 ## The simulator's shuffle: the battle's own dice decide it, so a seed deals the same.
@@ -311,6 +332,8 @@ func _hook() -> void:
 ## turn, its end, the next wave, the Aether and the draw. A Status ticks at
 ## the end of the half after the one it arrived in. (simHalf)
 func half() -> String:
+	if pvp > 0:
+		return "ally" if phase in ["turn", "recharge", "handoff"] else "enemy"     # (0.26) a turn's end is that player's half
 	return "ally" if (phase == "turn" or phase == "recharge") else "enemy"
 
 
@@ -1700,7 +1723,8 @@ func check_downs() -> void:
 
 ## The Actions a Unit could hold fire with now (Suppressive Fire). (simHoldable)
 func holdable(u: Dictionary) -> Array:
-	return fx.holdable(u)
+	# (0.26) a held shot waits for the Enemy turn, which a pass-and-play match never plays
+	return [] if pvp > 0 else fx.holdable(u)
 
 
 ## Holds fire: pays the Action's Energy now, and shoots the first Enemy that
@@ -2190,7 +2214,7 @@ func _add_loot(bag: Dictionary, who: String, from: String, at = null) -> void:
 ## An Enemy that has gone down drops its loot, once: by its kind, its Skull
 ## Level (the floor's, if it has none of its own) and its Salvage. (simSalvage)
 func salvage(u: Dictionary) -> void:
-	if u.get("side") != "enemy" or _salvaged.has(u.get("id")):
+	if u.get("side") != "enemy" or _salvaged.has(u.get("id")) or pvp > 0:      # (0.26) a player's Unit drops nothing
 		return
 	_salvaged[u["id"]] = true
 	var poi := poi_skull()
@@ -2268,6 +2292,10 @@ func find_loot(u: Dictionary) -> void:
 ## (simSettleLoot, less the keeping: that comes with the dock.)
 func _settle_loot(won: bool) -> void:
 	if not loot_result.is_empty():
+		return
+	if pvp > 0:
+		# (0.26) a pass-and-play match keeps nothing, and the floor gives no reward
+		loot_result = {"won": won, "haul": Loot.norm(loot), "reward": Loot.bag(), "total": Loot.norm(loot), "items": []}
 		return
 	var haul := Loot.norm(loot)
 	var reward := Loot.bag()
@@ -2629,3 +2657,211 @@ func phase_recharge() -> void:
 ## Kept for the screen's Next round in 0.2 tests: just the turnover.
 func next_round() -> void:
 	end_round()
+
+
+# ---------------------------------------------------------------- (0.26) pass and play
+const PVP_KEYS := ["aether", "bank", "pouch", "deck", "hand", "discard", "consumables", "protos", "leader_id", "player_level"]
+
+
+## A match between two Strike Teams on one floor, for two players passing the
+## phone. Player 1's team starts on the Player Spawn Tiles, Player 2's on the
+## Enemy Spawn Tiles (or, on a floor without enough of them, on the tiles
+## furthest from Player 1's). Player 1 goes first, with the opening Aether,
+## Chips and six cards; Player 2 has theirs as their first turn begins.
+## s1, s2: StrikeTeams.setup_for of each team.
+static func begin_pvp(f: FloorData, r: Roster, s1: Dictionary, s2: Dictionary, seed = null, names: Array = []) -> Battle:
+	var b := Battle.new()
+	b.roster = r
+	b.cards = r.cards
+	b._set_floor(f, seed)
+	b.pvp = 1
+	b.with_cards = true
+	b.waves_total = 0
+	b.wave = 0
+	if names.size() == 2:
+		b.pvp_names = {1: str(names[0]), 2: str(names[1])}
+	b._build_team(s1, "ally")
+	var first := b._take_side()
+	b._build_team(s2, "enemy")
+	b.pvp_store = b._take_side()
+	b._give_side(first)
+	b.wave_timer = 0
+	b.instability = 0
+	b._place_allies()
+	b._place_side("enemy")
+	b.deploy_start()
+	b._income()
+	b.phase_chips()
+	b.phase_draw(true)
+	b.phase = "turn"
+	b.say("Round 1 · %s's turn" % b.pvp_names[1], "note")
+	b.floats.clear()
+	return b
+
+
+## The side whose turn it is: its resources, taken off the battle (left empty).
+func _take_side() -> Dictionary:
+	var o := {}
+	for k in PVP_KEYS:
+		o[k] = get(k)
+	aether = {}
+	bank = []
+	pouch = []
+	deck = []
+	hand = []
+	discard = []
+	consumables = []
+	protos = []
+	leader_id = ""
+	player_level = 1
+	return o
+
+
+func _give_side(o: Dictionary) -> void:
+	for k in PVP_KEYS:
+		if o.has(k):
+			set(k, o[k])
+
+
+## The other player's Units go where the floor puts Enemies; without enough
+## Enemy Spawn Tiles, on the free tiles furthest from the Player Spawn Tiles.
+func _place_side(side: String) -> void:
+	var taken := {}
+	for u in units:
+		if u.get("pos") is Dictionary:
+			taken[Battle.tile_of(u)] = true
+	var spawns := spawn_tiles("enemy")
+	var mine := ally_spawns()
+	var far := func(h: Vector2i) -> int:
+		var d := 1 << 30
+		for m in mine:
+			d = mini(d, Hex.distance(h, m))
+		return d if not mine.is_empty() else -h.y
+	var extra: Array = floor_data.tiles.keys().filter(func(h): return not spawns.has(h) and kind_at(h) != "spawn-ally" and not kind_at(h).begins_with("cover") and unit_at(h) == null)
+	extra = Rules.stable_sort(extra, func(a, c): return far.call(c) - far.call(a))
+	var overflow := false
+	for u in units:
+		if u["side"] != side:
+			continue
+		var at = _claim(spawns, taken)
+		if at == null:
+			at = _claim(extra, taken)
+			overflow = true
+		if at != null:
+			u["pos"] = {"q": at.x, "r": at.y}
+	if overflow:
+		notes.append("%s's team starts across the floor from %s's: it has too few Enemy Spawn Tiles for them all." % [pvp_names[2], pvp_names[1]])
+
+
+func pvp_player() -> int:
+	return pvp
+
+
+func pvp_other() -> int:
+	return 3 - pvp if pvp > 0 else 0
+
+
+## The name of the player a side belongs to now ("ally": whose turn it is).
+func pvp_name_of(side: String) -> String:
+	if pvp == 0:
+		return side
+	return pvp_names[pvp] if side == "ally" else pvp_names[pvp_other()]
+
+
+## The player whose turn it is ends it: what ends with a turn ends (a Dash, a
+## held shot, a hazard under their Units), and the battle may be over. The
+## other player takes the phone next (pvp_hand_over).
+func pvp_end_turn() -> void:
+	_hook()
+	if pvp == 0 or phase != "turn" or over:
+		return
+	undo.clear()
+	phase = "handoff"
+	for u in units:
+		if u["side"] == "ally" and Rules.truthy(u.get("dash")):
+			u["dash"] = 0
+	fx.lapse_holds()
+	for u in units:
+		if u["side"] == "ally" and not Rules.truthy(u.get("down")):
+			fx.hazard_hit(u, "ends its turn on")
+	fx.check_downs()
+	settle()
+
+
+## The other player's turn begins: every Unit changes side, the players'
+## cards and Aether change places, the incoming player's Units refill their
+## Energy, and their Aether Generation, Aether Draw, Draw and Recharge play out
+## (the opening Aether, Chips and six cards, the first time). A new round
+## begins when it is Player 1's turn again.
+## Handbook 15.9 holds for both: a Status lasts through the turn after the one
+## it arrived in. Each player's Statuses tick as that player's next turn
+## begins, so each is marked, at every hand-off, as the other half's.
+func pvp_hand_over() -> void:
+	_hook()
+	if pvp == 0 or over:
+		return
+	for u in units:
+		u["side"] = "enemy" if u["side"] == "ally" else "ally"
+		for st in (u.get("statuses") if u.get("statuses") is Array else []):
+			st["late"] = not Rules.truthy(st.get("late"))
+		for m in (u.get("mods") if u.get("mods") is Array else []):
+			m["late"] = not Rules.truthy(m.get("late"))
+		if u.get("guards") is Dictionary:
+			for g in u["guards"].keys():
+				u["guards"][g] = not bool(u["guards"][g])
+	var waiting := pvp_store
+	pvp_store = _take_side()
+	_give_side(waiting)
+	pvp = pvp_other()
+	var new_round := pvp == 1
+	if new_round:
+		round += 1
+	moved.clear()
+	dash_used.clear()
+	for u in units:
+		u.erase("acted")
+		if u["side"] == "ally" and Rules.truthy(u.get("travel")):
+			u["travel"] = 0
+	say("Round %d · %s's turn" % [round, pvp_names[pvp]], "note")
+	for ev in Rules.end_turn(units.filter(func(u): return u["side"] == "ally")):
+		if ev["type"] == "status" and ev.get("energyLost") != null:
+			var u3 = unit_by_id(ev["unit"])
+			say("%s loses %d Energy to Drained" % [u3["name"] if u3 != null else "A Unit", ev["energyLost"]], "note")
+	if not pvp_opened.get(pvp, true):
+		pvp_opened[pvp] = true
+		phase = "gen"
+		_income()
+		phase = "chips"
+		phase_chips()
+		phase = "draw"
+		phase_draw(true)
+	else:
+		for k in ["gen", "chips", "draw"]:
+			run_phase(k)
+	phase = "recharge"
+	_tell_tick(Rules.recharge_tick(units), "recharge")
+	fx.check_downs()
+	fx.dealer = null
+	fx.apply_continuous()
+	if new_round:
+		fx.round_passives()
+		fx.emit("the round begins")
+		fx.check_downs()
+	var n := bank.filter(func(c): return Rules.truthy(c.get("spent"))).size()
+	for c in bank:
+		c["spent"] = false
+	if n > 0:
+		say("Recharge: %d Chip%s turned face-up" % [n, "" if n == 1 else "s"])
+	phase = "turn"
+	settle()
+
+
+## Who won a match, by name: "" while it goes on, or for a draw.
+func pvp_winner() -> String:
+	if pvp == 0 or not over:
+		return ""
+	if winner == "ally":
+		return pvp_names[pvp]
+	if winner == "enemy":
+		return pvp_names[pvp_other()]
+	return ""

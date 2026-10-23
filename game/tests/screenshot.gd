@@ -82,7 +82,7 @@ func _run() -> void:
 	var args := OS.get_cmdline_user_args()
 	var out := args[0] if args.size() > 0 else "user://shot.png"
 	var o := {"step": "battle", "floor": "", "heroes": "", "troops": "", "taps": "", "seed": "7", "place": "", "stage": "", "sure": "",
-		"screen": "battle", "mode": "quick", "tab": "heroes", "card": "", "deckonly": "", "empty": "", "timer": "", "districts": "", "carry": "", "map": "", "ws": "", "stock": "", "pick": "0", "dock": "", "motion": "", "after": "40", "options": "", "scroll": "", "view": "", "atmos": "", "freeze": "", "turns": "", "gen": "", "genchunks": "", "whole": "", "kind": "", "forge": ""}
+		"screen": "battle", "mode": "quick", "tab": "heroes", "card": "", "deckonly": "", "empty": "", "timer": "", "districts": "", "carry": "", "map": "", "ws": "", "stock": "", "pick": "0", "dock": "", "motion": "", "after": "40", "options": "", "scroll": "", "view": "", "atmos": "", "freeze": "", "turns": "", "gen": "", "genchunks": "", "whole": "", "kind": "", "forge": "", "pvp": ""}
 	for a in args.slice(1):
 		var kv: PackedStringArray = a.split("=", true, 1)
 		if kv.size() == 2:
@@ -180,6 +180,32 @@ func _run() -> void:
 		return
 	if o["screen"] == "workshop":
 		await _workshop(scene, o)
+		await _shoot(out)
+		return
+	# (0.26) pass and play: screen=pvp on floor=<name>, the test teams (Player 2's led by the free Heroes);
+	# pvp=cover (the hand-off screen), ready (Player 1's turn), two (Player 2's turn)
+	if o["screen"] == "pvp":
+		var red := Kit.team("Reds")
+		var blue := Kit.team("Blues")
+		blue["heroes"] = ["Dock Hand", "Field Medic", "Hangar Rifleman"]
+		blue["actions"] = {}
+		var fi := 0
+		for i in scene.floors.size():
+			if scene.floors[i].name == (o["floor"] if o["floor"] != "" else "TEST · Waves"):
+				fi = i
+		var cap := Roster.hero_capacity(scene.floors[fi])
+		var h1: Array = StrikeTeams.heroes(red, scene.roster).map(func(c): return str(c["name"])).slice(0, cap)
+		var h2: Array = StrikeTeams.heroes(blue, scene.roster).map(func(c): return str(c["name"])).slice(0, cap)
+		scene.start_pvp(fi, red, StrikeTeams.setup_for(red, scene.roster, h1, h1[0], [], 0, 0), blue, StrikeTeams.setup_for(blue, scene.roster, h2, h2[0], [], 0, 0), int(o["seed"]))
+		if o.get("pvp", "") != "cover":
+			scene.handoff.ready_btn.pressed.emit()
+		if o.get("pvp", "") == "two":
+			scene.end_turn()
+			for i in 4:
+				await process_frame
+			scene.handoff.ready_btn.pressed.emit()
+		for i in 30:
+			await process_frame
 		await _shoot(out)
 		return
 	# (0.26) the Sandbox's Card Forge: screen=sandbox, kind=<type>, forge=<a card's name to open>, scroll=<px>
