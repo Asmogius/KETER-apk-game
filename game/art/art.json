@@ -1,0 +1,4509 @@
+{
+ "board": {
+  "crate": {
+   "foot": [
+    16,
+    27
+   ],
+   "kind": "prop",
+   "rect": [
+    192,
+    0,
+    32,
+    32
+   ]
+  },
+  "emergency_exit": {
+   "foot": [
+    24,
+    36
+   ],
+   "kind": "prop",
+   "rect": [
+    288,
+    0,
+    48,
+    48
+   ]
+  },
+  "floor_bolts": {
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "rect": [
+    384,
+    0,
+    42,
+    48
+   ]
+  },
+  "floor_grate": {
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "rect": [
+    432,
+    0,
+    42,
+    48
+   ]
+  },
+  "floor_seam": {
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "rect": [
+    0,
+    48,
+    42,
+    48
+   ]
+  },
+  "floor_trench": {
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "rect": [
+    96,
+    48,
+    42,
+    48
+   ]
+  },
+  "floor_vent": {
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "rect": [
+    48,
+    48,
+    42,
+    48
+   ]
+  },
+  "full_cover_a": {
+   "foot": [
+    24,
+    42
+   ],
+   "kind": "prop",
+   "rect": [
+    96,
+    0,
+    48,
+    48
+   ]
+  },
+  "full_cover_b": {
+   "foot": [
+    24,
+    44
+   ],
+   "kind": "prop",
+   "rect": [
+    144,
+    0,
+    48,
+    48
+   ]
+  },
+  "half_cover_a": {
+   "foot": [
+    24,
+    38
+   ],
+   "kind": "prop",
+   "rect": [
+    0,
+    0,
+    48,
+    48
+   ]
+  },
+  "half_cover_b": {
+   "foot": [
+    24,
+    38
+   ],
+   "kind": "prop",
+   "rect": [
+    48,
+    0,
+    48,
+    48
+   ]
+  },
+  "hazard_acid": {
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "hazard",
+   "rect": [
+    240,
+    48,
+    42,
+    48
+   ]
+  },
+  "hazard_fire": {
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "hazard",
+   "rect": [
+    432,
+    48,
+    42,
+    48
+   ]
+  },
+  "hazard_razor": {
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "hazard",
+   "rect": [
+    336,
+    48,
+    42,
+    48
+   ]
+  },
+  "hazard_sludge": {
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "hazard",
+   "rect": [
+    384,
+    48,
+    42,
+    48
+   ]
+  },
+  "hazard_sparks": {
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "hazard",
+   "rect": [
+    288,
+    48,
+    42,
+    48
+   ]
+  },
+  "healing_station": {
+   "foot": [
+    24,
+    40
+   ],
+   "kind": "prop",
+   "rect": [
+    336,
+    0,
+    48,
+    48
+   ]
+  },
+  "locked_chest": {
+   "foot": [
+    16,
+    27
+   ],
+   "kind": "prop",
+   "rect": [
+    240,
+    0,
+    32,
+    32
+   ]
+  },
+  "pad_theirs": {
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "pad",
+   "rect": [
+    192,
+    48,
+    42,
+    48
+   ]
+  },
+  "pad_yours": {
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "pad",
+   "rect": [
+    144,
+    48,
+    42,
+    48
+   ]
+  }
+ },
+ "cardart": {
+  "adrenal_overdrive": {
+   "id": "D3-CN06",
+   "name": "Adrenal Overdrive",
+   "rect": [
+    0,
+    990,
+    128,
+    90
+   ],
+   "type": "consumable"
+  },
+  "adrenal_shot": {
+   "id": "",
+   "name": "Adrenal Shot",
+   "rect": [
+    640,
+    720,
+    128,
+    90
+   ],
+   "type": "consumable"
+  },
+  "aether_battery": {
+   "id": "D3-AE08",
+   "name": "Aether battery",
+   "rect": [
+    768,
+    180,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "aether_bolt": {
+   "id": "DX-AE03",
+   "name": "Aether Bolt",
+   "rect": [
+    768,
+    0,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "aether_discharge": {
+   "id": "DX-AE04",
+   "name": "Aether Discharge",
+   "rect": [
+    640,
+    180,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "aether_lance": {
+   "id": "D3-AE05",
+   "name": "Aether Lance",
+   "rect": [
+    0,
+    0,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "aetherium_reactive_plating": {
+   "id": "D3-EQ04",
+   "name": "Aetherium Reactive Plating",
+   "rect": [
+    512,
+    360,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "alchemical_chip": {
+   "id": "D3-AS03",
+   "name": "Alchemical Chip",
+   "rect": [
+    0,
+    90,
+    128,
+    90
+   ],
+   "type": "sphere"
+  },
+  "ballast_chip": {
+   "id": "",
+   "name": "Ballast Chip",
+   "rect": [
+    128,
+    180,
+    128,
+    90
+   ],
+   "type": "sphere"
+  },
+  "ballast_plate": {
+   "id": "",
+   "name": "Ballast Plate",
+   "rect": [
+    768,
+    450,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "barbed_chip": {
+   "id": "D0-AS03",
+   "name": "Barbed Chip",
+   "rect": [
+    128,
+    90,
+    128,
+    90
+   ],
+   "type": "sphere"
+  },
+  "bastion_chip": {
+   "id": "D0-AS04",
+   "name": "Bastion Chip",
+   "rect": [
+    512,
+    90,
+    128,
+    90
+   ],
+   "type": "sphere"
+  },
+  "bolstering_chip": {
+   "id": "D0-AS02",
+   "name": "Bolstering Chip",
+   "rect": [
+    256,
+    90,
+    128,
+    90
+   ],
+   "type": "sphere"
+  },
+  "breach_charge": {
+   "id": "",
+   "name": "Breach Charge",
+   "rect": [
+    768,
+    720,
+    128,
+    90
+   ],
+   "type": "consumable"
+  },
+  "burning_heart": {
+   "id": "D3-A06",
+   "name": "Burning Heart",
+   "rect": [
+    896,
+    180,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "call_the_note": {
+   "id": "",
+   "name": "Call the Note",
+   "rect": [
+    896,
+    630,
+    128,
+    90
+   ],
+   "type": "command"
+  },
+  "coolant_flush": {
+   "id": "",
+   "name": "Coolant Flush",
+   "rect": [
+    0,
+    810,
+    128,
+    90
+   ],
+   "type": "consumable"
+  },
+  "counterweight_fist": {
+   "id": "D3-EQ14",
+   "name": "Counterweight Fist",
+   "rect": [
+    128,
+    0,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "courrier_exorunners": {
+   "id": "D3-EQ09",
+   "name": "Courrier exorunners",
+   "rect": [
+    640,
+    360,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "dampening_chip": {
+   "id": "D3-AS04",
+   "name": "Dampening Chip",
+   "rect": [
+    384,
+    90,
+    128,
+    90
+   ],
+   "type": "sphere"
+  },
+  "datamine": {
+   "id": "DX-AE05",
+   "name": "Datamine",
+   "rect": [
+    0,
+    270,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "dead_man_s_grip": {
+   "id": "",
+   "name": "Dead Man's Grip",
+   "rect": [
+    896,
+    450,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "debt_ledger": {
+   "id": "",
+   "name": "Debt Ledger",
+   "rect": [
+    256,
+    540,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "deploy_fcb": {
+   "id": "DX-AE02",
+   "name": "Deploy FCB",
+   "rect": [
+    128,
+    270,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "deploy_hcb": {
+   "id": "DX-AE01",
+   "name": "Deploy HCB",
+   "rect": [
+    256,
+    270,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "deploy_ordinance_drone_swarm": {
+   "id": "D3-AE02",
+   "name": "Deploy ordinance drone swarm",
+   "rect": [
+    512,
+    270,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "deploy_sentry": {
+   "id": "D3-AE11",
+   "name": "Deploy Sentry",
+   "rect": [
+    384,
+    270,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "dragonskin_lining": {
+   "id": "D3-EQ06",
+   "name": "Dragonskin lining",
+   "rect": [
+    768,
+    360,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "emergency_overdrive": {
+   "id": "D3-AE04",
+   "name": "Emergency Overdrive",
+   "rect": [
+    640,
+    270,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "falconer_drone_pack": {
+   "id": "D3-A12",
+   "name": "Falconer Drone Pack",
+   "rect": [
+    256,
+    0,
+    128,
+    90
+   ],
+   "type": "action"
+  },
+  "field_dressing": {
+   "id": "",
+   "name": "Field Dressing",
+   "rect": [
+    256,
+    720,
+    128,
+    90
+   ],
+   "type": "consumable"
+  },
+  "field_triage": {
+   "id": "",
+   "name": "Field Triage",
+   "rect": [
+    512,
+    810,
+    128,
+    90
+   ],
+   "type": "prototype"
+  },
+  "field_weld": {
+   "id": "",
+   "name": "Field Weld",
+   "rect": [
+    256,
+    630,
+    128,
+    90
+   ],
+   "type": "action"
+  },
+  "flank_them": {
+   "id": "D3-CM09",
+   "name": "Flank Them",
+   "rect": [
+    640,
+    900,
+    128,
+    90
+   ],
+   "type": "command"
+  },
+  "frenzy_protocol": {
+   "id": "D3-AE03",
+   "name": "Frenzy Protocol",
+   "rect": [
+    768,
+    270,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "gantry_mapper": {
+   "id": "D3-PR03",
+   "name": "Gantry Mapper",
+   "rect": [
+    512,
+    990,
+    128,
+    90
+   ],
+   "type": "prototype"
+  },
+  "grapple_line": {
+   "id": "",
+   "name": "Grapple Line",
+   "rect": [
+    256,
+    810,
+    128,
+    90
+   ],
+   "type": "consumable"
+  },
+  "grav_boot_charge": {
+   "id": "D3-CN05",
+   "name": "Grav-Boot Charge",
+   "rect": [
+    896,
+    900,
+    128,
+    90
+   ],
+   "type": "consumable"
+  },
+  "gravity_well": {
+   "id": "D3-AE15",
+   "name": "Gravity Well",
+   "rect": [
+    256,
+    900,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "gyro_chip": {
+   "id": "D3-AS07",
+   "name": "Gyro Chip",
+   "rect": [
+    512,
+    180,
+    128,
+    90
+   ],
+   "type": "sphere"
+  },
+  "halo_targeting_system": {
+   "id": "D3-EQ07",
+   "name": "HALO targeting System",
+   "rect": [
+    896,
+    360,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "harmonic_damper": {
+   "id": "",
+   "name": "Harmonic Damper",
+   "rect": [
+    640,
+    0,
+    128,
+    90
+   ],
+   "type": "prototype"
+  },
+  "hold_the_line": {
+   "id": "D3-CM01",
+   "name": "Hold the Line",
+   "rect": [
+    384,
+    0,
+    128,
+    90
+   ],
+   "type": "command"
+  },
+  "integrated_targeting_system_2": {
+   "id": "D3-A11",
+   "name": "Integrated Targeting System 2",
+   "rect": [
+    384,
+    540,
+    128,
+    90
+   ],
+   "type": "action"
+  },
+  "integrated_targeting_system_v2": {
+   "id": "D3-A10",
+   "name": "Integrated Targeting System V2",
+   "rect": [
+    512,
+    540,
+    128,
+    90
+   ],
+   "type": "action"
+  },
+  "invigorating_chip": {
+   "id": "D0-AS01",
+   "name": "Invigorating Chip",
+   "rect": [
+    640,
+    90,
+    128,
+    90
+   ],
+   "type": "sphere"
+  },
+  "kickstart": {
+   "id": "D3-A07",
+   "name": "Kickstart",
+   "rect": [
+    896,
+    540,
+    128,
+    90
+   ],
+   "type": "action"
+  },
+  "kinetic_recycler": {
+   "id": "D3-PR02",
+   "name": "Kinetic Recycler",
+   "rect": [
+    384,
+    990,
+    128,
+    90
+   ],
+   "type": "prototype"
+  },
+  "kinetic_surge": {
+   "id": "D3-AE14",
+   "name": "Kinetic Surge",
+   "rect": [
+    128,
+    900,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "leaper_greaves": {
+   "id": "D3-EQ18",
+   "name": "Leaper Greaves",
+   "rect": [
+    384,
+    900,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "ledger_call": {
+   "id": "",
+   "name": "Ledger Call",
+   "rect": [
+    768,
+    630,
+    128,
+    90
+   ],
+   "type": "command"
+  },
+  "ledger_chip": {
+   "id": "",
+   "name": "Ledger Chip",
+   "rect": [
+    896,
+    90,
+    128,
+    90
+   ],
+   "type": "sphere"
+  },
+  "ledger_core": {
+   "id": "",
+   "name": "Ledger Core",
+   "rect": [
+    384,
+    810,
+    128,
+    90
+   ],
+   "type": "prototype"
+  },
+  "liquidate": {
+   "id": "",
+   "name": "Liquidate",
+   "rect": [
+    128,
+    720,
+    128,
+    90
+   ],
+   "type": "command"
+  },
+  "medical_supplies": {
+   "id": "",
+   "name": "Medical Supplies",
+   "rect": [
+    512,
+    720,
+    128,
+    90
+   ],
+   "type": "consumable"
+  },
+  "mending_chip": {
+   "id": "D3-AS02",
+   "name": "Mending Chip",
+   "rect": [
+    896,
+    0,
+    128,
+    90
+   ],
+   "type": "sphere"
+  },
+  "momentum_plating": {
+   "id": "D3-EQ19",
+   "name": "Momentum Plating",
+   "rect": [
+    512,
+    900,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "montu_battle_suit": {
+   "id": "D3-EQ05",
+   "name": "MONTU Battle Suit",
+   "rect": [
+    0,
+    450,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "overclock_surge": {
+   "id": "D3-A05",
+   "name": "Overclock Surge",
+   "rect": [
+    0,
+    630,
+    128,
+    90
+   ],
+   "type": "action"
+  },
+  "overdrive_governor": {
+   "id": "",
+   "name": "Overdrive Governor",
+   "rect": [
+    0,
+    900,
+    128,
+    90
+   ],
+   "type": "prototype"
+  },
+  "overpressure": {
+   "id": "",
+   "name": "Overpressure",
+   "rect": [
+    128,
+    630,
+    128,
+    90
+   ],
+   "type": "action"
+  },
+  "overrun": {
+   "id": "D3-AE07",
+   "name": "Overrun",
+   "rect": [
+    896,
+    270,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "personal_mounted_cluster_ordinance": {
+   "id": "D3-EQ03",
+   "name": "Personal mounted cluster ordinance",
+   "rect": [
+    128,
+    450,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "pin_the_runner": {
+   "id": "D3-CM10",
+   "name": "Pin the Runner",
+   "rect": [
+    768,
+    900,
+    128,
+    90
+   ],
+   "type": "command"
+  },
+  "quiet_chip": {
+   "id": "",
+   "name": "Quiet Chip",
+   "rect": [
+    256,
+    180,
+    128,
+    90
+   ],
+   "type": "sphere"
+  },
+  "ration_pack": {
+   "id": "",
+   "name": "Ration Pack",
+   "rect": [
+    128,
+    810,
+    128,
+    90
+   ],
+   "type": "consumable"
+  },
+  "recall": {
+   "id": "",
+   "name": "Recall",
+   "rect": [
+    640,
+    630,
+    128,
+    90
+   ],
+   "type": "command"
+  },
+  "redline_governor": {
+   "id": "D3-EQ12",
+   "name": "Redline Governor",
+   "rect": [
+    256,
+    450,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "redline_overdrive": {
+   "id": "D3-CM02",
+   "name": "Redline overdrive",
+   "rect": [
+    384,
+    630,
+    128,
+    90
+   ],
+   "type": "command"
+  },
+  "reinforced_frames": {
+   "id": "",
+   "name": "Reinforced Frames",
+   "rect": [
+    768,
+    810,
+    128,
+    90
+   ],
+   "type": "prototype"
+  },
+  "repair_kit": {
+   "id": "",
+   "name": "Repair Kit",
+   "rect": [
+    384,
+    720,
+    128,
+    90
+   ],
+   "type": "consumable"
+  },
+  "reroute_power": {
+   "id": "D3-CM03",
+   "name": "Reroute Power",
+   "rect": [
+    512,
+    630,
+    128,
+    90
+   ],
+   "type": "command"
+  },
+  "ripper_combat_suit": {
+   "id": "D3-EQ02",
+   "name": "Ripper Combat Suit",
+   "rect": [
+    384,
+    450,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "salvage_aether_core": {
+   "id": "D3-AE10",
+   "name": "Salvage Aether Core",
+   "rect": [
+    0,
+    360,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "salvage_hard_drive": {
+   "id": "D3-AE09",
+   "name": "Salvage Hard Drive",
+   "rect": [
+    128,
+    360,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "scavenge_parts": {
+   "id": "D3-AE01",
+   "name": "Scavenge Parts",
+   "rect": [
+    256,
+    360,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "scavenger_protocol": {
+   "id": "",
+   "name": "Scavenger Protocol",
+   "rect": [
+    896,
+    810,
+    128,
+    90
+   ],
+   "type": "prototype"
+  },
+  "signal_flare": {
+   "id": "",
+   "name": "Signal Flare",
+   "rect": [
+    896,
+    720,
+    128,
+    90
+   ],
+   "type": "consumable"
+  },
+  "skitter_step": {
+   "id": "D3-A17",
+   "name": "Skitter Step",
+   "rect": [
+    256,
+    990,
+    128,
+    90
+   ],
+   "type": "action"
+  },
+  "smoke_canister": {
+   "id": "",
+   "name": "Smoke Canister",
+   "rect": [
+    512,
+    0,
+    128,
+    90
+   ],
+   "type": "consumable"
+  },
+  "sparking_chip": {
+   "id": "D3-AS01",
+   "name": "Sparking chip",
+   "rect": [
+    768,
+    90,
+    128,
+    90
+   ],
+   "type": "sphere"
+  },
+  "spool_governor": {
+   "id": "",
+   "name": "Spool Governor",
+   "rect": [
+    0,
+    540,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "spring_chip": {
+   "id": "D3-AS06",
+   "name": "Spring Chip",
+   "rect": [
+    384,
+    180,
+    128,
+    90
+   ],
+   "type": "sphere"
+  },
+  "static_veil": {
+   "id": "D3-AE06",
+   "name": "Static Veil",
+   "rect": [
+    384,
+    360,
+    128,
+    90
+   ],
+   "type": "aether"
+  },
+  "subdermal_armor_plating_2": {
+   "id": "D3-A09",
+   "name": "Subdermal Armor Plating 2",
+   "rect": [
+    640,
+    540,
+    128,
+    90
+   ],
+   "type": "action"
+  },
+  "subdermal_armor_plating_v2": {
+   "id": "D3-A08",
+   "name": "Subdermal Armor Plating V2",
+   "rect": [
+    768,
+    540,
+    128,
+    90
+   ],
+   "type": "action"
+  },
+  "superheated_blades": {
+   "id": "D3-EQ08",
+   "name": "Superheated Blades",
+   "rect": [
+    512,
+    450,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "surge_chip": {
+   "id": "",
+   "name": "Surge Chip",
+   "rect": [
+    0,
+    180,
+    128,
+    90
+   ],
+   "type": "sphere"
+  },
+  "targeting_mesh": {
+   "id": "",
+   "name": "Targeting Mesh",
+   "rect": [
+    640,
+    810,
+    128,
+    90
+   ],
+   "type": "prototype"
+  },
+  "tighten_ranks": {
+   "id": "",
+   "name": "Tighten Ranks",
+   "rect": [
+    0,
+    720,
+    128,
+    90
+   ],
+   "type": "command"
+  },
+  "vantage_servo_harness": {
+   "id": "D3-EQ10",
+   "name": "Vantage Servo Harness",
+   "rect": [
+    640,
+    450,
+    128,
+    90
+   ],
+   "type": "equipment"
+  },
+  "vault_strike": {
+   "id": "D3-A16",
+   "name": "Vault Strike",
+   "rect": [
+    128,
+    990,
+    128,
+    90
+   ],
+   "type": "action"
+  },
+  "whisper_coil": {
+   "id": "",
+   "name": "Whisper Coil",
+   "rect": [
+    128,
+    540,
+    128,
+    90
+   ],
+   "type": "equipment"
+  }
+ },
+ "cardback": {
+  "back": {
+   "rect": [
+    0,
+    0,
+    75,
+    105
+   ]
+  }
+ },
+ "cards": {
+  "action": {
+   "rect": [
+    0,
+    0,
+    64,
+    45
+   ]
+  },
+  "aether": {
+   "rect": [
+    0,
+    45,
+    64,
+    45
+   ]
+  },
+  "command": {
+   "rect": [
+    128,
+    0,
+    64,
+    45
+   ]
+  },
+  "consumable": {
+   "rect": [
+    192,
+    0,
+    64,
+    45
+   ]
+  },
+  "equipment": {
+   "rect": [
+    64,
+    0,
+    64,
+    45
+   ]
+  },
+  "prototype": {
+   "rect": [
+    128,
+    45,
+    64,
+    45
+   ]
+  },
+  "sphere": {
+   "rect": [
+    64,
+    45,
+    64,
+    45
+   ]
+  }
+ },
+ "district": {
+  "d1_floor_0": {
+   "d": "1",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 0,
+   "rect": [
+    0,
+    0,
+    42,
+    48
+   ]
+  },
+  "d1_floor_1": {
+   "d": "1",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 1,
+   "rect": [
+    43,
+    0,
+    42,
+    48
+   ]
+  },
+  "d1_floor_2": {
+   "d": "1",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 2,
+   "rect": [
+    86,
+    0,
+    42,
+    48
+   ]
+  },
+  "d1_floor_3": {
+   "d": "1",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 3,
+   "rect": [
+    129,
+    0,
+    42,
+    48
+   ]
+  },
+  "d1_floor_4": {
+   "d": "1",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 4,
+   "rect": [
+    172,
+    0,
+    42,
+    48
+   ]
+  },
+  "d1_full_cover": {
+   "d": "1",
+   "foot": [
+    24,
+    44
+   ],
+   "kind": "full_cover",
+   "rect": [
+    215,
+    0,
+    48,
+    48
+   ]
+  },
+  "d1_half_cover": {
+   "d": "1",
+   "foot": [
+    24,
+    38
+   ],
+   "kind": "half_cover",
+   "rect": [
+    264,
+    0,
+    48,
+    48
+   ]
+  },
+  "d2_floor_0": {
+   "d": "2",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 0,
+   "rect": [
+    313,
+    0,
+    42,
+    48
+   ]
+  },
+  "d2_floor_1": {
+   "d": "2",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 1,
+   "rect": [
+    356,
+    0,
+    42,
+    48
+   ]
+  },
+  "d2_floor_2": {
+   "d": "2",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 2,
+   "rect": [
+    399,
+    0,
+    42,
+    48
+   ]
+  },
+  "d2_floor_3": {
+   "d": "2",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 3,
+   "rect": [
+    0,
+    49,
+    42,
+    48
+   ]
+  },
+  "d2_floor_4": {
+   "d": "2",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 4,
+   "rect": [
+    43,
+    49,
+    42,
+    48
+   ]
+  },
+  "d2_full_cover": {
+   "d": "2",
+   "foot": [
+    24,
+    44
+   ],
+   "kind": "full_cover",
+   "rect": [
+    86,
+    49,
+    48,
+    48
+   ]
+  },
+  "d2_half_cover": {
+   "d": "2",
+   "foot": [
+    24,
+    38
+   ],
+   "kind": "half_cover",
+   "rect": [
+    135,
+    49,
+    48,
+    48
+   ]
+  },
+  "d3_floor_0": {
+   "d": "3",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 0,
+   "rect": [
+    184,
+    49,
+    42,
+    48
+   ]
+  },
+  "d3_floor_1": {
+   "d": "3",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 1,
+   "rect": [
+    227,
+    49,
+    42,
+    48
+   ]
+  },
+  "d3_floor_2": {
+   "d": "3",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 2,
+   "rect": [
+    270,
+    49,
+    42,
+    48
+   ]
+  },
+  "d3_floor_3": {
+   "d": "3",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 3,
+   "rect": [
+    313,
+    49,
+    42,
+    48
+   ]
+  },
+  "d3_floor_4": {
+   "d": "3",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 4,
+   "rect": [
+    356,
+    49,
+    42,
+    48
+   ]
+  },
+  "d3_full_cover": {
+   "d": "3",
+   "foot": [
+    24,
+    44
+   ],
+   "kind": "full_cover",
+   "rect": [
+    399,
+    49,
+    48,
+    48
+   ]
+  },
+  "d3_half_cover": {
+   "d": "3",
+   "foot": [
+    24,
+    38
+   ],
+   "kind": "half_cover",
+   "rect": [
+    0,
+    98,
+    48,
+    48
+   ]
+  },
+  "d4_floor_0": {
+   "d": "4",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 0,
+   "rect": [
+    49,
+    98,
+    42,
+    48
+   ]
+  },
+  "d4_floor_1": {
+   "d": "4",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 1,
+   "rect": [
+    92,
+    98,
+    42,
+    48
+   ]
+  },
+  "d4_floor_2": {
+   "d": "4",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 2,
+   "rect": [
+    135,
+    98,
+    42,
+    48
+   ]
+  },
+  "d4_floor_3": {
+   "d": "4",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 3,
+   "rect": [
+    178,
+    98,
+    42,
+    48
+   ]
+  },
+  "d4_floor_4": {
+   "d": "4",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 4,
+   "rect": [
+    221,
+    98,
+    42,
+    48
+   ]
+  },
+  "d4_full_cover": {
+   "d": "4",
+   "foot": [
+    24,
+    44
+   ],
+   "kind": "full_cover",
+   "rect": [
+    264,
+    98,
+    48,
+    48
+   ]
+  },
+  "d4_half_cover": {
+   "d": "4",
+   "foot": [
+    24,
+    38
+   ],
+   "kind": "half_cover",
+   "rect": [
+    313,
+    98,
+    48,
+    48
+   ]
+  },
+  "d5_floor_0": {
+   "d": "5",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 0,
+   "rect": [
+    362,
+    98,
+    42,
+    48
+   ]
+  },
+  "d5_floor_1": {
+   "d": "5",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 1,
+   "rect": [
+    405,
+    98,
+    42,
+    48
+   ]
+  },
+  "d5_floor_2": {
+   "d": "5",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 2,
+   "rect": [
+    0,
+    147,
+    42,
+    48
+   ]
+  },
+  "d5_floor_3": {
+   "d": "5",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 3,
+   "rect": [
+    43,
+    147,
+    42,
+    48
+   ]
+  },
+  "d5_floor_4": {
+   "d": "5",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 4,
+   "rect": [
+    86,
+    147,
+    42,
+    48
+   ]
+  },
+  "d5_full_cover": {
+   "d": "5",
+   "foot": [
+    24,
+    44
+   ],
+   "kind": "full_cover",
+   "rect": [
+    129,
+    147,
+    48,
+    48
+   ]
+  },
+  "d5_half_cover": {
+   "d": "5",
+   "foot": [
+    24,
+    38
+   ],
+   "kind": "half_cover",
+   "rect": [
+    178,
+    147,
+    48,
+    48
+   ]
+  },
+  "d6_floor_0": {
+   "d": "6",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 0,
+   "rect": [
+    227,
+    147,
+    42,
+    48
+   ]
+  },
+  "d6_floor_1": {
+   "d": "6",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 1,
+   "rect": [
+    270,
+    147,
+    42,
+    48
+   ]
+  },
+  "d6_floor_2": {
+   "d": "6",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 2,
+   "rect": [
+    313,
+    147,
+    42,
+    48
+   ]
+  },
+  "d6_floor_3": {
+   "d": "6",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 3,
+   "rect": [
+    356,
+    147,
+    42,
+    48
+   ]
+  },
+  "d6_floor_4": {
+   "d": "6",
+   "foot": [
+    21,
+    24
+   ],
+   "kind": "floor",
+   "n": 4,
+   "rect": [
+    399,
+    147,
+    42,
+    48
+   ]
+  },
+  "d6_full_cover": {
+   "d": "6",
+   "foot": [
+    24,
+    44
+   ],
+   "kind": "full_cover",
+   "rect": [
+    0,
+    196,
+    48,
+    48
+   ]
+  },
+  "d6_half_cover": {
+   "d": "6",
+   "foot": [
+    24,
+    38
+   ],
+   "kind": "half_cover",
+   "rect": [
+    49,
+    196,
+    48,
+    48
+   ]
+  }
+ },
+ "fx": {
+  "ash": {
+   "anchor": [
+    4,
+    4
+   ],
+   "atmos": true,
+   "fps": 4,
+   "frames": 3,
+   "h": 8,
+   "rect": [
+    0,
+    227,
+    24,
+    8
+   ],
+   "w": 8
+  },
+  "dust": {
+   "anchor": [
+    3,
+    3
+   ],
+   "atmos": true,
+   "fps": 3,
+   "frames": 2,
+   "h": 6,
+   "rect": [
+    0,
+    236,
+    12,
+    6
+   ],
+   "w": 6
+  },
+  "ember": {
+   "anchor": [
+    4,
+    4
+   ],
+   "atmos": true,
+   "fps": 8,
+   "frames": 4,
+   "h": 8,
+   "rect": [
+    0,
+    205,
+    32,
+    8
+   ],
+   "w": 8
+  },
+  "explosion": {
+   "anchor": [
+    24,
+    28
+   ],
+   "fps": 14,
+   "frames": 8,
+   "h": 48,
+   "rect": [
+    0,
+    58,
+    384,
+    48
+   ],
+   "w": 48
+  },
+  "flash": {
+   "anchor": [
+    12,
+    12
+   ],
+   "fps": 20,
+   "frames": 4,
+   "h": 24,
+   "rect": [
+    0,
+    0,
+    96,
+    24
+   ],
+   "w": 24
+  },
+  "heal": {
+   "anchor": [
+    16,
+    44
+   ],
+   "fps": 12,
+   "frames": 6,
+   "h": 48,
+   "rect": [
+    0,
+    107,
+    192,
+    48
+   ],
+   "w": 32
+  },
+  "impact": {
+   "anchor": [
+    16,
+    16
+   ],
+   "fps": 16,
+   "frames": 5,
+   "h": 32,
+   "rect": [
+    0,
+    25,
+    160,
+    32
+   ],
+   "w": 32
+  },
+  "shield": {
+   "anchor": [
+    24,
+    26
+   ],
+   "fps": 14,
+   "frames": 6,
+   "h": 48,
+   "rect": [
+    0,
+    156,
+    288,
+    48
+   ],
+   "w": 48
+  },
+  "spark": {
+   "anchor": [
+    6,
+    6
+   ],
+   "atmos": true,
+   "fps": 16,
+   "frames": 3,
+   "h": 12,
+   "rect": [
+    0,
+    214,
+    36,
+    12
+   ],
+   "w": 12
+  }
+ },
+ "ground": {
+  "ground_1_0": {
+   "cells": "BwABLwGZAS8NAAGaAS8BmAMvAZkJAAGZAi8BmAEvAZkFLwUAAZgELwGaAZgELwGZAZgCLwIAAi8BmQQvAZoBmAMvAZkBmAMvAQABmAEsAZgBLA2YAQABLAEvAiwBmgEvAZoBLwGaAZgBmgGZAZoBLwGaAZkBmgEAAS8BLAIvAZgDLwGZAZoDLwOZAS8BAAMvAZgBLwGZBC8BmAMvA5kBAAKZAS8BmQIvAZgDLwGaAZgBLwGYAy8BAAGZAi8BmQEvAZkBLwGZAy8BmgGZBC8BAAEvA5kGLwGYAS8BmAMvAZkBAAMvAZkCLwGZAZgBmQIvAZgBmgGYAZkCLwMAApkCLwGYAS8BmAIvApkBmgEvBwACLwGZAy8BmQEvAZkLAAGYAZkDLw8AAS8JAA==",
+   "d": "1",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    0,
+    0,
+    78,
+    89
+   ],
+   "v": 0
+  },
+  "ground_1_1": {
+   "cells": "BwACLwGZDQAGLwGYCQABLwGaAZgCLwGYAy8BmQGYBQACLwGZAS8BmgEvAZkILwIAAS8BmQGYAZkBLwGZAZgDLwGZAy8BmQIvAQABmAUvAZoBmAIvApkBLwGZAZgCLwEAAS8BmAEvA5gBLwGaApgBmQGYAZkBmAGZAZgBLwEACJoBmAiaAQADLwGZAS8CmQGYAZoBmAGZBC8CmAEABi8DmQGaAS8BmAIvAZkCLwEAApkBmAEvAZkFLwGYBi8BAAEvAZkILwGaApgCLwGZAS8BAAKZAi8BmQYvAZoCmQEvAZkBLwMAAZkJLwGYAi8HAAGYAi8BmQQvAZoLAAIvA5kPAAEvCQA=",
+   "d": "1",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    79,
+    0,
+    78,
+    89
+   ],
+   "v": 1
+  },
+  "ground_1_2": {
+   "cells": "BwABLwKZDQABLwGYAZkBLwGZAi8JAAGaBC8BmQEvAZgDLwUAAS8BmQEvAZgBLwGZAy8BmQQvAZkCAAGZAZgCLwGaAZgBLwOZAi8BmAQvAQAFmAGaC5gBAAGaAZgBmgEvAZoBLwGYAS8BmgEvAZoBmQGaAS8BmgEvAZoBAAKYBC8BmgGYAS8CmQYvAQACLwGZAZgBmQIvAZoELwGYAS8DmQEAAZkBmAGZAy8BmQEvAZgELwGZAy8BAAEvAS0CmQQvAZoBmAIvAZkELwEAASwBmQEvAZkFLwGaAZkDLwGZAS8BmQEAAS0BMQIvAZkCLAMvAZgBmQEvApkCLwMAAy8BLQEsAS0BmAEvAZoBmAGZAi8HAAEvAZkBLQQvAZoBLwsABS8PAAEvCQA=",
+   "d": "1",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    158,
+    0,
+    78,
+    89
+   ],
+   "v": 2
+  },
+  "ground_1_3": {
+   "cells": "BwABmQEvAZgNAAKZAS8BmQEvAZkBmAkAAZkDLwGZAS8BmQEvApkBmAUAAS8BmgGYCC8DmQEvAgACLwGZAZoGLwGYAy8CmQEvAQABLwGZAi8BmAYvApkELwEAAS8BmAGZAZgBmgGYAS8BmAEvAZgBLwGYAS8BmAEvAZgBmQEACZoBigeaAQABmQEvAZkCLwSKAS8CigEvAZgCLwGZAQACLwKZAS8BmQGaAZgDLwGZAS8BmQEvApkBAAUvAZkBLwGaAS8DmQEvAZkCLwGZAQABmQIvAZkBLwMtAZgFLwGZAS8BmQEAAi8BmQIvAS0BKwEtAZoBmAIvAZkCLwGZAS8DAAGZAi8BmQEsAS8BmQGaAZkDLwGZBwAGLwGYAS8BmQsAAZkDLwGaDwABLwkA",
+   "d": "1",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    237,
+    0,
+    78,
+    89
+   ],
+   "v": 3
+  },
+  "ground_2_0": {
+   "cells": "BwABbgFsAWgNAANuAWwBbQJsCQABbgJsAm4BaANtAmwFAAFoAm4BbAFtA2wDbQFsAW4CbAIAAmwCbgFsA20CbAJtAWwDbgFsAQABbAFtA2wDbQFsAW4DbAFoAm4BbAEAAWwDbQJsAm0BbANuAmwBbgFoAWwBAAFsA20BbAFuA2wCbgFoAWwBbQNsAQABaAFsAm0BbANuAmwCbgFsA20BbAEAAWwBbgNsA24BbAFtA2wDbQFsAQABbANuAmwCbgFsA20BbAFoAm0BbAEAAWwDbgFsAW0DbANtAWwBbgNsAQACbAJuAWwDbQJsAm0BbANuAWwDAANsA20BbAFuA2wCbgcAAmwCbQFsA24BbAsAA2wCbg8AAWwJAA==",
+   "d": "2",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    316,
+    0,
+    78,
+    89
+   ],
+   "v": 0
+  },
+  "ground_2_1": {
+   "cells": "BwABbgJsDQACbgFoAWwBbQFoAWwJAAFuAmwCbgFsA20CbAUAA24BbAFoA2wDbQFsAW4CbAIAAmwBbgFoAWwCaANsAm0BbANuAWwBAAFsAW0DbAFoAWwBaAFsAW4DbANuAWwBAAFsAW0BaAFtAWwBaAFsAWgBbANuAmwCbgFsAQABbAFoAm0BbAFuA2wDbgFsAW0DbAEAAmwCbQFsA24CbAFuAWgBbANtAWwBAAFsAW4DbANuBWwDbQFsAQABbANuAmwCbgJsAWgDbAJtAWwBAAFsA24BbAFtBGwBaAJsAW4CbAFoAQACbAJuAWwDbQJsAWgCbANuAWwDAANsA20BbAFuA2wCbgcAAmwCbQFsA24BbAsAA2wCbg8AAWwJAA==",
+   "d": "2",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    395,
+    0,
+    78,
+    89
+   ],
+   "v": 1
+  },
+  "ground_2_2": {
+   "cells": "BwABbgJsDQADbgFsAW0CbAkAAW4CbAJuAWwDbQJsBQADbgFsAW0DbANtAWwBbgJsAgACbAJuAWwDbQJsAm0BbANuAWwBAAFsAW0DbANtAWgBbgNsAm4BaAFsAQABbANtAmwCbQFsA24CbAJuAWwBAAFsA20BbAFoA2wDbgFsAW0DbAEAAmwCbQFsA24CbAJuAWwDbQFsAQABbAFuA2wDbgFsAW0CbAFoA20BbAEAAWwBaAJuAmwCbgFsA20CbAJtAWwBAAFsAW4BaAFuAWwBbQNsA20BbAFuAWwBaAFsAQACbAJuAWwBbQFoAW0BaAFsAm0BbANuAWwDAANsA20BbAFuA2wCbgcAAmwCbQFsA24BbAsAA2wCbg8AAWwJAA==",
+   "d": "2",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    474,
+    0,
+    78,
+    89
+   ],
+   "v": 2
+  },
+  "ground_2_3": {
+   "cells": "BwABbgJsDQADbgFsAW0CbAkAAW4CbAJuAWwDbQJsBQADbgFsAW0DbAFoAm0BbAFuAmwCAAJsAm4BbAFmAm0BbAFmAm0BbANuAWwBAAFsAWgBbAFoAWwCbQFoAWwBbgNsA24BbAEAAWwCbQFoAmwBbQFoAWwDbgJsAm4BbAEAAWwDbQFsAW4DbANuAWwBbQNsAQACbAJtAWwDbgJsAm4BbANtAWwBAAFsAW4DbANuAWgBbQNsA20BbAEAAWwDbgJsAm4BbANtAmwBaAFtAWwBAAFsA24BbAFmAmwBiQFtAW4BZgFsAW4DbAEAAmwCbgFsAm0BaAJsAm0BbAJuAWgBbAMAAmwBaANtAWwBbgNsAm4HAAJsAm0BbANuAWwLAANsAm4PAAFsCQA=",
+   "d": "2",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    0,
+    90,
+    78,
+    89
+   ],
+   "v": 3
+  },
+  "ground_3_0": {
+   "cells": "BwABDwIODQABRAFFAQ8BRAEOAUQBDgkAAg4BRAFFAQ8CDgJEAQ4BRAUABA4BRAFFAQ8BRAEOAUQBRQFEAg4BRAIAAUQBDwFEAQ8BDgEPAUUBDwEOAQ8BRAEPAToBDwEOAQ8BRAEAAQ8BRQEPAUUBDwJFAg8BRQEPAToBDwFFAQ8BRQEPAQABRAEOAkQCDgE6AQ8BOgcOAUQBAAIOA0QBDgFFAToBDgNEAQ4BRAMOAQABDgJEAQ4BRQEOAUUBDwEOAkQBDgFEAQ4BRQIOAQABRAQOAToBRQEPAg4BRQFEAg4BOgIOAQADDgFEAQ4CRQEPAg4BRAMOAUQCDgEAAg4BRAMOAUUBDwgOAUQBAAMOAUQCDgFFAQ8CRAMOAUQDDgMAA0QBDgFFAQ8BRQQOAUQBDgcAAg4BRQEPAQ4BOgFEAg4LAAFFAQ8DDg8AAQ4JAA==",
+   "d": "3",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    79,
+    90,
+    78,
+    89
+   ],
+   "v": 0
+  },
+  "ground_3_1": {
+   "cells": "BwABRQEPAUQNAAEOAUQBRQEPAw4JAAFEAw4BRQEPBQ4FAAYOAUUBDwREAUUCDgIAAw4DRAEOAUUBDwIOAUQFDgEAAw8BOgMPAUUJDwEAAUUBDgFFAQ4ERQEPAQ4DRQFEAUUBRAFFAQABDgJEAw4COgEPAUUBDgFFAw4BRQEOAQABDgE6AUQEDgFFAQ8CDgFEAUUCDgJEAQACDgFEAQ4BRAIOAUUBOggOAQABDgFEBQ4BRQEPAg4BDwFEAQ8CDgFEAQAFDgFEAQ4BRQEPAg4DDwMOAQABRAQOAToBDgE6AQ8BRAcOAwAFDgFFAQ8CDgNEAQ4HAAEOAUQCRQEPAUQDDgsAAQ4BRQEPAQ4BRA8AAQ8JAA==",
+   "d": "3",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    158,
+    90,
+    78,
+    89
+   ],
+   "v": 1
+  },
+  "ground_3_2": {
+   "cells": "BwABDgFFAQ8NAAIOAUQBRQEPAUQBDgkAAg4CRAEOAUUBOgFEAw4FAAcOAUUBDwEOAUQBDgFEAQ4BRAIAAw4BRQFEAg4BRAE6AQ8EDgFEAg4BAAEOA0QCDgFEAQ4BRQEPA0QEDgEAAQ8BRQEPAUUBDwFFAQ8CRQIPAUUBDwFFAQ8BRQEPAQABDgFEAQ4BRAMOAToBRQEPAw4BRAMOAQACDgFFBQ4BRQEPAUUDDgJFAQ4BAAIOAkQBOgMOAUUBDwQOAUQBDgFEAQACDgFEAg4BRQEOAUQBRQEPAg4DRAE6AQ4BAAEOAToBRAEOAUQDDgE6AQ8ERAE6AUQBDgEAAUUEDgE6AUUBDgFFAQ8BOgNEAw4DAAIOAUQDDgFFAQ8BOgJEAg4HAAEOAUQBDgFEAUUBDwFFAg4LAAJEAUUBDwFEDwABRQkA",
+   "d": "3",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    237,
+    90,
+    78,
+    89
+   ],
+   "v": 2
+  },
+  "ground_3_3": {
+   "cells": "BwACDgFFDQAEDgFFAQ8BDgkAAUQFDgFFAQ8BOgFEAQ4FAAEOAUQCDgJEAg4BRQEPAQ4BRAMOAgABRAMOAUQCDgFEAQ4BRQEPAQ4BOgFEAw4BAAUOAUQBDgFEAQ4BRQEPAToDDgE6AUQBAAEOAQ8BDgEPAQ4BDwEOAQ8BDgFFAToBDwEOAQ8BRAEPAQ4BAAFFAQ0BRQENAUUBDQE6AQ0BRQENAToBDQE6AQ0BRQENAUUBAAELAg8BCwIPAQsCDwILAg8CCwEPAQsBAAIPAQsCDwILAg8CCwEPAgsBDwILAQABDQFEAQ0BRAENAQ4BDQEOAQ0BRQENAQ4BDQEOAQ0BRQENAQABDgFEAToGDgFFAQ8EDgFFAQ4BAAFEAQ4BOgYOAUUBDwIOAToDDgMAAkQCDgFEAg4BRQEPAUUBDgJEBwADDgJEAUUBDwIOCwABDgFFAQ4BRQEPDwABDgkA",
+   "d": "3",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    316,
+    90,
+    78,
+    89
+   ],
+   "v": 3
+  },
+  "ground_4_0": {
+   "cells": "BwADuA0ABLgBuQG4AbkJAAO4ArkCuAK6AbgBuQUAA7kBuAK5ArgBugG4AbkBuAK5AbgCABG4AQABuAG6AbgBuQO4AbkBuAO5AbgBugK5AbgBAAG4AbkBuAG5AbgDuQG4AbkBugG5AbgBuQG4AbkBuAEAAbgDuQK4AbkBugG4ArkCuAO5AbgBABG4AQABuAK5A7gBugG5A7gBugG4A7kBuAEAAbgBuQO4ArkCuAG5AbgBugG4A7kBuAEAArgCuQG4AbkDuAG6AbkBugG4AbkBuAG5AbgBABG4AwACuQG4AboBuQG6AbgCuQG6AbgCuQcAAbgBugG4AbkDuAG5AbgLAAK6AbgCuQ8AAbgJAA==",
+   "d": "4",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    395,
+    90,
+    78,
+    89
+   ],
+   "v": 0
+  },
+  "ground_4_1": {
+   "cells": "BwADuA0AAbgBugG5AbgBugK4CQABuQG4A7kCuAK5ArgFAAK4AbkCuAG5ArgBuQG6AbkBuAG6AbgBugIAEbgBAAG4AbkBuAG6BbgCuQK4AbkBuAG5AbgBAAG4ArkCuAG5AboBhAO4AbkBuAO5AbgBAAK4AYQBuQG4AbkEuAG6ArgBuQO4AQAOuAGEArgBAAK4AbkBugG4AbkDuAK6AbkBuAG5AbgBugG4AQABuAG5AroBuAG6AbkHuAG5ArgBAAK4AbkBugG4AYQBuQK4A7kBuAK5ArgBABG4AwABuAG5AbgCuQG6AbgCuQG6ArgBuQcAAbgBuQK6ArgCuQG4CwADuAG5AbgPAAG4CQA=",
+   "d": "4",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    474,
+    90,
+    78,
+    89
+   ],
+   "v": 1
+  },
+  "ground_4_2": {
+   "cells": "BwABuAE3AYQNAAG4AbkBuAM3AbkJAAO4AbkBugM3A7gFAAO5AbgBuQG4AbkBhAI3AbkBuAO5AgAIuAM3BrgBAAG4AboBuAG5AbgDuQGEAjcCuAO5AbgBAAK4AbkCuAO5AzcCuAO5AbgBAAG4AbkBuAG5A7gBugM3AbkBuAO5AbgBAAi4AjcBhAa4AQABuAK6AbkBuAG5AbgBuQM3ArgBuQG4AboBuAEAA7gBugG4AbkCugE3AYQBNwG5ArgBugK4AQACuAK5AbgBuQG6AbkBhAI3BrgBAAi4AzcGuAMAArkBuAK6AbkBhAE3AYQBuQG4ArkHAAG4AboBuAG5AzcBuQG4CwACuQM3DwABNwkA",
+   "d": "4",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    0,
+    180,
+    78,
+    89
+   ],
+   "v": 2
+  },
+  "ground_4_3": {
+   "cells": "BwADuA0AA7kCuAG6AbgJAAG5AbgDuQG4AbkBugG5AbgBuQUAA7kBuAG6AbgBugG4AbkBuAG6AbgCuQG4AgARuAEAAbgBuQG4AbkBuAK5Az4CuQK4ArkBuAEAAbgCugG5AbgCPgG5AT4BuAI+AbgDuQG4AQABuAK5AboBuAE+AbkDPgG6AT4CuAG5ArgBAAW4AT4CuAE+ArgBPgW4AQABuAK6AbkBuAE+AbkBPgG4AT4BuQE+AbgCuQK4AQABuAG5AroCuAI+AbgCPgG5AbgBuQG4AbkBuAEAAbgBuQG6A7gCuQE+AboDuAG5AboCuAEAEbgDAAK5ArgCuQG4AroCuAK5BwADuAG6AbgBuQG4AbkBuAsAAbkDuAG5DwABuAkA",
+   "d": "4",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    79,
+    180,
+    78,
+    89
+   ],
+   "v": 3
+  },
+  "ground_5_0": {
+   "cells": "BwABJAFTAVQNAAEkAVQBJAFTAVQBUwEkCQABVAJTAVQBUwEkAVQBJAFTAVQBJAUAAiQBVAIkAVQBUwEkAVQBUwEkAVQBJAFTAVQCAAFUAiQBVAIkAVQBUwEkAVQCJAFUASQBUwFUAVMBAAFUAiQBVAIkAVQCJAFUAlMBVAIkAVQBJAEAAVQBJAFTAVQBJAFTAVQBUwEkAVQBJAFTAVQCUwFUASQBAAFUAiQBVAIkAVQBJAFTAVQCUwFUAlMBVAFTAQABVAFTASQBVAEkAVMBVAFTASMBVAIkAVQBJAFTAVQBJAEAAVQCJAFUAVMBIwFUASMBHAEjAlMBVAIkAVQBJAEAAVQBJAFTAVQBUwEcASMBUwEjAVQCJAFUAiQBVAEkAQABVAIkAVQBJAEiARwBIwEkAVQBUwEkAVQCJAFUASQBAAFUAiQBVAFTASQBIwIkAVQBJAFTAVQBJAFTAVQBJAMAASQBVAEkAVMBVAEkAVMBVAIkAVQBUwEkBwACUwFUASQBUwFUAVMBJAFUCwABVAIkAVQBJA8AASQJAA==",
+   "d": "5",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    158,
+    180,
+    78,
+    89
+   ],
+   "v": 0
+  },
+  "ground_5_1": {
+   "cells": "BwABJAFTAVQNAAEkAVQCJAFUASQBUwkAAVQCJAFUAlMBVAIkAVQBJAUAAVMBJAFUASQBUwFUASQBUwFUAVMBJAFUASQBUwFUAgABVAJTAVQBUwEkAVQDIwEkAVMBVAJTAVQBUwEAAVQCUwFUAiQBVAEjAhwCUwFUASQBUwFUAVMBAAFUAlMBVAJTAVQBJAEjAVQCJAFUAlMBVAEkAQABVAFTASQBVAJTAVQCUwFUAVMBJAFUASQBUwFUASQBAAFUASQBUwFUAiQBVAIkAVQBUwEkAVQBUwEkAVQBJAEAAVQBUwEkAVQCJAFUARwBUwFUAVMBJAFUAlMBVAFTAQABVAFTASMBIgIkASMBIgEjAVQCJAFUAVMBJAFUAVMBAAFUASQBIwEdASMBJAEjASQBUwFUASQBUwFUAiQBVAEkAQABVAFTAyMBJAFUAiQBVAIkAVQCUwFUASQDAAEkAVQBJAFTAVQCJAFUAiQBVAIkBwACUwFUASQBUwFUAVMBJAFUCwABVAEkAVMBVAFTDwABUwkA",
+   "d": "5",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    237,
+    180,
+    78,
+    89
+   ],
+   "v": 1
+  },
+  "ground_5_2": {
+   "cells": "BwABUwEkAVQNAAEkAVQBJAFTASMCJAkAAVQCUwFUASQBUwIjASQBVAEkBQABJAFTAVQBUwEkAVQBJAEjAX0BHAEjAVQBJAFTAVQCAAFUAiQBIwIkAVQBJAIcASIBIwFUAiQBVAEkAQABVAIjASICIwFUAVMDIwEkAVQCJAFUAVMBAAFUAVMDIgEkAVQBIwEcASICJAFUAiQBVAEkAQABVAFTARwCIwFTAVQBUwEjAVQBJAFTAVQBJAFTAVQBJAEAAVQCUwFUASQBUwFUASQBUwFUAiQBVAFTASQBVAEkAQABVAIkAVQBUwEkAVQCUwFUASQDIwFTAVQBUwEAAVQBSgEkAUoBJAFKAVQBSgFTAVQBUwEcASIBHAEkAVQBJAEAAVQBJARKAUkBSgJJAkoBIgEjASQBVAFTAQABVAEkAVMBVAFTASQBVAFTASQBVAFKASQBSQNKASQDAAFTAVQCJAFUASQBUwFUASQBUwFUAiQHAAIkAVQBUwEkAVQBJAFTAVQLAAFUAiQBVAFTDwABJAkA",
+   "d": "5",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    316,
+    180,
+    78,
+    89
+   ],
+   "v": 2
+  },
+  "ground_5_3": {
+   "cells": "BwACJAFUDQABUwFUAVMBJAFUASQBUwkAAVQCUwFUAiQBVAIkAVQBUwUAAiQBVAIkAVQBUwEkAVQBJAFTAVQBJAFTAVQCAAFUASQBUwFUASQBUwFUASQBUwFUASQBUwFUAiQBVAEkAQABVAJTAVQBUwEkAVQCJAFUAlMBVAFTASQBVAEkAQABVAFTASQBVAEkAVMBVAEkAVMBVAJTAVQBJAFTAVQBJAEAAVQBJAEjARwCJAFUAlMBVAFTASQBVAJTAVQBJAEAAVQBIwEcASIBIwFTASIBIQEiAVQBUwEkAVQBJAFTAVQBJAEAAVQBJAMjASICIAEhASMBJAEjAVQCUwFUASQBAAFUASQBUwFUAlMBIQIiAiMBIgFUAlMBVAFTAQABVAIkAVQBUwEkAVQBJAFTASMBIgF9ASMCJAFUASQBAAFUAVMBJAFUAVMBJAFUAlMBIwEiARwBIwEkAVMBVAFTAwABJAFUAVMBJAFUAiQBVAJTAVQBUwEkBwABUwEkAVQCJAFUAlMBVAsAAVQBJAFTAVQBJA8AAVMJAA==",
+   "d": "5",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    395,
+    180,
+    78,
+    89
+   ],
+   "v": 3
+  },
+  "ground_6_0": {
+   "cells": "BwABUwKeDQABngFTAVYBngFWAlMJAAFWAZ4BUwJWAlMEngUAASUBUwGeAVMDngFCAZ4CUwGeAVYBUwGeAgABQQFTAiUBngFTAZ4CUwJWBJ4BUwGeAQABngFTAZ4BUwIlAZ4CVgWeAVMCngEAAZ4BQQFTAp4BUwIlATcBUwFWAVMBngFTAZ4CJQEAAVYBngFTAZ4BQgNWASUBNwGeAlMCJQKeAQACVgWeAjcBngMlAVYBngJWAQABngFTB54CJQFTAiUBQgGeAVYBAAGeAVMDngFTAVYCJQFTBJ4CJQFTAQABngFWAZ4BQgGeAiUBVgFBAVMBVgFTAZ4BUwKeASUBAAJWAZ4CJQFTAUIBQQGeAVYDngFTAVYBngFWAwABQgJWAZ4BUwKeAVYBngFTAZ4BUwFBBwABVgKeAVMBVgKeAVYBngsAAZ4BVgFTAUEBUw8AAZ4JAA==",
+   "d": "6",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    474,
+    180,
+    78,
+    89
+   ],
+   "v": 0
+  },
+  "ground_6_1": {
+   "cells": "BwABUwKeDQABVgFCAZ4BQgFBAp4JAAFTAUIBngFWA54BVgGeAVYBngUAASUCUwGeAUIFngFTAZ4BVgGeAVYCAAJXAiUBQgKeAVYBUwKeAUECUwJWAUIBAAGeAUICVwIlAlMBQgSeAVYDngEAAZ4BQgGeAVMCVwElAzcDngFCAVMCJQEAAVYBUwGeAVYBngJCAVcCJQFTAp4CJQKeAQABngFTAVYCngFTAZ4BUwE3AVcBNwElAUIBUwGeAVMBngEABZ4BUwJCATcBJQE3AVcCJQGeAVMBQQEAAUEBVgFTAp4BVgGeAiUBVgKeAlcCJQFWAQACngFWAUIBngIlAp4BUwGeAlMBngJXASUBAAJTAZ4CJQGeAUIDngFWA54CVgFXAwABJQOeAVYDUwKeAVMBngFTBwAGngFBAp4LAAKeAVYCng8AAZ4JAA==",
+   "d": "6",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    0,
+    270,
+    78,
+    89
+   ],
+   "v": 1
+  },
+  "ground_6_2": {
+   "cells": "BwABQgKeDQACngFCAZ4BUwJWCQABngJWAZ4BUwGeAVMBQgFTAp4FAAGeAUIBUwGeAVMCngFBAZ4BUwKeAVMBQgFBAgACJQFBAVMBQQKeAVYCngFTAZ4BUwJWAZ4BQgEAAlcBNwElATcDngFCBJ4BUwNWAQABUwFWAlcCJQE3AlMBngFTAp4BQgFWAiUBAAOeAVYBVwJBATcCngNWASUBQQGeAUIBAAFWAZ4BUwGeAlYBNwFXAjcBngIlAVYBngFBAZ4BAAGeAUECngFTAZ4BQgFWAVcBJQE3ASUEngFWAQABngFTA54BUwE3AiUBngJXAiUBngFTAZ4BAAFWAZ4BVgJCASUBNwGeAVMBQQFTAZ4BVwFCAiUBngEAAVMCngIlAp4BVgFTAVYCngFWAVMCVwElAwABJQFBAVMCQgGeAUEBUwJWAVMCngcAAp4BQQFCAVMBngFBAZ4BVgsAAp4BUwKeDwABVgkA",
+   "d": "6",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    79,
+    270,
+    78,
+    89
+   ],
+   "v": 2
+  },
+  "ground_6_3": {
+   "cells": "BwABUwKeDQABUwGeAUIBngFCAVYBngkAAVYCUwFWAZ4BVgGeAVMBngFCAVMFAAFCAVMBVgWeA1MDngFCAgAGngE3AZ4BQgFWBZ4BQgGeAQACJQGeAVMCngFWATcBUwFCAVMBQgE3AVYBngFCAZ4BAAGeAUECJQI3AVMCNwKeAUEDngIlAQABngFWAZ4CQgElAUIBVQICAVUBQgGeAiUCngEAAZ4BVgSeASUBVQMCAiUBngFCAZ4BQgEAAVYCngFTAUIBngFWAVUBAgJVAUIBUwOeAVMBAAFWAZ4CUwKeAUIBJQFVAUIBJQFBAlMBVgGeAVYBAAFTAUIBUwFWAZ4BJQFCAVMBVgGeAUIBngElAUIBUwGeAUIBAAKeAVMBQQElAVYBUwGeAVYBQgGeATcBUwFWAUIBJQGeAwABQQFCA1MDVgKeAlMBngcAAZ4BQgGeAVYBUwGeAUICngsABZ4PAAGeCQA=",
+   "d": "6",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    158,
+    270,
+    78,
+    89
+   ],
+   "v": 3
+  },
+  "ground_none_0": {
+   "cells": "BwADXg0AA14BjAJeAV0JAAFfAl4BjAJeAYwEXgUAAV0BXgFdAYwDXgOMAl4BjAJeAgAEXgFfAowCXgGMAl4BXQFeAYwCXgEAAl4BjAFeAV0BXwKMBV4BXQFeAYwBXgEABV8BXQtfAQABXQGMAV0BXgFdAV4BXwFeAV0BXgFdAV4BXQGMAV0BXgFdAQAGXgFdAV8BXgOMBV4BAAJeAowBXgFdAYwBXQGMB14BjAEAAl4BXQJeAV0BXgFdAV8BjAJeAYwBXgKMAV4BAAFeAV0BXgKMAV4BjAJdAV8BXgSMAV4BXQEAAYwBXgGMA14BjAJeAV0BXgKMBF4DAAVeAYwBXgGMAV8BjANeBwABXgGMAV4BXQFeAYwBXQFfAYwLAAJdA14PAAFeCQA=",
+   "d": "",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    237,
+    270,
+    78,
+    89
+   ],
+   "v": 0
+  },
+  "ground_none_1": {
+   "cells": "BwABXQGMAV4NAAJeAYwEXgkAAYwBXQFfAV4BjANeAowBXgUAAYwDXgFdAYwCXgKMBV4CAAGMBV4BXwFeAYwEXgKMAl4BAAGMAV4BjAFdAV4BjAFdAV8CXgGMBl4BAAFdAV4BjAFeAYwCXgFdAV4CjAJeAYwDXgEAEV8BAAFdAV4BXQFeAV0BXgFdAV4BXQFfAV0BXgFdAV4BXQFeAV0BAAKMAl4BjAReAV0BjAJeAowCXgEABF4BjAFdAYwDXgFfAV4BjAJeAYwBXgEABIwFXgGMAV0BXwFeAYwBXgKMAQACXgKMAl4DjAJeAV0BjAJeAowDAAJeAowBXgGMAV4BjAFeAYwBXwGMAV4HAAJeAYwCXgOMAV0LAAFeA4wBXg8AAV4JAA==",
+   "d": "",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    316,
+    270,
+    78,
+    89
+   ],
+   "v": 1
+  },
+  "ground_none_2": {
+   "cells": "BwABXgKMDQABjAFfAV4BjAJeAYwJAAFeAYwBXgFdAV8EjAJeBQACXgGMA14BXQNeA4wCXgIAA4wCXgGMAV4BXQFfAYwCXgGMBF4BAAVeAYwCXgFdAV8DXgKMAV0BXgEABl4BjAJeAV0BjAZeAQACXQVeAYwCXgFfAV4BjANeAYwBAAFeAV8BXgFfAV4BXwGMAV8BjAFfAV0BXwGMAV8BXgFfAV4BAAFfAV0BXwFdAV8BXQFfAV0BXwFdAV8BXQFfAV0BXwFdAV8BAASMAV4BjAJeAYwBXgGMAV4BXwFeAYwCXgEAAYwCXgGMAV4BXQJeAowCXgFdAV8BXgKMAQABXgGMAl4BXQFeAowCXgGMAl4CXQGMAV4DAAKMAV4BjAFdA14BjANeAV8HAAGMAV4BjAJeAYwBXgKMCwACjAFdAl4PAAFeCQA=",
+   "d": "",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    395,
+    270,
+    78,
+    89
+   ],
+   "v": 2
+  },
+  "ground_none_3": {
+   "cells": "BwABXQGMAV4NAAGMAl4BXwNeCQABXgGMAV4CjAFdAV8EXgUAB14BjAFdA14BjAFeAYwCAAGMAV4BjAJeAowCXgFdAV8DXgOMAQACXgJdBl4BXQFfAV0CXgGMAV4BAAKMAV0BjAFeAV0CXgGMAl4BXQNeAYwBXgEAAl4BXQFeAowDXgKMAV4BXwSMAQADXgFdBF4CjAJeAV0BXwKMAV4BAAFeAV8BXgFfAV4BXwFeAV8BXgFfAYwBXwGMAV0BXgFfAYwBAAFfAV0BXwFdAV8BXQFfAV0BXwFdAV8BXQFfAV0BXwFdAV8BAAFeAowBXgGMAl4CjAJeAV0CjAFdAV8BjAEAAl4CjAJeAV0BjAFeAYwCXgGMAV4CXQFeAwABXgGMAV4CjAFeAYwBXgFdAV4DjAcAAYwCXgFdBF4BjAsABF4BjA8AAV4JAA==",
+   "d": "",
+   "kind": "ground",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    474,
+    270,
+    78,
+    89
+   ],
+   "v": 3
+  },
+  "rubble_0": {
+   "cells": "BwADNw0AAjcFAgkAAjcBAgE3AWkGNwUAAQIBNwMCAWkBagFpATcBAgU3AgABAgU3AmkBagM3AQIENwEABjcBAgE3AWoCNwECATcCAgE3AQIBAAQCATcBAgM3AQIENwECAjcBAAE3AQIBNwECATcCAgE3AQIBNwECAkQBaQECAjcBAAECATcBAgI3AgICNwJEAgMCagFpAQIBAAMCAjcCAgI3AgMCNwJqAjcBAAMCA2kBNwECAUQBAwI3AWkCagI3AQACNwECA2oBNwMCATcDaQFqATcBAgEAATcCaQRqAQIBNwECAWkEagI3AwABaQJqAjcBAgI3AQIBNwFqAjcHAAQ3AQICNwECATcLAAICAzcPAAECCQA=",
+   "d": null,
+   "kind": "rubble",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    0,
+    360,
+    78,
+    89
+   ],
+   "v": 0
+  },
+  "rubble_1": {
+   "cells": "BwADNw0ABzcJAAEDAUQBNwECAjcDAgI3BQACRAIDATcBAgI3AQICNwECATcCAgIAATcEAwE3BQICNwICAjcBAAFEAwMENwECAzcBAgE3AwIBAAE3AQIBAwM3AQIBQgECATcBAgE3AgIDNwEAAgIBNwECATcBAgNCAjcBAgI3AQIBNwECAQADNwECAjcBQgE4AUIENwICATcBAgEAAQICNwECATcCQgI4ATcERAICATcBAAE3AkIBOAE3BDgBAgFEAwMBNwECATcBAAECAUIBOAM3ATgDNwUDAjcBAAICATcCAgI3AgICNwECAwMCNwMAAjcBAgE3AQIBNwECATcBAgE3AgIBNwcAAjcBAgI3AwIBNwsAAQIDNwECDwABAgkA",
+   "d": null,
+   "kind": "rubble",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    79,
+    360,
+    78,
+    89
+   ],
+   "v": 1
+  },
+  "rubble_2": {
+   "cells": "BwABAgE3AQINAAICBTcJAAI3AQIDNwECAkQBNwECBQADNwECAWkENwFEAwMCNwIAAzcCaQFqATcBAgI3AUQBNwEDATcBAgI3AQABAgE3AWkCagE3AWoHNwECAjcBAAICAWkCNwE4AzcDaQE3AQICNwECAQACNwFCBjcBaQJqAzcBAgE3AQABNwECAzcDRAFpA2oCNwMCAQACNwICAUQBaQIDA2oBNwQCATcBAAQ3AUQBaQJqATcBaQU3AgIBAAI3AQIBNwECAWkBagJpAWoDNwECAjcBAgEAAQIENwECATcBaQJqBDcBAgI3AwAGNwFqBDcBAgE3BwADNwECAzcCAgsAAgICNwECDwABNwkA",
+   "d": null,
+   "kind": "rubble",
+   "mid": [
+    39.0,
+    44.167
+   ],
+   "rect": [
+    158,
+    360,
+    78,
+    89
+   ],
+   "v": 2
+  }
+ },
+ "ground_layout": {
+  "clip": 14.3564,
+  "cols": 18,
+  "orient": "flat",
+  "rows": 17,
+  "s": 3.0,
+  "side": 9
+ },
+ "icons": {
+  "act_attack": {
+   "rect": [
+    144,
+    16,
+    16,
+    16
+   ]
+  },
+  "act_end": {
+   "rect": [
+    160,
+    16,
+    16,
+    16
+   ]
+  },
+  "act_move": {
+   "rect": [
+    128,
+    16,
+    16,
+    16
+   ]
+  },
+  "bar_auto": {
+   "rect": [
+    96,
+    32,
+    16,
+    16
+   ]
+  },
+  "bar_fit": {
+   "rect": [
+    128,
+    32,
+    16,
+    16
+   ]
+  },
+  "bar_leave": {
+   "rect": [
+    144,
+    32,
+    16,
+    16
+   ]
+  },
+  "bar_log": {
+   "rect": [
+    112,
+    32,
+    16,
+    16
+   ]
+  },
+  "bar_undo": {
+   "rect": [
+    80,
+    32,
+    16,
+    16
+   ]
+  },
+  "bleed": {
+   "rect": [
+    80,
+    0,
+    16,
+    16
+   ]
+  },
+  "district_1": {
+   "rect": [
+    176,
+    16,
+    16,
+    16
+   ]
+  },
+  "district_2": {
+   "rect": [
+    0,
+    32,
+    16,
+    16
+   ]
+  },
+  "district_3": {
+   "rect": [
+    16,
+    32,
+    16,
+    16
+   ]
+  },
+  "district_4": {
+   "rect": [
+    32,
+    32,
+    16,
+    16
+   ]
+  },
+  "district_5": {
+   "rect": [
+    48,
+    32,
+    16,
+    16
+   ]
+  },
+  "district_6": {
+   "rect": [
+    64,
+    32,
+    16,
+    16
+   ]
+  },
+  "drained": {
+   "rect": [
+    112,
+    0,
+    16,
+    16
+   ]
+  },
+  "evasive": {
+   "rect": [
+    128,
+    0,
+    16,
+    16
+   ]
+  },
+  "full cover": {
+   "rect": [
+    16,
+    16,
+    16,
+    16
+   ]
+  },
+  "guarded": {
+   "rect": [
+    32,
+    16,
+    16,
+    16
+   ]
+  },
+  "half cover": {
+   "rect": [
+    0,
+    16,
+    16,
+    16
+   ]
+  },
+  "hardened": {
+   "rect": [
+    176,
+    0,
+    16,
+    16
+   ]
+  },
+  "marked": {
+   "rect": [
+    48,
+    0,
+    16,
+    16
+   ]
+  },
+  "overwatch": {
+   "rect": [
+    48,
+    16,
+    16,
+    16
+   ]
+  },
+  "pinned": {
+   "rect": [
+    32,
+    0,
+    16,
+    16
+   ]
+  },
+  "poisoned": {
+   "rect": [
+    64,
+    0,
+    16,
+    16
+   ]
+  },
+  "role_cyber": {
+   "rect": [
+    112,
+    16,
+    16,
+    16
+   ]
+  },
+  "role_melee": {
+   "rect": [
+    64,
+    16,
+    16,
+    16
+   ]
+  },
+  "role_ranged": {
+   "rect": [
+    80,
+    16,
+    16,
+    16
+   ]
+  },
+  "role_support": {
+   "rect": [
+    96,
+    16,
+    16,
+    16
+   ]
+  },
+  "rooted": {
+   "rect": [
+    16,
+    0,
+    16,
+    16
+   ]
+  },
+  "slowed": {
+   "rect": [
+    96,
+    0,
+    16,
+    16
+   ]
+  },
+  "stunned": {
+   "rect": [
+    0,
+    0,
+    16,
+    16
+   ]
+  },
+  "sundered": {
+   "rect": [
+    160,
+    0,
+    16,
+    16
+   ]
+  },
+  "weakened": {
+   "rect": [
+    144,
+    0,
+    16,
+    16
+   ]
+  }
+ },
+ "map": {
+  "d1_clock": {
+   "d": "1",
+   "foot": [
+    16,
+    28
+   ],
+   "kind": "prop",
+   "rect": [
+    65,
+    0,
+    32,
+    32
+   ]
+  },
+  "d1_crystal": {
+   "d": "1",
+   "foot": [
+    16,
+    27
+   ],
+   "kind": "prop",
+   "rect": [
+    98,
+    0,
+    32,
+    32
+   ]
+  },
+  "d1_ring": {
+   "d": "1",
+   "foot": [
+    16,
+    28
+   ],
+   "kind": "prop",
+   "rect": [
+    131,
+    0,
+    32,
+    32
+   ]
+  },
+  "d2_barricade": {
+   "d": "2",
+   "foot": [
+    16,
+    27
+   ],
+   "kind": "prop",
+   "rect": [
+    164,
+    0,
+    32,
+    32
+   ]
+  },
+  "d2_chair": {
+   "d": "2",
+   "foot": [
+    16,
+    26
+   ],
+   "kind": "prop",
+   "rect": [
+    197,
+    0,
+    32,
+    32
+   ]
+  },
+  "d2_pylon": {
+   "d": "2",
+   "foot": [
+    16,
+    29
+   ],
+   "kind": "prop",
+   "rect": [
+    0,
+    65,
+    32,
+    32
+   ]
+  },
+  "d3_arm": {
+   "d": "3",
+   "foot": [
+    16,
+    28
+   ],
+   "kind": "prop",
+   "rect": [
+    33,
+    65,
+    32,
+    32
+   ]
+  },
+  "d3_conveyor": {
+   "d": "3",
+   "foot": [
+    16,
+    26
+   ],
+   "kind": "prop",
+   "rect": [
+    66,
+    65,
+    32,
+    32
+   ]
+  },
+  "d3_scrapbot": {
+   "d": "3",
+   "foot": [
+    16,
+    27
+   ],
+   "kind": "prop",
+   "rect": [
+    99,
+    65,
+    32,
+    32
+   ]
+  },
+  "d4_circle": {
+   "d": "4",
+   "foot": [
+    16,
+    24
+   ],
+   "kind": "prop",
+   "rect": [
+    132,
+    65,
+    32,
+    32
+   ]
+  },
+  "d4_racks": {
+   "d": "4",
+   "foot": [
+    16,
+    28
+   ],
+   "kind": "prop",
+   "rect": [
+    165,
+    65,
+    32,
+    32
+   ]
+  },
+  "d4_spools": {
+   "d": "4",
+   "foot": [
+    16,
+    26
+   ],
+   "kind": "prop",
+   "rect": [
+    198,
+    65,
+    32,
+    32
+   ]
+  },
+  "d5_bloom": {
+   "d": "5",
+   "foot": [
+    16,
+    28
+   ],
+   "kind": "prop",
+   "rect": [
+    0,
+    98,
+    32,
+    32
+   ]
+  },
+  "d5_roots": {
+   "d": "5",
+   "foot": [
+    16,
+    26
+   ],
+   "kind": "prop",
+   "rect": [
+    33,
+    98,
+    32,
+    32
+   ]
+  },
+  "d5_vat": {
+   "d": "5",
+   "foot": [
+    16,
+    29
+   ],
+   "kind": "prop",
+   "rect": [
+    66,
+    98,
+    32,
+    32
+   ]
+  },
+  "d6_heap": {
+   "d": "6",
+   "foot": [
+    16,
+    26
+   ],
+   "kind": "prop",
+   "rect": [
+    99,
+    98,
+    32,
+    32
+   ]
+  },
+  "d6_hulk": {
+   "d": "6",
+   "foot": [
+    16,
+    26
+   ],
+   "kind": "prop",
+   "rect": [
+    132,
+    98,
+    32,
+    32
+   ]
+  },
+  "d6_pylon": {
+   "d": "6",
+   "foot": [
+    16,
+    28
+   ],
+   "kind": "prop",
+   "rect": [
+    165,
+    98,
+    32,
+    32
+   ]
+  },
+  "hangar": {
+   "d": "",
+   "foot": [
+    32,
+    52
+   ],
+   "kind": "dock",
+   "rect": [
+    0,
+    0,
+    64,
+    64
+   ]
+  },
+  "icon_ambush": {
+   "kind": "icon",
+   "plate": "ff2a3c",
+   "rect": [
+    198,
+    98,
+    16,
+    16
+   ]
+  },
+  "icon_cache": {
+   "kind": "icon",
+   "plate": "59cf93",
+   "rect": [
+    215,
+    98,
+    16,
+    16
+   ]
+  },
+  "icon_event": {
+   "kind": "icon",
+   "plate": "42bfe8",
+   "rect": [
+    232,
+    98,
+    16,
+    16
+   ]
+  },
+  "icon_poi": {
+   "kind": "icon",
+   "plate": "d6a851",
+   "rect": [
+    0,
+    131,
+    16,
+    16
+   ]
+  },
+  "icon_unique": {
+   "kind": "icon",
+   "plate": "f8e398",
+   "rect": [
+    17,
+    131,
+    16,
+    16
+   ]
+  }
+ },
+ "marks": {
+  "bleed": {
+   "rect": [
+    48,
+    48,
+    8,
+    8
+   ]
+  },
+  "drained": {
+   "rect": [
+    80,
+    48,
+    8,
+    8
+   ]
+  },
+  "evasive": {
+   "rect": [
+    96,
+    48,
+    8,
+    8
+   ]
+  },
+  "full cover": {
+   "rect": [
+    176,
+    48,
+    8,
+    8
+   ]
+  },
+  "gem 1": {
+   "rect": [
+    32,
+    64,
+    8,
+    8
+   ]
+  },
+  "gem 2": {
+   "rect": [
+    48,
+    64,
+    8,
+    8
+   ]
+  },
+  "gem 3": {
+   "rect": [
+    64,
+    64,
+    8,
+    8
+   ]
+  },
+  "gem 4": {
+   "rect": [
+    80,
+    64,
+    8,
+    8
+   ]
+  },
+  "gem 5": {
+   "rect": [
+    96,
+    64,
+    8,
+    8
+   ]
+  },
+  "gem 6": {
+   "rect": [
+    112,
+    64,
+    8,
+    8
+   ]
+  },
+  "gem any": {
+   "rect": [
+    128,
+    64,
+    8,
+    8
+   ]
+  },
+  "guarded": {
+   "rect": [
+    0,
+    64,
+    8,
+    8
+   ]
+  },
+  "half cover": {
+   "rect": [
+    160,
+    48,
+    8,
+    8
+   ]
+  },
+  "hardened": {
+   "rect": [
+    144,
+    48,
+    8,
+    8
+   ]
+  },
+  "marked": {
+   "rect": [
+    16,
+    48,
+    8,
+    8
+   ]
+  },
+  "overwatch": {
+   "rect": [
+    16,
+    64,
+    8,
+    8
+   ]
+  },
+  "pinned": {
+   "rect": [
+    0,
+    48,
+    8,
+    8
+   ]
+  },
+  "poisoned": {
+   "rect": [
+    32,
+    48,
+    8,
+    8
+   ]
+  },
+  "rooted": {
+   "rect": [
+    176,
+    32,
+    8,
+    8
+   ]
+  },
+  "slowed": {
+   "rect": [
+    64,
+    48,
+    8,
+    8
+   ]
+  },
+  "stunned": {
+   "rect": [
+    160,
+    32,
+    8,
+    8
+   ]
+  },
+  "sundered": {
+   "rect": [
+    128,
+    48,
+    8,
+    8
+   ]
+  },
+  "weakened": {
+   "rect": [
+    112,
+    48,
+    8,
+    8
+   ]
+  }
+ },
+ "menu": {
+  "defeat": {
+   "rect": [
+    387,
+    145,
+    129,
+    32
+   ]
+  },
+  "dock": {
+   "rect": [
+    0,
+    0,
+    256,
+    144
+   ]
+  },
+  "home": {
+   "rect": [
+    257,
+    0,
+    256,
+    144
+   ]
+  },
+  "icon_gear": {
+   "rect": [
+    140,
+    290,
+    16,
+    16
+   ]
+  },
+  "icon_part_aether": {
+   "rect": [
+    157,
+    290,
+    16,
+    16
+   ]
+  },
+  "icon_part_equipment": {
+   "rect": [
+    174,
+    290,
+    16,
+    16
+   ]
+  },
+  "icon_part_troop": {
+   "rect": [
+    191,
+    290,
+    16,
+    16
+   ]
+  },
+  "icon_shards": {
+   "rect": [
+    208,
+    290,
+    16,
+    16
+   ]
+  },
+  "icon_skull": {
+   "rect": [
+    225,
+    290,
+    16,
+    16
+   ]
+  },
+  "menu": {
+   "rect": [
+    0,
+    145,
+    256,
+    144
+   ]
+  },
+  "qm7": {
+   "rect": [
+    257,
+    145,
+    64,
+    64
+   ]
+  },
+  "qm7_blink": {
+   "rect": [
+    322,
+    145,
+    64,
+    64
+   ]
+  },
+  "victory": {
+   "rect": [
+    0,
+    290,
+    139,
+    32
+   ]
+  }
+ },
+ "note": "Drawn for KETER 0.14 to 0.24. Square pixels on the Pixel Studio palette; the World Map's ground in hex pixels; each of the fight's effects a row of frames, side by side; each card that is not a Unit its own picture, 128 by 90.",
+ "tokens": {
+  "aether_battery": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T21",
+   "kind": "troop",
+   "name": "Aether Battery",
+   "rect": [
+    432,
+    144,
+    48,
+    48
+   ]
+  },
+  "aetherium_golem": {
+   "big": true,
+   "cardType": "troop",
+   "id": "D3-T20",
+   "kind": "troop",
+   "name": "Aetherium Golem",
+   "rect": [
+    0,
+    192,
+    48,
+    48
+   ]
+  },
+  "arachnabot": {
+   "big": false,
+   "cardType": "enemy",
+   "id": "D3-E02",
+   "kind": "enemy",
+   "name": "Arachnabot",
+   "rect": [
+    144,
+    48,
+    48,
+    48
+   ]
+  },
+  "arc_technician": {
+   "big": false,
+   "cardType": "troop",
+   "id": null,
+   "kind": "troop",
+   "name": "Arc Technician",
+   "rect": [
+    384,
+    240,
+    48,
+    48
+   ]
+  },
+  "augmented_weapons_specialist": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T04",
+   "kind": "troop",
+   "name": "Augmented Weapons Specialist",
+   "rect": [
+    48,
+    192,
+    48,
+    48
+   ]
+  },
+  "binder_cleaner_bot": {
+   "big": false,
+   "cardType": "enemy",
+   "id": "D3-E06",
+   "kind": "enemy",
+   "name": "\"Binder\" Cleaner Bot",
+   "rect": [
+    288,
+    0,
+    48,
+    48
+   ]
+  },
+  "bipedal": {
+   "big": false,
+   "cardType": null,
+   "id": null,
+   "kind": "body",
+   "name": "Bipedal",
+   "rect": [
+    336,
+    288,
+    48,
+    48
+   ]
+  },
+  "brick_security_bot": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T23",
+   "kind": "troop",
+   "name": "BRICK Security Bot",
+   "rect": [
+    336,
+    144,
+    48,
+    48
+   ]
+  },
+  "brood_matriarch": {
+   "big": true,
+   "cardType": "miniboss",
+   "id": "D3-M02",
+   "kind": "enemy",
+   "name": "Brood Matriarch",
+   "rect": [
+    144,
+    288,
+    48,
+    48
+   ]
+  },
+  "centibot": {
+   "big": false,
+   "cardType": "enemy",
+   "id": "D0-E01",
+   "kind": "enemy",
+   "name": "Centibot",
+   "rect": [
+    336,
+    48,
+    48,
+    48
+   ]
+  },
+  "cerberus_barriage_bot": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T11",
+   "kind": "troop",
+   "name": "CERBERUS Barriage Bot",
+   "rect": [
+    240,
+    96,
+    48,
+    48
+   ]
+  },
+  "cerberus_blitz_bot": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T02",
+   "kind": "troop",
+   "name": "CERBERUS Blitz Bot",
+   "rect": [
+    192,
+    96,
+    48,
+    48
+   ]
+  },
+  "cerberus_breacher_bot": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T12",
+   "kind": "troop",
+   "name": "CERBERUS Breacher Bot",
+   "rect": [
+    288,
+    96,
+    48,
+    48
+   ]
+  },
+  "cerberus_overlord_bot": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T13",
+   "kind": "troop",
+   "name": "CERBERUS Overlord Bot",
+   "rect": [
+    336,
+    96,
+    48,
+    48
+   ]
+  },
+  "chaff_swarm": {
+   "big": false,
+   "cardType": "troop",
+   "id": null,
+   "kind": "troop",
+   "name": "Chaff Swarm",
+   "rect": [
+    0,
+    288,
+    48,
+    48
+   ]
+  },
+  "chrome_fiend": {
+   "big": false,
+   "cardType": "enemy",
+   "id": "D3-E03",
+   "kind": "enemy",
+   "name": "Chrome Fiend",
+   "rect": [
+    192,
+    48,
+    48,
+    48
+   ]
+  },
+  "chrome_junkie": {
+   "big": false,
+   "cardType": "enemy",
+   "id": "D3-E04",
+   "kind": "enemy",
+   "name": "Chrome Junkie",
+   "rect": [
+    288,
+    48,
+    48,
+    48
+   ]
+  },
+  "construction_titan": {
+   "big": true,
+   "cardType": "enemy",
+   "id": "D0-E06",
+   "kind": "enemy",
+   "name": "Construction Titan",
+   "rect": [
+    240,
+    48,
+    48,
+    48
+   ]
+  },
+  "cyber_savant": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T03",
+   "kind": "troop",
+   "name": "Cyber Savant",
+   "rect": [
+    96,
+    192,
+    48,
+    48
+   ]
+  },
+  "debt_collector": {
+   "big": false,
+   "cardType": "troop",
+   "id": null,
+   "kind": "troop",
+   "name": "Debt Collector",
+   "rect": [
+    432,
+    240,
+    48,
+    48
+   ]
+  },
+  "decimation_titan": {
+   "big": true,
+   "cardType": "enemy",
+   "id": "D3-E09",
+   "kind": "enemy",
+   "name": "Decimation Titan",
+   "rect": [
+    0,
+    96,
+    48,
+    48
+   ]
+  },
+  "defensive_platform_specialist": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T24",
+   "kind": "troop",
+   "name": "Defensive Platform Specialist",
+   "rect": [
+    144,
+    192,
+    48,
+    48
+   ]
+  },
+  "dross_the_forge_blind": {
+   "big": true,
+   "cardType": "hero",
+   "id": null,
+   "kind": "hero",
+   "name": "Dross, the Forge-Blind",
+   "rect": [
+    192,
+    0,
+    48,
+    48
+   ]
+  },
+  "earthshaker_titan": {
+   "big": true,
+   "cardType": "enemy",
+   "id": "D0-E07",
+   "kind": "enemy",
+   "name": "Earthshaker Titan",
+   "rect": [
+    48,
+    96,
+    48,
+    48
+   ]
+  },
+  "entry_denial_bot": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T08",
+   "kind": "troop",
+   "name": "Entry Denial Bot",
+   "rect": [
+    192,
+    192,
+    48,
+    48
+   ]
+  },
+  "exo_husk": {
+   "big": false,
+   "cardType": "enemy",
+   "id": "D3-E01",
+   "kind": "enemy",
+   "name": "Exo Husk",
+   "rect": [
+    0,
+    48,
+    48,
+    48
+   ]
+  },
+  "exo_worker_husk": {
+   "big": false,
+   "cardType": "enemy",
+   "id": "D3-E07",
+   "kind": "enemy",
+   "name": "Exo Worker Husk",
+   "rect": [
+    48,
+    48,
+    48,
+    48
+   ]
+  },
+  "falcon_drone": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T25",
+   "kind": "troop",
+   "name": "FALCON Drone",
+   "rect": [
+    240,
+    192,
+    48,
+    48
+   ]
+  },
+  "falcon_drone_token": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T26",
+   "kind": "troop",
+   "name": "FALCON Drone Token",
+   "rect": [
+    288,
+    192,
+    48,
+    48
+   ]
+  },
+  "foundry_sentinel": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T18",
+   "kind": "troop",
+   "name": "Foundry Sentinel",
+   "rect": [
+    384,
+    144,
+    48,
+    48
+   ]
+  },
+  "hexapod": {
+   "big": false,
+   "cardType": null,
+   "id": null,
+   "kind": "body",
+   "name": "Hexapod",
+   "rect": [
+    0,
+    336,
+    48,
+    48
+   ]
+  },
+  "hunter_cleaner_bot": {
+   "big": false,
+   "cardType": "enemy",
+   "id": "D0-E03",
+   "kind": "enemy",
+   "name": "\"Hunter\" Cleaner Bot",
+   "rect": [
+    336,
+    0,
+    48,
+    48
+   ]
+  },
+  "ilsa_varn_jump_frame_pilot": {
+   "big": false,
+   "cardType": "hero",
+   "id": "D3-H06",
+   "kind": "hero",
+   "name": "Ilsa Varn, Jump-Frame Pilot",
+   "rect": [
+    192,
+    288,
+    48,
+    48
+   ]
+  },
+  "laz_welder_husk": {
+   "big": false,
+   "cardType": "enemy",
+   "id": "D0-E04",
+   "kind": "enemy",
+   "name": "Laz Welder Husk",
+   "rect": [
+    96,
+    48,
+    48,
+    48
+   ]
+  },
+  "ledger_runner": {
+   "big": false,
+   "cardType": "troop",
+   "id": null,
+   "kind": "troop",
+   "name": "Ledger Runner",
+   "rect": [
+    288,
+    240,
+    48,
+    48
+   ]
+  },
+  "long_range_vaccinator": {
+   "big": false,
+   "cardType": "enemy",
+   "id": "D3-E10",
+   "kind": "enemy",
+   "name": "Long Range Vaccinator",
+   "rect": [
+    432,
+    48,
+    48,
+    48
+   ]
+  },
+  "mincer_cleaner_bot": {
+   "big": false,
+   "cardType": "hero",
+   "id": "D3-H03",
+   "kind": "hero",
+   "name": "\"Mincer\" Cleaner Bot",
+   "rect": [
+    0,
+    0,
+    48,
+    48
+   ]
+  },
+  "octopod": {
+   "big": false,
+   "cardType": null,
+   "id": null,
+   "kind": "body",
+   "name": "Octopod",
+   "rect": [
+    48,
+    336,
+    48,
+    48
+   ]
+  },
+  "onyx_assassin": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T31",
+   "kind": "troop",
+   "name": "ONYX Assassin",
+   "rect": [
+    384,
+    96,
+    48,
+    48
+   ]
+  },
+  "onyx_blademaster": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T27",
+   "kind": "troop",
+   "name": "ONYX Blademaster",
+   "rect": [
+    432,
+    96,
+    48,
+    48
+   ]
+  },
+  "onyx_breacher": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T34",
+   "kind": "troop",
+   "name": "ONYX Breacher",
+   "rect": [
+    0,
+    144,
+    48,
+    48
+   ]
+  },
+  "onyx_brute": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T30",
+   "kind": "troop",
+   "name": "ONYX Brute",
+   "rect": [
+    48,
+    144,
+    48,
+    48
+   ]
+  },
+  "onyx_guardian": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T29",
+   "kind": "troop",
+   "name": "ONYX Guardian",
+   "rect": [
+    96,
+    144,
+    48,
+    48
+   ]
+  },
+  "onyx_sharpshooter": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T28",
+   "kind": "troop",
+   "name": "ONYX Sharpshooter",
+   "rect": [
+    144,
+    144,
+    48,
+    48
+   ]
+  },
+  "onyx_stitcher": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T33",
+   "kind": "troop",
+   "name": "ONYX Stitcher",
+   "rect": [
+    192,
+    144,
+    48,
+    48
+   ]
+  },
+  "onyx_wraith": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T32",
+   "kind": "troop",
+   "name": "ONYX Wraith",
+   "rect": [
+    240,
+    144,
+    48,
+    48
+   ]
+  },
+  "purifier_cleaner_bot": {
+   "big": false,
+   "cardType": "enemy",
+   "id": "D0-E02",
+   "kind": "enemy",
+   "name": "\"Purifier\" Cleaner Bot",
+   "rect": [
+    384,
+    0,
+    48,
+    48
+   ]
+  },
+  "quadcopter": {
+   "big": false,
+   "cardType": null,
+   "id": null,
+   "kind": "body",
+   "name": "Quadcopter",
+   "rect": [
+    384,
+    288,
+    48,
+    48
+   ]
+  },
+  "quadruped": {
+   "big": false,
+   "cardType": null,
+   "id": null,
+   "kind": "body",
+   "name": "Quadruped",
+   "rect": [
+    432,
+    288,
+    48,
+    48
+   ]
+  },
+  "quillon_vex": {
+   "big": false,
+   "cardType": "hero",
+   "id": null,
+   "kind": "hero",
+   "name": "Quillon Vex",
+   "rect": [
+    240,
+    0,
+    48,
+    48
+   ]
+  },
+  "rictus": {
+   "big": false,
+   "cardType": "hero",
+   "id": "D3-H02",
+   "kind": "hero",
+   "name": "Rictus",
+   "rect": [
+    48,
+    0,
+    48,
+    48
+   ]
+  },
+  "sable_nine_ledger_adept": {
+   "big": false,
+   "cardType": "hero",
+   "id": null,
+   "kind": "hero",
+   "name": "Sable-Nine, Ledger Adept",
+   "rect": [
+    144,
+    0,
+    48,
+    48
+   ]
+  },
+  "scrap_caddy": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T19",
+   "kind": "troop",
+   "name": "Scrap Caddy",
+   "rect": [
+    384,
+    192,
+    48,
+    48
+   ]
+  },
+  "scrap_rat": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T14",
+   "kind": "troop",
+   "name": "Scrap rat",
+   "rect": [
+    432,
+    192,
+    48,
+    48
+   ]
+  },
+  "scrapheap_brawler": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T15",
+   "kind": "troop",
+   "name": "Scrapheap Brawler",
+   "rect": [
+    0,
+    240,
+    48,
+    48
+   ]
+  },
+  "scuttle_brood_mother": {
+   "big": true,
+   "cardType": "troop",
+   "id": "D3-T05",
+   "kind": "troop",
+   "name": "Scuttle brood mother",
+   "rect": [
+    192,
+    240,
+    48,
+    48
+   ]
+  },
+  "scuttle_overseer": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T10",
+   "kind": "troop",
+   "name": "Scuttle Overseer",
+   "rect": [
+    144,
+    240,
+    48,
+    48
+   ]
+  },
+  "scuttle_swarm": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T07",
+   "kind": "troop",
+   "name": "Scuttle Swarm",
+   "rect": [
+    96,
+    240,
+    48,
+    48
+   ]
+  },
+  "scuttlebot": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T09",
+   "kind": "troop",
+   "name": "Scuttlebot",
+   "rect": [
+    48,
+    240,
+    48,
+    48
+   ]
+  },
+  "securmax_civilian_guard_bot": {
+   "big": false,
+   "cardType": "troop",
+   "id": "DX-T01",
+   "kind": "troop",
+   "name": "SecurMax Civilian Guard Bot",
+   "rect": [
+    288,
+    144,
+    48,
+    48
+   ]
+  },
+  "sentry_turret": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T22",
+   "kind": "troop",
+   "name": "Sentry Turret",
+   "rect": [
+    240,
+    240,
+    48,
+    48
+   ]
+  },
+  "skitter_harrier_mk_i": {
+   "big": false,
+   "cardType": null,
+   "id": null,
+   "kind": "troop",
+   "name": "Skitter Harrier Mk I",
+   "rect": [
+    288,
+    288,
+    48,
+    48
+   ]
+  },
+  "skitter_runner_mk_i": {
+   "big": false,
+   "cardType": null,
+   "id": null,
+   "kind": "troop",
+   "name": "Skitter Runner Mk I",
+   "rect": [
+    240,
+    288,
+    48,
+    48
+   ]
+  },
+  "skitter_stalker": {
+   "big": false,
+   "cardType": "elite",
+   "id": "D3-EL02",
+   "kind": "enemy",
+   "name": "Skitter Stalker",
+   "rect": [
+    96,
+    288,
+    48,
+    48
+   ]
+  },
+  "skitterling": {
+   "big": false,
+   "cardType": "enemy",
+   "id": "D3-E16",
+   "kind": "enemy",
+   "name": "Skitterling",
+   "rect": [
+    48,
+    288,
+    48,
+    48
+   ]
+  },
+  "slag_hauler": {
+   "big": false,
+   "cardType": "troop",
+   "id": null,
+   "kind": "troop",
+   "name": "Slag Hauler",
+   "rect": [
+    336,
+    240,
+    48,
+    48
+   ]
+  },
+  "standin_beast": {
+   "big": false,
+   "cardType": null,
+   "id": null,
+   "kind": "standin",
+   "name": "Beast stand-in",
+   "rect": [
+    240,
+    336,
+    48,
+    48
+   ]
+  },
+  "standin_drone": {
+   "big": false,
+   "cardType": null,
+   "id": null,
+   "kind": "standin",
+   "name": "Drone stand-in",
+   "rect": [
+    192,
+    336,
+    48,
+    48
+   ]
+  },
+  "standin_melee": {
+   "big": false,
+   "cardType": null,
+   "id": null,
+   "kind": "standin",
+   "name": "Melee stand-in",
+   "rect": [
+    96,
+    336,
+    48,
+    48
+   ]
+  },
+  "standin_ranged": {
+   "big": false,
+   "cardType": null,
+   "id": null,
+   "kind": "standin",
+   "name": "Ranged stand-in",
+   "rect": [
+    144,
+    336,
+    48,
+    48
+   ]
+  },
+  "starkiller_titan": {
+   "big": true,
+   "cardType": "enemy",
+   "id": "D3-E08",
+   "kind": "enemy",
+   "name": "Starkiller Titan",
+   "rect": [
+    96,
+    96,
+    48,
+    48
+   ]
+  },
+  "stitcher_cleaner_bot": {
+   "big": false,
+   "cardType": "enemy",
+   "id": "D3-E05",
+   "kind": "enemy",
+   "name": "\"Stitcher\" Cleaner Bot",
+   "rect": [
+    432,
+    0,
+    48,
+    48
+   ]
+  },
+  "titan_command_center": {
+   "big": true,
+   "cardType": "enemy",
+   "id": "D0-E05",
+   "kind": "enemy",
+   "name": "Titan Command Center",
+   "rect": [
+    144,
+    96,
+    48,
+    48
+   ]
+  },
+  "unmanned_arial_gun_platform": {
+   "big": false,
+   "cardType": "troop",
+   "id": "D3-T01",
+   "kind": "troop",
+   "name": "Unmanned Arial Gun Platform",
+   "rect": [
+    336,
+    192,
+    48,
+    48
+   ]
+  },
+  "vaccinator": {
+   "big": false,
+   "cardType": "enemy",
+   "id": "D3-E11",
+   "kind": "enemy",
+   "name": "Vaccinator",
+   "rect": [
+    384,
+    48,
+    48,
+    48
+   ]
+  },
+  "volt_warden_ryska": {
+   "big": false,
+   "cardType": "hero",
+   "id": "D3-H01",
+   "kind": "hero",
+   "name": "Volt-Warden Ryska",
+   "rect": [
+    96,
+    0,
+    48,
+    48
+   ]
+  }
+ },
+ "version": "0.24"
+}

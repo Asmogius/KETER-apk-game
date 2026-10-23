@@ -1,0 +1,10 @@
+# build outputs: `bash guides.sh && python3 build.py` remakes them
+pwa/
+keter_art.js
+handbook.html
+changelog.html
+whatsnew.html
+*_guide.html
+__pycache__/
+# Godot's cache
+game/.godot/
