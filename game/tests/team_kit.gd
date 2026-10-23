@@ -6,6 +6,7 @@ const PATH := "user://test_strike_teams.json"
 const SETTINGS := "user://test_settings.json"
 const BEHAVIORS := "user://test_behaviors.json"
 const CAMPAIGN := "user://test_campaign.json"
+const SANDBOX := "user://test_sandbox.json"
 
 
 ## Points the game's saved teams at the tests' own file, and empties it.
@@ -26,6 +27,9 @@ static func fresh() -> void:
 	Motion.still = true
 	# (0.25) the tests' teams lead with Heroes nobody has recruited: they count as yours, unless a test says not
 	Dock.every_hero = true
+	# (0.26) and the Sandbox: a file of the tests' own, empty
+	Sandbox.path = SANDBOX
+	Sandbox.clear()
 
 
 ## Three Heroes (the third has the Action Slots, and carries an Action card),

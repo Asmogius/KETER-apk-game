@@ -5,6 +5,8 @@
 ## anyone at all), beside Strike Teams. Options is the gear in the corner: the
 ## version, the export the content came from, and Look again are in there
 ## (Look again is on Home too while there is no export to play with).
+## (0.26) Sandbox, beside Strike Teams, opens the game's own tools for making
+## content: the Card Forge first.
 class_name HomeScreen
 extends Control
 
@@ -14,6 +16,7 @@ signal quick_pressed
 signal teams_pressed
 signal look_again_pressed
 signal options_pressed
+signal sandbox_pressed
 
 var title: Label               # (0.15) the sign in the picture is the game's name: this stays hidden
 var note: Label
@@ -25,6 +28,7 @@ var practice_row: HBoxContainer
 var battle_btn: Button
 var quick_btn: Button
 var teams_btn: Button
+var sandbox_btn: Button
 var again_btn: Button
 var options_btn: Button
 var version := ""
@@ -75,6 +79,8 @@ func _init(ver: String) -> void:
 	row.add_child(practice_btn)
 	teams_btn = _steel("Strike Teams", func(): teams_pressed.emit())
 	row.add_child(teams_btn)
+	sandbox_btn = _steel("Sandbox", func(): sandbox_pressed.emit())
+	row.add_child(sandbox_btn)
 	# Practice's two fights, under it once it is pressed
 	practice_row = HBoxContainer.new()
 	practice_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -156,6 +162,7 @@ func show_state(ready: bool, message: String, from: String, teams: int, world_li
 	battle_btn.disabled = not ready
 	quick_btn.disabled = not ready
 	teams_btn.disabled = not ready
+	sandbox_btn.disabled = not ready
 	again_btn.visible = not ready
 	source.text = from
 	source.visible = not ready and from != ""

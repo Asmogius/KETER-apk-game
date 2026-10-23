@@ -131,7 +131,14 @@ func floors() -> Array[FloorData]:
 	return out
 
 
+## The export's cards, with the Sandbox's laid over them (0.26): yours made
+## and changed there, those deleted there left out.
 func cards() -> Array:
+	return Sandbox.apply(content("cards").get("cards", []))
+
+
+## The export's own cards, as they came.
+func own_cards() -> Array:
 	return content("cards").get("cards", [])
 
 

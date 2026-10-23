@@ -24,6 +24,16 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	if OS.get_cmdline_user_args().has("twentysix"):
+		# (only 0.26's, while working on them)
+		Kit.fresh()
+		_twentysix()
+		await _twentysix_scene()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("twentyfive"):
 		# (only 0.25's, while working on them)
 		Kit.fresh()
@@ -212,6 +222,7 @@ func _run() -> void:
 	_twentytwo()
 	_twentythree()
 	_twentyfive()
+	_twentysix()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -236,6 +247,7 @@ func _run() -> void:
 	await _twenty_scene()
 	await _twentythree_scene()
 	await _twentyfive_scene()
+	await _twentysix_scene()
 	Kit.fresh()
 	print("\nGAME PASS %d  FAIL %d" % [ok, bad])
 	Rules.hooks = {}              # the rules let go of the last battle
@@ -8195,4 +8207,189 @@ func _twentyfive_scene() -> void:
 	scene.queue_free()
 	await _frames(2)
 	Dock.every_hero = true
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- 0.26: the Sandbox and its Card Forge
+func _twentysix() -> void:
+	Kit.fresh()
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var n0 := x.cards().size()
+	ck("0.26 sandbox: empty, it leaves the export's cards as they came, the same objects", x.cards() == x.own_cards() and n0 > 100 and Sandbox.counts() == {"made": 0, "edited": 0, "deleted": 0})
+	# a card of your own
+	var mine := ForgeModel.blank("hero", "Sandbox Scout")
+	mine["stats"]["hp"] = "28"
+	var k := Sandbox.put(mine)
+	var r := Roster.new(x)
+	var got = r.card_named("Sandbox Scout")
+	ck("0.26 sandbox: a card made there joins the game's: in the Roster, a Hero, kept under a key of its own", Sandbox.is_own(k) and got != null and Roster.type_of(got) == "hero" and got["_src"] == "sandbox" and got["_sandbox"] == "made"
+		and int(got["stats"]["hp"]) == 28 and r.heroes().any(func(h): return h["name"] == "Sandbox Scout") and x.cards().size() == n0 + 1, got)
+	# one of the export's, changed and renamed
+	var orig = r.card_named("Rictus")
+	var rk := Sandbox.key_of(orig)
+	var ed: Dictionary = Sandbox.stripped(orig).duplicate(true)
+	ed["stats"]["hp"] = "55"
+	ed["name"] = "Rictus Reborn"
+	Sandbox.put(ed, rk)
+	r = Roster.new(x)
+	var rr = r.card_named("Rictus Reborn")
+	ck("0.26 sandbox: one of the export's, changed and renamed, takes its place, keeping its token", rr != null and r.card_named("Rictus") == null and int(rr["stats"]["hp"]) == 55 and rr["_sandbox"] == "edited"
+		and rr["_artName"] == "Rictus" and Sandbox.key_of(rr) == rk and not r.token_for(rr).is_empty() and x.cards().size() == n0 + 1, rr)
+	# deleted, and back
+	var gone = r.card_named("Volt-Warden Ryska")
+	var gk := Sandbox.key_of(gone)
+	Sandbox.delete(gk)
+	r = Roster.new(x)
+	ck("0.26 sandbox: deleted, one of the export's leaves the game", r.card_named("Volt-Warden Ryska") == null and Sandbox.deleted_keys() == [gk] and x.cards().size() == n0)
+	Sandbox.reset(gk)
+	ck("0.26 sandbox: Reset brings it back as it came", Roster.new(x).card_named("Volt-Warden Ryska") != null and not Sandbox.changed(gk))
+	ck("0.26 sandbox: it counts what you have made, changed and deleted", Sandbox.counts() == {"made": 1, "edited": 1, "deleted": 0}, Sandbox.counts())
+	# kept, and read back
+	ck("0.26 sandbox: saved, and read back the same", Sandbox.save() and FileAccess.file_exists(Sandbox.path))
+	var kept := Sandbox.data.duplicate(true)
+	Sandbox.data = Sandbox.blank()
+	Sandbox.load_saved()
+	ck("0.26 sandbox: read back the same", Sandbox.data == kept and Roster.new(x).card_named("Sandbox Scout") != null)
+	# the rest of the game sees it: a Hero of no District made there is on offer at the dock
+	var c := Campaign.new(x, Roster.new(x), x.floors(), 7)
+	ck("0.26 sandbox: the rest of the game sees it: a Hero of no District made here can be recruited at the dock", c.dock.recruitable().any(func(h): return h["name"] == "Sandbox Scout"))
+	# back to the Companion
+	var comp := Sandbox.compendium(x.cards())
+	var forge_cards: int = x.cards().filter(func(e): return not ["workshop", "design", "prebuilt"].has(str(e.get("_src", "")))).size()
+	ck("0.26 export: a Compendium file the Companion's Forge imports: its schema, every card but the Workshop's designs, and nothing the game adds", comp["schema"] == "keter.compendium/1" and comp["cards"].size() == forge_cards and forge_cards > 100
+		and comp["cards"].all(func(e): return not e.keys().any(func(q): return str(q).begins_with("_"))) and comp["cards"].any(func(e): return e["name"] == "Rictus Reborn"))
+	var f := Sandbox.export_to(x.cards(), ProjectSettings.globalize_path("user://"))
+	var back = JSON.parse_string(FileAccess.get_file_as_string(f)) if f != "" else null
+	ck("0.26 export: written to a file, and it reads", back is Dictionary and back["schema"] == "keter.compendium/1" and back["cards"].size() == forge_cards, f)
+	if f != "":
+		DirAccess.remove_absolute(f)
+	# deleting one of yours is for good
+	Sandbox.delete(k)
+	ck("0.26 sandbox: deleting one of yours is for good", Roster.new(x).card_named("Sandbox Scout") == null and not Sandbox.changed(k) and Sandbox.deleted_keys().is_empty())
+	# the model
+	var all_ok := true
+	for t in ForgeModel.TYPE_ORDER:
+		var b := ForgeModel.blank(t, "Model %s" % t)
+		if not ForgeModel.problems(b, [], "").is_empty() or str(b["cardType"]) != t or (b["entries"] as Array).is_empty():
+			all_ok = false
+	ck("0.26 forge: a new card of every kind is fit to keep as it starts", all_ok)
+	var bad := ForgeModel.blank("troop", "")
+	bad["combatRoles"] = []
+	var pr := ForgeModel.problems(bad, [], "")
+	ck("0.26 forge: one with no name, or a Unit with no Combat Role, can't be kept", pr.has("It needs a name.") and pr.has("A Unit needs at least one Combat Role."), pr)
+	var dup := ForgeModel.blank("hero", "Quillon Vex")
+	ck("0.26 forge: nor one named as another of its kind", ForgeModel.problems(dup, Roster.new(x).cards, "").has("Another hero is called Quillon Vex."))
+	var warn := ForgeModel.blank("hero", "Loose Words")
+	warn["entries"][0]["text"] = "[[when]] [[target enemy]] takes [[damage 2]]."
+	ck("0.26 forge: what the keyword checks say of its effects is said, and it is kept anyway", not ForgeModel.warnings(warn).is_empty() and ForgeModel.problems(warn, [], "").is_empty(), ForgeModel.warnings(warn))
+	ck("0.26 forge: a ranged Action carries its range and to-hit, an Aura its radius, a Passive nothing", ForgeModel.entry_numbers("hero", {"kind": "Active", "role": "ranged"}).map(func(q): return q[0]) == ["energyCost", "damage", "attackRange", "toHit", "armorPenetration"]
+		and ForgeModel.entry_numbers("hero", {"kind": "Aura"}).map(func(q): return q[0]) == ["auraRadius"] and ForgeModel.entry_numbers("hero", {"kind": "Passive"}).is_empty())
+	Kit.fresh()
+
+
+func _twentysix_scene() -> void:
+	Kit.fresh()
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	await _frames(2)
+	var fs: ForgeScreen = scene.forge_screen
+	ck("0.26 home: Sandbox sits beside Strike Teams", scene.home.sandbox_btn.visible and not scene.home.sandbox_btn.disabled and scene.home.sandbox_btn.get_parent() == scene.home.teams_btn.get_parent())
+	scene.home.sandbox_btn.pressed.emit()
+	await _frames(2)
+	var every: int = scene.roster.cards.filter(func(c): return not ["workshop", "design", "prebuilt"].has(str(c.get("_src", "")))).size()
+	ck("0.26 screen: the Sandbox opens on the Card Forge, every card the game plays in its grid", fs.visible and not scene.home.visible and fs.mode == "list" and fs.tools["forge"].button_pressed and fs.grid.items.size() == every, [fs.grid.items.size(), every])
+	fs.type_filter = "hero"
+	fs.show_list()
+	ck("0.26 screen: by kind: the Heroes", fs.grid.items.size() == scene.roster.heroes().size() and fs.grid.items.all(func(it): return Roster.type_of(it["card"]) == "hero"), fs.grid.items.size())
+	fs.search = "quill"
+	fs.show_list()
+	ck("0.26 screen: and by name", fs.grid.items.size() == 1 and fs.grid.items[0]["card"]["name"] == "Quillon Vex")
+	fs.search = ""
+	fs.open_tool("studio")
+	ck("0.26 screen: the tools still to come say so", "later version" in fs.note.text and fs.tools["forge"].button_pressed and not fs.tools["studio"].button_pressed, fs.note.text)
+	# changing one of the export's
+	fs.show_list()
+	var qi: int = fs._shown.find(fs._shown.filter(func(c): return c["name"] == "Quillon Vex")[0])
+	fs._on_card(qi)
+	await _frames(1)
+	ck("0.26 forge: a tap opens it: drawn on the left, its form on the right, Save and Delete beneath", fs.mode == "edit" and fs.preview_box.visible and fs.form.visible and fs.save_btn.visible and fs.delete_btn.visible and not fs.reset_btn.visible and fs.card["name"] == "Quillon Vex")
+	var hp0 := int(fs.card["stats"]["hp"])
+	var offers := fs.offers()
+	ck("0.26 forge: its form offers its kind, rarity, District, roles, archetypes, every number and every ability", offers.has(["type", "troop"]) and offers.has(["rarity", "rare"]) and offers.has(["dist", "3"]) and offers.has(["role", "cyber"])
+		and offers.has(["arch", "Sniper"]) and offers.has(["step", "stat:hp", 1]) and offers.has(["e_build", 0]) and offers.has(["e_add"]) and offers.has(["lore"]), offers.size())
+	fs.act(["step", "stat:hp", 1])
+	fs.act(["role", "support"])
+	ck("0.26 forge: a change shows at once, on the card drawn, and is not kept yet", fs.dirty and int(fs.preview.card["stats"]["hp"]) == hp0 + 1 and fs.card["combatRoles"].has("support") and not Sandbox.changed(fs.key))
+	fs.act(["e_build", 0])
+	await _frames(1)
+	ck("0.26 forge: + Build an effect opens the keyword builder", fs.sheet != null)
+	if fs.sheet != null:
+		fs.sheet.done.emit("[[target enemy]] takes [[damage 2]].")
+	await _frames(1)
+	ck("0.26 forge: what it builds joins the ability's effects", fs.sheet == null and str(fs.card["entries"][0]["text"]).ends_with("[[target enemy]] takes [[damage 2]]."), fs.card["entries"][0]["text"])
+	var r0: Roster = scene.roster
+	fs.save_card()
+	await _frames(1)
+	var q2 = scene.roster.card_named("Quillon Vex")
+	ck("0.26 forge: Save keeps it, and the game reads its cards again with it", Sandbox.changed(fs.key) and not fs.dirty and scene.roster != r0 and fs.roster == scene.roster and q2 != null and int(q2["stats"]["hp"]) == hp0 + 1 and fs.reset_btn.visible
+		and FileAccess.file_exists(Sandbox.path), q2["stats"] if q2 != null else null)
+	ck("0.26 forge: the campaign with them", scene.campaign.roster == scene.roster and int(scene.campaign.dock.card_of("Quillon Vex")["stats"]["hp"]) == hp0 + 1)
+	fs.ask_reset()
+	if fs.dialog is Dialog:
+		fs.dialog.chosen.emit(1)
+	await _frames(1)
+	ck("0.26 forge: Reset puts it back as the export has it", not Sandbox.changed(Sandbox.key_of(scene.roster.card_named("Quillon Vex"))) and int(scene.roster.card_named("Quillon Vex")["stats"]["hp"]) == hp0)
+	# a new card of your own
+	fs.show_list()
+	fs.type_filter = "all"
+	fs.ask_new()
+	fs.act(["type", "troop"])
+	fs.act(["name"])
+	if fs.dialog is NameDialog:
+		fs.dialog.named.emit("Sandbox Sapper")
+	await _frames(1)
+	ck("0.26 forge: New card starts one: its Kind and name chosen, it is drawn as a Troop", fs.mode == "edit" and fs.key == "" and fs.card["cardType"] == "troop" and fs.card["name"] == "Sandbox Sapper" and fs.card.has("aetherCost") and fs.card["stats"].has("uslot"))
+	fs.save_card()
+	await _frames(1)
+	var sp = scene.roster.card_named("Sandbox Sapper")
+	ck("0.26 forge: saved, it is yours, and in the game", sp != null and sp["_src"] == "sandbox" and Sandbox.is_own(fs.key) and scene.roster.troops().any(func(c): return c["name"] == "Sandbox Sapper"))
+	fs.copy_card()
+	ck("0.26 forge: Copy makes another of yours from it, not kept until saved", fs.key == "" and fs.card["name"] == "Sandbox Sapper copy" and fs.dirty)
+	fs.show_list()
+	fs.view = "mine"
+	fs.show_list()
+	ck("0.26 screen: Yours shows only those you made", fs.grid.items.size() == 1 and fs.grid.items[0]["mark"] == "Yours")
+	fs._on_card(0)
+	fs.ask_delete()
+	if fs.dialog is Dialog:
+		fs.dialog.chosen.emit(1)
+	await _frames(1)
+	ck("0.26 forge: Delete takes it out of the game", scene.roster.card_named("Sandbox Sapper") == null and fs.mode == "list")
+	# deleting one of the export's, and restoring it
+	fs.view = "all"
+	fs.show_list()
+	var ri: int = fs._shown.find(fs._shown.filter(func(c): return c["name"] == "Dross, the Forge-Blind")[0])
+	fs._on_card(ri)
+	fs.ask_delete()
+	if fs.dialog is Dialog:
+		fs.dialog.chosen.emit(1)
+	await _frames(1)
+	fs.view = "deleted"
+	fs.show_list()
+	ck("0.26 screen: a card of the export's, deleted, is under Deleted", scene.roster.card_named("Dross, the Forge-Blind") == null and fs.grid.items.size() == 1 and fs.grid.items[0]["mark"] == "Deleted")
+	fs._on_card(0)
+	if fs.dialog is Dialog:
+		fs.dialog.chosen.emit(1)
+	await _frames(1)
+	ck("0.26 screen: and a tap restores it", scene.roster.card_named("Dross, the Forge-Blind") != null and Sandbox.deleted_keys().is_empty())
+	fs.view = "all"
+	fs.show_list()
+	fs.back_btn.pressed.emit()
+	await _frames(1)
+	ck("0.26 screen: Home goes back home", scene.home.visible and not fs.visible)
+	scene.queue_free()
+	await _frames(2)
 	Kit.fresh()

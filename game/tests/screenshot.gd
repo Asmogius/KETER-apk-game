@@ -82,7 +82,7 @@ func _run() -> void:
 	var args := OS.get_cmdline_user_args()
 	var out := args[0] if args.size() > 0 else "user://shot.png"
 	var o := {"step": "battle", "floor": "", "heroes": "", "troops": "", "taps": "", "seed": "7", "place": "", "stage": "", "sure": "",
-		"screen": "battle", "mode": "quick", "tab": "heroes", "card": "", "deckonly": "", "empty": "", "timer": "", "districts": "", "carry": "", "map": "", "ws": "", "stock": "", "pick": "0", "dock": "", "motion": "", "after": "40", "options": "", "scroll": "", "view": "", "atmos": "", "freeze": "", "turns": "", "gen": "", "genchunks": "", "whole": ""}
+		"screen": "battle", "mode": "quick", "tab": "heroes", "card": "", "deckonly": "", "empty": "", "timer": "", "districts": "", "carry": "", "map": "", "ws": "", "stock": "", "pick": "0", "dock": "", "motion": "", "after": "40", "options": "", "scroll": "", "view": "", "atmos": "", "freeze": "", "turns": "", "gen": "", "genchunks": "", "whole": "", "kind": "", "forge": ""}
 	for a in args.slice(1):
 		var kv: PackedStringArray = a.split("=", true, 1)
 		if kv.size() == 2:
@@ -180,6 +180,23 @@ func _run() -> void:
 		return
 	if o["screen"] == "workshop":
 		await _workshop(scene, o)
+		await _shoot(out)
+		return
+	# (0.26) the Sandbox's Card Forge: screen=sandbox, kind=<type>, forge=<a card's name to open>, scroll=<px>
+	if o["screen"] == "sandbox":
+		scene.open_sandbox()
+		var fs: ForgeScreen = scene.forge_screen
+		if o.get("kind", "") != "":
+			fs.type_filter = o["kind"]
+			fs.show_list()
+		if o.get("forge", "") != "":
+			var hit = scene.roster.card_named(o["forge"])
+			if hit != null:
+				fs.edit(hit)
+		for i in 6:
+			await process_frame
+		if o["scroll"] != "":
+			fs.form.scroll_by(float(o["scroll"]))
 		await _shoot(out)
 		return
 	scene.open_setup(o["mode"])

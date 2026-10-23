@@ -106,6 +106,7 @@ var _neon_for = null             # the fight it played for
 var overlay: Overlay
 var home: HomeScreen
 var teams_screen: TeamsScreen
+var forge_screen: ForgeScreen   # (0.26) the Sandbox: the Card Forge
 var map_view: MapView
 var map_screen: MapScreen
 var dock_screen: DockScreen
@@ -300,6 +301,7 @@ const ANDROID_NOTE := "Playing the export built into this app. To play your own,
 
 
 func load_export(p: String = "") -> bool:
+	Sandbox.load_saved()            # (0.26) what you have made and changed in the Sandbox, over the export
 	data.close()
 	floors.clear()
 	roster = null
@@ -389,6 +391,32 @@ func _turn(into_fight := false) -> void:
 
 
 ## The home screen: World Map, Battle, Quick battle, Strike Teams.
+## (0.26) The Sandbox: the game's own tools, the Card Forge first.
+func open_sandbox() -> void:
+	if roster == null:
+		return
+	_turn()
+	_leave_battle()
+	_hide_world()
+	home.visible = false
+	setup.visible = false
+	teams_screen.visible = false
+	forge_screen.visible = true
+	forge_screen.open(roster)
+
+
+## (0.26) The Sandbox's cards have changed: the game reads its cards again from the
+## export it has open, with them laid over it, and the campaign with them.
+func reload_cards() -> void:
+	if not data.is_open() or floors.is_empty():
+		return
+	roster = Roster.new(data)
+	setup.set_content(roster, floors)
+	campaign = Campaign.new(data, roster, data.floors())
+	if forge_screen != null:
+		forge_screen.roster = roster
+
+
 func show_home() -> void:
 	_turn()
 	_leave_battle()
@@ -396,6 +424,7 @@ func show_home() -> void:
 	battle = null
 	setup.visible = false
 	teams_screen.visible = false
+	forge_screen.visible = false
 	home.visible = true
 	# what loading had to say (a new map, a file that couldn't be read) comes before where things stand
 	var world_line := ""
@@ -2896,6 +2925,12 @@ func _build_ui() -> void:
 	teams_screen.closed.connect(show_home)
 	ui.add_child(teams_screen)
 
+	forge_screen = ForgeScreen.new()
+	forge_screen.visible = false
+	forge_screen.closed.connect(show_home)
+	forge_screen.changed.connect(reload_cards)
+	ui.add_child(forge_screen)
+
 	dock_screen = DockScreen.new()
 	dock_screen.visible = false
 	dock_screen.closed.connect(show_home)
@@ -2914,6 +2949,7 @@ func _build_ui() -> void:
 	home.battle_pressed.connect(func(): open_setup("team"))
 	home.quick_pressed.connect(func(): open_setup("quick"))
 	home.teams_pressed.connect(open_teams)
+	home.sandbox_pressed.connect(open_sandbox)
 	home.look_again_pressed.connect(func(): load_export())
 	home.options_pressed.connect(open_options)
 	ui.add_child(home)

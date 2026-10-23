@@ -37,7 +37,7 @@ PARTS = [
                                               and p.parts[:2] != ("game", "tests")
                                               and (p.suffix in (".gd", ".tscn", ".godot", ".md", ".cfg", ".uid", ".import", ".txt")
                                                    or str(p) in ("game/art/art.json", "game/tools/.gdignore")
-                                                   or (p.suffix in (".py", ".b64") and p.parts[:2] == ("game", "tools"))))),
+                                                   or (p.suffix in (".py", ".b64", ".java") and p.parts[:2] == ("game", "tools"))))),
     # (0.16) the game's tests, a part of their own: like the Companion's suites (part 5), they
     # stay out of Project Knowledge (their export and generated cases are rebuilt, as before)
     ("7_game_tests", "The Godot game's tests", sorted(str(p) for p in __import__("pathlib").Path("game/tests").glob("*")

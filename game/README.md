@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.25 recruits
-Heroes at the dock; v0.24 withdrew the last four cards in plain text.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.26 opens
+the Sandbox, with its Card Forge; v0.25 recruits Heroes at the dock.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,27 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.26 (Companion 14.14): **the Sandbox**, beside Strike Teams on Home:
+the game's own tools for making content, the Companion's made over for a
+thumb. Its first is the **Card Forge**:
+
+- **Every card the game plays**, to find by kind, by name, or by what you
+  have done to it (Changed, Yours, Deleted).
+- **Change any of them**, the export's too: its kind, rarity, District,
+  Skull Level, Aether cost, Combat Roles, Origin, Archetypes and every number;
+  each ability's tag, role and numbers, and its effects, built with the
+  keyword builder or typed; and its lore. The card is drawn as it changes.
+- **Save** keeps it, and the whole game (Decks, fights, drops, the dock) has
+  it at once. **Delete** takes a card out of the game, **Reset** puts one of
+  the export's back as it came, **Copy** makes one of yours from any card,
+  and **New card** starts one. Deleted cards can be restored.
+- What you make is kept on the phone, over the export (`user://sandbox.json`),
+  and **Export** writes every card as a Compendium file
+  (`KETER_sandbox_….json`, in Downloads on the phone) for the Companion's Card
+  Forge to import.
+- The Chassis builder, the POI Sandbox and the Pixel Studio have their tabs,
+  and come in the next versions.
 
 New in 0.25 (Companion 14.14): **Recruit, a tab at the dock.** A Strike
 Team leaves only with Heroes who are yours:
@@ -474,7 +495,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-25_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-26_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -485,7 +506,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-25_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-26_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the
