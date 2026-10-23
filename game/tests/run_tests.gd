@@ -8349,7 +8349,8 @@ func _twentysix_scene() -> void:
 	ck("0.26 screen: and by name", fs.grid.items.size() == 1 and fs.grid.items[0]["card"]["name"] == "Quillon Vex")
 	fs.search = ""
 	fs.open_tool("studio")
-	ck("0.26 screen: the tools still to come say so", "later version" in fs.note.text and fs.tools["forge"].button_pressed and not fs.tools["studio"].button_pressed, fs.note.text)
+	ck("0.26 screen: (0.30) every tool has come: the Pixel Studio's tab opens it", scene.studio_screen.visible and not fs.visible and fs.tools["forge"].button_pressed)
+	scene.studio_screen.tools["forge"].pressed.emit()
 	# changing one of the export's
 	fs.show_list()
 	var qi: int = fs._shown.find(fs._shown.filter(func(c): return c["name"] == "Quillon Vex")[0])
