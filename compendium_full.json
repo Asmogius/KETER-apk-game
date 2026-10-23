@@ -1,6 +1,6 @@
 {
  "schema": "keter.compendium/1",
- "version": "31",
+ "version": "32",
  "cards": [
   {
    "id": "D3-E06",
@@ -9768,7 +9768,13 @@
    "name": "Dock Hand",
    "createdBy": "Claude",
    "lastEditedBy": "Claude",
-   "affinities": [],
+   "affinities": [
+    {
+     "district": "neu",
+     "symbol": "\u2713",
+     "level": 2
+    }
+   ],
    "level": 1,
    "entries": [
     {
@@ -9816,7 +9822,13 @@
    "name": "Hangar Rifleman",
    "createdBy": "Claude",
    "lastEditedBy": "Claude",
-   "affinities": [],
+   "affinities": [
+    {
+     "district": "neu",
+     "symbol": "\u2713",
+     "level": 2
+    }
+   ],
    "level": 1,
    "entries": [
     {
@@ -9868,7 +9880,13 @@
    "name": "Field Medic",
    "createdBy": "Claude",
    "lastEditedBy": "Claude",
-   "affinities": [],
+   "affinities": [
+    {
+     "district": "neu",
+     "symbol": "\u2713",
+     "level": 2
+    }
+   ],
    "level": 1,
    "entries": [
     {

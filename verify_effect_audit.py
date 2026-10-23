@@ -94,7 +94,7 @@ with sync_playwright() as p:
     E("()=>localStorage.setItem('keter-app-dice',JSON.stringify({dur:0}))")
     r = E("""()=>{ var K=KETER_KW, c=simAllCards().filter(function(x){ return x.name==='Field Dressing'; })[0];
       var runs=K.displayRuns((c.entries||c.effects)[0].text); return {ver:window.KETER_APP_VER||null, coloured:runs.filter(function(x){ return x.kw; }).map(function(x){ return x.cat; })}; }""")
-    ck("the app is 14.17, and Field Dressing's text is coloured keywords (its Target, narrowed to within 1 tile, then its Effect)", r["ver"] == "14.17" and r["coloured"] == ["target", "effect"], r)
+    ck("the app is 14.18, and Field Dressing's text is coloured keywords (its Target, narrowed to within 1 tile, then its Effect)", r["ver"] == "14.18" and r["coloured"] == ["target", "effect"], r)
     pg.locator("#nav button[data-go='home']").click(); pg.wait_for_timeout(500)
     pg.locator('.lt[data-page="battle"]').click(); pg.wait_for_timeout(900)
     E("(g)=>{ window.FLOOR_IN=g; }", FLOOR)

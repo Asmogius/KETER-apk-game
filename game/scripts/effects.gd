@@ -441,7 +441,7 @@ func aether_district(ctx: Dictionary) -> String:
 	elif ctx.get("actor") != null and ctx["actor"].get("affinities") is Array and not ctx["actor"]["affinities"].is_empty():
 		aff = ctx["actor"]["affinities"][0]
 	var d = aff.get("district") if aff is Dictionary else null
-	return str(d) if (Rules.truthy(d) and str(d) != "any") else ""
+	return str(d) if (Rules.truthy(d) and str(d) != "any" and str(d) != "neu") else ""
 
 
 ## simLineStep: the tile that carries the line on from one tile through another.

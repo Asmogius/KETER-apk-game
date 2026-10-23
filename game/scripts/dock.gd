@@ -620,7 +620,7 @@ static func is_test_hero(c: Dictionary) -> bool:
 ## A Hero's District: none, or one fought in, puts it on offer.
 static func hero_district(c: Dictionary) -> String:
 	var d := Progress.enemy_district(c)
-	return "" if d == "any" else d
+	return "" if d == "any" or d == "neu" else d
 
 
 ## Whether a Hero can lead a Strike Team out: a free one, or one recruited.

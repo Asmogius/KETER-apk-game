@@ -5786,7 +5786,7 @@ function simShapeTiles(kind, from, aim, n){
 function simAetherDistrict(ctx){
   var c=ctx.sourceCard?simAllCards().filter(function(x){ return x.name===ctx.sourceCard; })[0]:null;
   var aff=(c&&c.affinities&&c.affinities[0]) || (ctx.actor&&ctx.actor.affinities&&ctx.actor.affinities[0]) || null;
-  var d=aff&&aff.district; return (d && d!=="any") ? String(d) : null;
+  var d=aff&&aff.district; return (d && d!=="any" && d!=="neu") ? String(d) : null;
 }
 /* the floor's colour for a Barricade, added to its key if it has none */
 function simCoverColour(which){
@@ -10650,9 +10650,9 @@ function pingsForLoadout(lo){
   var needD={}, haveD={};
   deck.concat(assignedActionCards(lo)).forEach(function(c){
     var ac=c.aetherCost||{}, affs=c.affinities||[];
-    if((parseInt(ac.affinity,10)||0)>0 && affs[0] && affs[0].district && affs[0].district!=="any")
+    if((parseInt(ac.affinity,10)||0)>0 && affs[0] && affs[0].district && affs[0].district!=="any" && affs[0].district!=="neu")
       needD[affs[0].district]=(needD[affs[0].district]||0)+1;
-    if((parseInt(ac.affinity2,10)||0)>0 && affs[1] && affs[1].district && affs[1].district!=="any")
+    if((parseInt(ac.affinity2,10)||0)>0 && affs[1] && affs[1].district && affs[1].district!=="any" && affs[1].district!=="neu")
       needD[affs[1].district]=(needD[affs[1].district]||0)+1;
   });
   pouchEntries(lo).forEach(function(e){ var d=chipDistrictOf(e.chip); if(d) haveD[d]=1; });

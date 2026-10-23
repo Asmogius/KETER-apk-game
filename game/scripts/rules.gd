@@ -152,7 +152,8 @@ static func aether_from_hero(unit: Dictionary) -> Dictionary:
 		var lvl = num(a.get("level"), 0)
 		if lvl <= 0:
 			continue
-		var key: String = ("d" + str(a["district"])) if truthy(a.get("district")) else "generic"
+		# (0.31) a Neutral Affinity ("neu") generates Neutral Aether, which pays any cost
+		var key: String = ("d" + str(a["district"])) if truthy(a.get("district")) and str(a["district"]) != "neu" else "generic"
 		out[key] = out.get(key, 0) + lvl
 	return out
 

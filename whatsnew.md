@@ -6,6 +6,13 @@ the Change Log.
 
 <!-- NEWEST ENTRY GOES BELOW THIS LINE -->
 
+## v14.18 — The free Heroes generate Neutral Aether
+
+Alongside game 0.31.
+
+- **Dock Hand, Hangar Rifleman and Field Medic are Neutral, at Affinity Level 2.** Each generates 2 Neutral Aether a turn, which pays any cost, so a team of free Heroes can play its cards.
+- **Any Hero made Neutral in the Card Forge does the same.** Before, a Neutral Affinity generated Aether that nothing could use. Neutral is never a District: no District cost asks for it, and it doesn't change which Heroes are on offer to recruit.
+
 ## v14.17 — Pictures from the game's Sandbox
 
 Alongside game 0.30, whose Sandbox now has a Pixel Studio of its own.

@@ -25,7 +25,12 @@ with sync_playwright() as p:
     pg.on("pageerror",lambda e:errs.append(str(e)))
     pg.goto("http://127.0.0.1:9977/"); pg.wait_for_timeout(1800)
     E=pg.evaluate
-    ck("the Companion is 14.17", E("()=>document.documentElement.innerHTML.indexOf('14.17')>=0"))
+    ck("the Companion is 14.18", E("()=>document.documentElement.innerHTML.indexOf('14.18')>=0"))
+    nz=E("""()=>{ var R=window.KETER_RULES||window.KETER_SIM_RULES||null; if(!R||!R.aetherFromHero) return null;
+      return {neu:R.aetherFromHero({affinities:[{district:'neu',level:2}]}), d3:R.aetherFromHero({affinities:[{district:'3',level:2}]})}; }""")
+    ck("(14.18) a Neutral Hero generates Neutral Aether; a District's, its District's", nz is not None and nz["neu"]=={"generic":2} and nz["d3"]=={"d3":2}, nz)
+    fh=E("()=>{ var c=(typeof simAllCards==='function'?simAllCards():[]).filter(function(x){ return x.name==='Dock Hand'; })[0]; return c?c.affinities:null; }")
+    ck("(14.18) the free Heroes are Neutral, at Affinity Level 2", bool(fh) and (fh[0]["district"]=="neu" and fh[0]["level"]==2), fh)
     r=E("""()=>{ var C=KETER_CHASSIS, n0=C.list().length, sk=JSON.parse(JSON.stringify(C.get('ch_skitter_frame')||{id:'ch_skitter_frame',name:'Skitter Frame'}));
       sk.powerCap=22; sk._sandbox='edited';
       var file={schema:'keter.compendium/1', cards:[], chassis:[sk, {id:'ch_sb1_1', name:'Sandbox Strider', district:'', bodyPlan:'Quadruped', subtypes:['Melee','Ranged'], powerCap:20, abilityCap:2,

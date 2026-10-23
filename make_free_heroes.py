@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """The free Heroes (Companion 14.14, game 0.25): three plain Heroes of no
 District who are always yours at the dock and never lost, so a Strike Team
-can always leave, shards or none. The others are recruited (dock.js). Adds
+can always leave, shards or none. (14.18) Each is Neutral at Affinity Level 2,
+so each generates 2 Neutral Aether a turn. The others are recruited (dock.js). Adds
 them to compendium_full.json, replacing any of the same id; one you have since
 edited in the Card Forge keeps your edit."""
 import json
@@ -17,7 +18,7 @@ def E(name, kind, text, role="", dmg="", rng="", hit="", ap="", nrg=""):
     return e
 def hero(cid, name, entries, **kw):
     c = {"id": cid, "cardType": "hero", "name": name, "createdBy": "Claude", "lastEditedBy": "Claude",
-         "affinities": [], "level": 1, "entries": entries, "rarity": "common", "origin": "Human"}
+         "affinities": [{"district": "neu", "symbol": "\u2713", "level": 2}], "level": 1, "entries": entries, "rarity": "common", "origin": "Human"}
     c.update(kw)
     return c
 

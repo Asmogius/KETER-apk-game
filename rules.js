@@ -27,13 +27,14 @@ function behOf(k){ for(var i=0;i<BEH.length;i++) if(BEH[i].k===k) return BEH[i];
 /* Handbook, Aether Generation: a Hero produces Aether of its own Affinity
    equal to its Affinity Level, every turn, for as long as it is standing. A
    Hero with two Affinities generates for both. Chips drawn from the Pouch are
-   separate income and are counted by the caller. */
+   separate income and are counted by the caller. (v14.18) A Neutral Affinity
+   ("neu", as the Forge writes it) generates Neutral Aether, which pays any cost. */
 function aetherFromHero(unit){
   var out = {};
   (unit.affinities||[]).forEach(function(a){
     var lvl = parseInt(a.level,10)||0;
     if(lvl<=0) return;
-    var key = a.district ? ("d"+a.district) : "generic";
+    var key = (a.district && a.district!=="neu") ? ("d"+a.district) : "generic";
     out[key] = (out[key]||0) + lvl;
   });
   return out;

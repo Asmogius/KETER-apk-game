@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.30 adds
-the Sandbox's Pixel Studio, its fourth tool; v0.29 brought its POI Sandbox.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.31 makes the
+free Heroes Neutral; v0.30 brought the Sandbox's Pixel Studio, its fourth tool.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,13 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.31 (Companion 14.18): **the free Heroes generate Neutral Aether.**
+Dock Hand, Hangar Rifleman and Field Medic are Neutral at Affinity Level 2:
+each generates 2 Neutral Aether a turn, which pays any cost. Any Hero made
+Neutral in the Card Forge does the same; Neutral is never a District (no
+District cost asks for it, and recruiting doesn't count it). Hold Fire stays
+off in Pass and play.
 
 New in 0.30 (Companion 14.17): **the Pixel Studio**, the Sandbox's fourth
 tool (its Pixel Studio tab), the Companion's studio made over for a thumb:
@@ -579,7 +586,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-30_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-31_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -590,7 +597,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-30_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-31_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the

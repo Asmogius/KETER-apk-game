@@ -233,7 +233,7 @@
   function isFree(name, t){ return (t||tables()).free.indexOf(name)>=0; }
   function isTestHero(c){ return /^Test /.test(String(c&&c.name||"")); }
   /* a Hero's District: none, or one fought in, puts it on offer */
-  function heroDistrict(c){ var d=P().enemyDistrict(c); return d==="any"?"":d; }
+  function heroDistrict(c){ var d=P().enemyDistrict(c); return (d==="any"||d==="neu")?"":d; }
   function owns(name){ return isFree(name) || !!state().heroes[name]; }
   function ownedHeroes(){ return Object.keys(state().heroes); }
   function heroRarity(c){ var r=String(c&&c.rarity||"").toLowerCase(), i=L().RARITIES.map(function(x){ return x.id; }).indexOf(r); return i<0?0:i; }

@@ -6,7 +6,7 @@ config_version=5
 [application]
 
 config/name="KETER"
-config/version="0.30"
+config/version="0.31"
 config/description="KETER, the video game. v0.16: the fight's effects, drawn frame by frame: a muzzle flash as a shot leaves, an impact where damage lands, an explosion on every tile a blast catches, a heal rising from whoever is mended, a shield as an attack glances off armour; and a strip in the side panel of what a Unit can still do this turn, Move, Attack and Hold fire, each with its icon; on 0.15's World Map and menus and 0.14's fight, drawn. Build Strike Teams and send them out from the dock onto the World Map, where each fight is a Battle of six waves. Their Troops are your own designs, made in the Workshop. What they bring home is spent at the dock: the Exchange, Reclaiming, the Bounty Board and upgrades. Battle and Quick battle are practice fights."
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")

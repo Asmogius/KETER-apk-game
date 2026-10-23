@@ -306,7 +306,7 @@ static func pings(t: Dictionary, r: Roster, own := true) -> Array:
 		var affs: Array = c["affinities"] if c.get("affinities") is Array else []
 		for pair in [["affinity", 0], ["affinity2", 1]]:
 			var amt = Rules.num(ac.get(pair[0]), 0)
-			if (int(amt) if Rules.truthy(amt) else 0) > 0 and affs.size() > pair[1] and affs[pair[1]] is Dictionary and Rules.truthy(affs[pair[1]].get("district")) and str(affs[pair[1]]["district"]) != "any":
+			if (int(amt) if Rules.truthy(amt) else 0) > 0 and affs.size() > pair[1] and affs[pair[1]] is Dictionary and Rules.truthy(affs[pair[1]].get("district")) and str(affs[pair[1]]["district"]) != "any" and str(affs[pair[1]]["district"]) != "neu":
 				var d := str(affs[pair[1]]["district"])
 				need_d[d] = need_d.get(d, 0) + 1
 	for e in pouch_entries(t, r):

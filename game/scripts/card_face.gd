@@ -25,7 +25,7 @@ static func district_of(c: Dictionary) -> String:
 	var affs = c.get("affinities")
 	if affs is Array:
 		for a in affs:
-			if a is Dictionary and Rules.truthy(a.get("district")) and str(a["district"]) != "any":
+			if a is Dictionary and Rules.truthy(a.get("district")) and str(a["district"]) != "any" and str(a["district"]) != "neu":
 				return str(a["district"])
 	return ""
 

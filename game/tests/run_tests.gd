@@ -24,6 +24,11 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	if OS.get_cmdline_user_args().has("thirtyone"):
+		_thirtyone()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("thirty"):
 		# (only 0.30's, while working on them)
 		Kit.fresh()
@@ -259,6 +264,7 @@ func _run() -> void:
 	_twentyeight()
 	_twentynine()
 	_thirty()
+	_thirtyone()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -9102,4 +9108,25 @@ func _thirty_scene() -> void:
 	ck("0.30 screen: Home goes home", scene.home.visible and not ss.visible)
 	scene.queue_free()
 	await _frames(2)
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- 0.31: the free Heroes are Neutral
+func _thirtyone() -> void:
+	Kit.fresh()
+	ck("0.31 rules: a Neutral Affinity generates Neutral Aether; a District's, its District's", Rules.aether_from_hero({"affinities": [{"district": "neu", "level": 2}]}) == {"generic": 2}
+		and Rules.aether_from_hero({"affinities": [{"district": "3", "level": 2}]}) == {"d3": 2})
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var r := Roster.new(x)
+	var all_neu := true
+	for nm in FREE_HEROES:
+		var c = r.card_named(nm)
+		all_neu = all_neu and c != null and c["affinities"][0]["district"] == "neu" and int(c["affinities"][0]["level"]) == 2
+	ck("0.31 free Heroes: each is Neutral, at Affinity Level 2", all_neu)
+	var dh = r.card_named("Dock Hand")
+	ck("0.31 free Heroes: Neutral is no District: the card's colours, recruiting", CardFace.district_of(dh) == "" and Dock.hero_district(dh) == "")
+	var units := [{"side": "ally", "cardType": "hero", "affinities": dh["affinities"]}, {"side": "ally", "cardType": "hero", "affinities": r.card_named("Field Medic")["affinities"]}]
+	ck("0.31 free Heroes: two of them generate 4 Neutral Aether a turn, which pays a District's card's generic cost", Rules.aether_income(units, "ally") == {"generic": 4}
+		and Rules.aether_can_pay({"generic": 4}, {"generic": 3, "affinity": 0, "district": "3"}) and not Rules.aether_can_pay({"generic": 4}, {"generic": 0, "affinity": 1, "district": "3"}))
 	Kit.fresh()
