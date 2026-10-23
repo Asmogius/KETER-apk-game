@@ -474,7 +474,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-24_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-25_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -485,7 +485,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-24_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-25_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the
