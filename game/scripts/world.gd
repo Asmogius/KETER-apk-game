@@ -66,7 +66,7 @@ func _init(stream: Loot, content = null, floor_list: Array = []) -> void:
 			continue
 		var name := str(raw["name"]) if Rules.truthy(raw.get("name")) else "Untitled floor"
 		var size = raw.get("battlefieldSize") if Rules.truthy(raw.get("battlefieldSize")) else raw.get("floorSize")
-		floors.append({"key": name, "name": name, "district": district_num(raw.get("district")), "skull": floor_skull(raw),
+		floors.append({"key": str(raw["_key"]) if raw.has("_key") else name, "name": name, "district": district_num(raw.get("district")), "skull": floor_skull(raw),
 			"type": str(raw["poiType"]) if Rules.truthy(raw.get("poiType")) else "", "size": str(size if Rules.truthy(size) else "").to_lower(),
 			"test": Rules.truthy(raw.get("testMap")), "tiles": raw["hexes"].size()})
 

@@ -9,8 +9,8 @@
 ## one of the export's back as it came; Copy makes one of yours from it.
 ## Export writes everything as a Compendium file for the Companion.
 ##
-## The Chassis builder, the POI Sandbox and the Pixel Studio take their tabs
-## in later versions.
+## Its other tabs: the Chassis builder (0.28, chassis_screen.gd) and the POI
+## Sandbox (0.29, poi_screen.gd); the Pixel Studio takes its tab in a later version.
 class_name ForgeScreen
 extends Control
 
@@ -133,7 +133,7 @@ func open(r: Roster) -> void:
 func open_tool(k: String) -> void:
 	for t in tools:
 		tools[t].set_pressed_no_signal(t == k)
-	if k == "chassis" and dialog == null:
+	if (k == "chassis" or k == "poi") and dialog == null:
 		tools["forge"].set_pressed_no_signal(true)
 		tools[k].set_pressed_no_signal(false)
 		tool_requested.emit(k)
@@ -141,7 +141,7 @@ func open_tool(k: String) -> void:
 	if k != "forge":
 		tools["forge"].set_pressed_no_signal(true)
 		tools[k].set_pressed_no_signal(false)
-		say("The %s comes to the Sandbox in a later version. Until then it is in the Companion." % ("Chassis builder" if k == "chassis" else ("POI Sandbox" if k == "poi" else "Pixel Studio")))
+		say("The %s comes to the Sandbox in a later version. Until then it is in the Companion." % "Pixel Studio")
 		return
 	show_list()
 
@@ -759,8 +759,7 @@ func ask_new() -> void:
 
 
 func export_all() -> void:
-	var chs = roster.data.content("chassis").get("chassis", [])
-	var f := Sandbox.export_to(all_cards(), "", chs if chs is Array else [])
+	var f := Sandbox.export_game(roster)
 	if f == "":
 		say("It couldn't be written.", true)
 	else:

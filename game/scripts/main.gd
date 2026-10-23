@@ -109,6 +109,7 @@ var teams_screen: TeamsScreen
 var forge_screen: ForgeScreen   # (0.26) the Sandbox: the Card Forge
 var handoff: HandoffScreen      # (0.26) pass and play: the screen covered between turns
 var chassis_screen: ChassisScreen   # (0.28) the Sandbox: the Chassis builder
+var poi_screen: PoiScreen           # (0.29) the Sandbox: the POI Sandbox
 var _teams_for_setup := false   # (0.26) Strike Teams was opened from a match's setup: back there after
 var map_view: MapView
 var map_screen: MapScreen
@@ -407,12 +408,15 @@ func open_sandbox() -> void:
 	open_sandbox_tool("forge")
 
 
-## (0.28) One of the Sandbox's tools: the Card Forge or the Chassis builder.
+## (0.28) One of the Sandbox's tools: the Card Forge, the Chassis builder, (0.29) the POI Sandbox.
 func open_sandbox_tool(k: String) -> void:
-	forge_screen.visible = k == "forge"
+	forge_screen.visible = k != "chassis" and k != "poi"
 	chassis_screen.visible = k == "chassis"
+	poi_screen.visible = k == "poi"
 	if k == "chassis":
 		chassis_screen.open(roster)
+	elif k == "poi":
+		poi_screen.open(roster)
 	else:
 		forge_screen.open(roster)
 
@@ -423,12 +427,19 @@ func reload_cards() -> void:
 	if not data.is_open() or floors.is_empty():
 		return
 	roster = Roster.new(data)
+	# (0.29) and its floors, the Sandbox's laid over them
+	var every := data.floors()
+	var fights := every.filter(func(f): return not ChunkGen.is_chunk(f.raw))
+	if not fights.is_empty():
+		floors.assign(fights)
 	setup.set_content(roster, floors)
-	campaign = Campaign.new(data, roster, data.floors())
+	campaign = Campaign.new(data, roster, every)
 	if forge_screen != null:
 		forge_screen.roster = roster
 	if chassis_screen != null:
 		chassis_screen.roster = roster
+	if poi_screen != null:
+		poi_screen.roster = roster
 
 
 func show_home() -> void:
@@ -440,6 +451,7 @@ func show_home() -> void:
 	teams_screen.visible = false
 	forge_screen.visible = false
 	chassis_screen.visible = false
+	poi_screen.visible = false
 	home.visible = true
 	# what loading had to say (a new map, a file that couldn't be read) comes before where things stand
 	var world_line := ""
@@ -585,7 +597,7 @@ func start_deploy_fight() -> void:
 		return
 	var f: FloorData = null
 	for x in floors:
-		if x.name == str(sp["floor"]):
+		if x.key == str(sp["floor"]):
 			f = FloorData.from_dict(x.raw)
 	# (0.20) a battlefield grown from chunks, grown again from its key
 	if f == null and ChunkGen.is_gen_key(sp["floor"]):
@@ -3045,6 +3057,13 @@ func _build_ui() -> void:
 	chassis_screen.changed.connect(reload_cards)
 	chassis_screen.tool_requested.connect(open_sandbox_tool)
 	ui.add_child(chassis_screen)
+
+	poi_screen = PoiScreen.new()
+	poi_screen.visible = false
+	poi_screen.closed.connect(show_home)
+	poi_screen.changed.connect(reload_cards)
+	poi_screen.tool_requested.connect(open_sandbox_tool)
+	ui.add_child(poi_screen)
 
 	dock_screen = DockScreen.new()
 	dock_screen.visible = false

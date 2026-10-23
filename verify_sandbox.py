@@ -1,7 +1,8 @@
 """The game's Sandbox, back in the Companion (v14.15): a file the game's
 Sandbox exports carries its chassis beside its cards, and importing it puts
 them in the Chassis library, replacing one of the same id, without what the
-game adds to them; a file with no chassis changes nothing there."""
+game adds to them; a file with no chassis changes nothing there. (v14.16) Its
+floors join the POI Sandbox's saved levels by name."""
 import http.server, socketserver, threading, functools, pathlib, shutil, json
 from playwright.sync_api import sync_playwright
 TMP=pathlib.Path("/tmp/serve_sandbox")
@@ -23,7 +24,7 @@ with sync_playwright() as p:
     pg.on("pageerror",lambda e:errs.append(str(e)))
     pg.goto("http://127.0.0.1:9977/"); pg.wait_for_timeout(1800)
     E=pg.evaluate
-    ck("the Companion is 14.15", E("()=>document.documentElement.innerHTML.indexOf('14.15')>=0"))
+    ck("the Companion is 14.16", E("()=>document.documentElement.innerHTML.indexOf('14.16')>=0"))
     r=E("""()=>{ var C=KETER_CHASSIS, n0=C.list().length, sk=JSON.parse(JSON.stringify(C.get('ch_skitter_frame')||{id:'ch_skitter_frame',name:'Skitter Frame'}));
       sk.powerCap=22; sk._sandbox='edited';
       var file={schema:'keter.compendium/1', cards:[], chassis:[sk, {id:'ch_sb1_1', name:'Sandbox Strider', district:'', bodyPlan:'Quadruped', subtypes:['Melee','Ranged'], powerCap:20, abilityCap:2,
@@ -35,6 +36,16 @@ with sync_playwright() as p:
     ck("one of the same id is replaced by the game's", r["cap"]==22, r)
     ck("without what the game adds to them", r["clean"], r)
     ck("a file with no chassis changes nothing there", r["none"]==0, r)
+    f=E("""()=>{ localStorage.setItem('keter-hexmap-levels', JSON.stringify({'Old Hall':{v:6,name:'Old Hall',hexes:[['0,0',{}]]}}));
+      var file={schema:'keter.compendium/1', cards:[], floors:[{v:6,name:'Sandbox Hall',radius:8,hexes:[['0,0',{c:3}],['1,0',{}]],marks:[],walls:[['0,0|1,0',-1]],symDefs:[],colorLabels:{'3':'Player Spawn Tile'},_key:'fl_sb1_1',_sandbox:'made'},
+        {v:6,name:'Old Hall',hexes:[['0,0',{}],['0,1',{}]]}, {name:'no tiles'}]};
+      var got=sandboxExtras(file), all=JSON.parse(localStorage.getItem('keter-hexmap-levels')||'{}');
+      return {got:got, names:Object.keys(all).sort(), tiles:(all['Sandbox Hall']||{}).hexes, walls:(all['Sandbox Hall']||{}).walls, old:(all['Old Hall']||{}).hexes.length,
+        clean:!('_key' in (all['Sandbox Hall']||{})) && !('_sandbox' in (all['Sandbox Hall']||{}))}; }""")
+    ck("a Sandbox file's floors join the POI Sandbox's levels, as they were drawn", f["got"]==2 and f["names"]==["Old Hall","Sandbox Hall"] and f["tiles"]==[["0,0",{"c":3}],["1,0",{}]] and f["walls"]==[["0,0|1,0",-1]], f)
+    ck("one of the same name is replaced, and what the game adds is left behind", f["old"]==2 and f["clean"], f)
+    sims=E("()=>typeof simSavedFloors==='function' ? simSavedFloors().map(function(x){ return x.name; }) : null")
+    ck("and the Battle Simulator offers it as a floor to fight on", sims is not None and "Sandbox Hall" in sims, sims)
     ck("no page errors", not errs, errs)
     b.close()
 print(f"\nSANDBOX PASS {len(ok)}  FAIL {len(bad)}")

@@ -116,6 +116,12 @@ func content(kind: String) -> Dictionary:
 		var o := raw.duplicate()
 		o["chassis"] = Sandbox.apply_chassis(raw.get("chassis", []) if raw.get("chassis") is Array else [])
 		return o
+	# (0.29) and its floors
+	if kind == "floors" and not Sandbox.data.get("floors", {}).is_empty():
+		var raw := _raw_content(kind)
+		var o := raw.duplicate()
+		o["floors"] = Sandbox.apply_floors(raw.get("floors", []) if raw.get("floors") is Array else [])
+		return o
 	return _raw_content(kind)
 
 

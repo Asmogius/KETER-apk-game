@@ -648,8 +648,7 @@ func ask_reset() -> void:
 
 
 func export_all() -> void:
-	var cards: Array = roster.cards.filter(func(c): return not ["workshop", "design", "prebuilt"].has(str(c.get("_src", ""))))
-	var f := Sandbox.export_to(cards, "", all_chassis())
+	var f := Sandbox.export_game(roster)
 	if f == "":
 		say("It couldn't be written.", true)
 	else:

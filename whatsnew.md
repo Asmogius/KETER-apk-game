@@ -6,6 +6,12 @@ the Change Log.
 
 <!-- NEWEST ENTRY GOES BELOW THIS LINE -->
 
+## v14.16 — Floors from the game's Sandbox
+
+Alongside game 0.29, whose Sandbox now has a POI Sandbox of its own.
+
+- **Import takes the floors in a file from the game's Sandbox too.** They join your POI Sandbox's saved levels by name, replacing one of the same name. A floor renamed in the game arrives under its new name, beside the old one.
+
 ## v14.15 — From the game's Sandbox
 
 Alongside game 0.28, whose Sandbox has a Card Forge and a Chassis builder of its own.

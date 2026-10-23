@@ -82,7 +82,7 @@ func _run() -> void:
 	var args := OS.get_cmdline_user_args()
 	var out := args[0] if args.size() > 0 else "user://shot.png"
 	var o := {"step": "battle", "floor": "", "heroes": "", "troops": "", "taps": "", "seed": "7", "place": "", "stage": "", "sure": "",
-		"screen": "battle", "mode": "quick", "tab": "heroes", "card": "", "deckonly": "", "empty": "", "timer": "", "districts": "", "carry": "", "map": "", "ws": "", "stock": "", "pick": "0", "dock": "", "motion": "", "after": "40", "options": "", "scroll": "", "view": "", "atmos": "", "freeze": "", "turns": "", "gen": "", "genchunks": "", "whole": "", "kind": "", "forge": "", "pvp": "", "chassis": ""}
+		"screen": "battle", "mode": "quick", "tab": "heroes", "card": "", "deckonly": "", "empty": "", "timer": "", "districts": "", "carry": "", "map": "", "ws": "", "stock": "", "pick": "0", "dock": "", "motion": "", "after": "40", "options": "", "scroll": "", "view": "", "atmos": "", "freeze": "", "turns": "", "gen": "", "genchunks": "", "whole": "", "kind": "", "forge": "", "pvp": "", "chassis": "", "poi": "", "poitab": "", "poitool": ""}
 	for a in args.slice(1):
 		var kv: PackedStringArray = a.split("=", true, 1)
 		if kv.size() == 2:
@@ -219,6 +219,30 @@ func _run() -> void:
 			var hit = scene.roster.card_named(o["forge"])
 			if hit != null:
 				fs.edit(hit)
+		# (0.29) poi=<a floor's name> opens the POI Sandbox on it (poi=list: its list), poitab=<tab>, poitool=<tool>
+		if o.get("poi", "") != "":
+			scene.open_sandbox_tool("poi")
+			var ps: PoiScreen = scene.poi_screen
+			var hf = scene.data.content("floors")["floors"].filter(func(f): return f["name"] == o["poi"])
+			if not hf.is_empty():
+				ps.edit(hf[0])
+			if o["poitab"] != "":
+				ps.act(["tab", o["poitab"]])
+			if o["poitool"] != "":
+				ps.act(["tool", o["poitool"]])
+			for i in 6:
+				await process_frame
+			if ps.mode == "edit":
+				ps.canvas.fit()
+				if o["poitool"] == "wall":
+					ps.mirror = {"pivot": Vector2i.ZERO, "axis": 1}
+					ps.refresh()
+			for i in 4:
+				await process_frame
+			if o["scroll"] != "":
+				(ps.form if ps.mode == "edit" else ps.list).scroll_by(float(o["scroll"]))
+			await _shoot(out)
+			return
 		# (0.28) chassis=<id> opens the Chassis builder on it (chassis=list: its list)
 		if o.get("chassis", "") != "":
 			scene.open_sandbox_tool("chassis")

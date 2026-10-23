@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.28 adds
-the Sandbox's Chassis builder; v0.27 brought pass and play.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.29 adds
+the Sandbox's POI Sandbox; v0.28 brought its Chassis builder.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,31 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.29 (Companion 14.16): **the POI Sandbox**, the Sandbox's third
+tool (its POI Sandbox tab), the Companion's floor editor made over for a
+thumb:
+
+- **Every floor**, the export's and your own, each with its picture, grouped
+  as floors to fight on, battlefield chunks and World Map levels.
+- **Draw on its map with a finger**: Place, Paint (six colours, or plain),
+  Wall (on the edge between two tiles, black or a colour), Symbol, Erase,
+  Spawn level (an Enemy Spawn tile's Skull Level) and the Ruler; Free, in a
+  Line or a Hex (filled or outlined), and mirrored through a pivot at any of
+  three angles. Two fingers pinch and pan; Move pans with one; Undo and
+  Redo; a second finger mid-stroke takes the stroke back.
+- **File it**: name, District, POI type, Skull Level, size (Auto, or the
+  Heroes it admits), notes, rewards, what each colour and wall means, and a
+  chunk's role, open sides and Skull range. Reset to KETER defaults.
+- **Symbols**, up to twenty, and any of them a **hazard**: damage, a status,
+  or both, as the fight reads it.
+- **Checks**: what it lacks (spawns, a name, tiles no one can reach).
+- **Save** keeps it over the export: the floor list, Pass and play, the
+  World Map's POIs and its chunks have it at once (a floor of the export's
+  keeps the name it came with for the World Map, even renamed). Delete,
+  Reset, Copy and New floor work as in the Card Forge.
+- **Export** now writes every floor too, and the Companion's Import (14.16)
+  puts them among its POI Sandbox's levels.
 
 New in 0.28 (Companion 14.15): **the Chassis builder**, the Sandbox's
 second tool (its Chassis tab), the Companion's Chassis editor made over for
@@ -535,7 +560,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-28_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-29_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -546,7 +571,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-28_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-29_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the

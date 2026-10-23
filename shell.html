@@ -11491,6 +11491,14 @@ function sandboxExtras(j){
       j.chassis.forEach(function(c){ if(c && c.id && c.name){ var o=JSON.parse(JSON.stringify(c)); Object.keys(o).forEach(function(k){ if(k.charAt(0)==="_") delete o[k]; }); window.KETER_CHASSIS.put(window.KETER_CHASSIS.upgrade(o)); n++; } });
     }
   }catch(e){}
+  /* (v14.16) and its floors, into the Sandbox's levels by name (one of the same name is replaced) */
+  try{
+    if(j && Array.isArray(j.floors) && j.floors.length){
+      var all=JSON.parse(localStorage.getItem("keter-hexmap-levels")||"{}")||{}, m=0;
+      j.floors.forEach(function(f){ if(f && f.name && Array.isArray(f.hexes)){ var o=JSON.parse(JSON.stringify(f)); Object.keys(o).forEach(function(k){ if(k.charAt(0)==="_") delete o[k]; }); all[o.name]=o; m++; } });
+      if(m){ localStorage.setItem("keter-hexmap-levels",JSON.stringify(all)); n+=m; }
+    }
+  }catch(e){}
   return n;
 }
 try{ window.sandboxExtras=sandboxExtras; }catch(e){}

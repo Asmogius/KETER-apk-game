@@ -9,6 +9,7 @@ extends RefCounted
 const RAINBOW: Array[Color] = [Color("#c8624d"), Color("#e88a36"), Color("#f8c53a"), Color("#42a459"), Color("#4572e3"), Color("#9052bc")]
 
 var name := ""
+var key := ""             # (0.29) what the World Map knows it by: the name it came with
 var district := ""
 var tiles := {}           # Vector2i -> Dictionary (the tile's own fields)
 var walls := []           # [Vector2i, Vector2i, int colour id]
@@ -23,6 +24,7 @@ static func from_dict(d: Dictionary) -> FloorData:
 	var f := FloorData.new()
 	f.raw = d
 	f.name = str(d.get("name", "Untitled floor"))
+	f.key = str(d["_key"]) if d.has("_key") else f.name
 	f.district = str(d.get("district", ""))
 	for pair in d.get("hexes", []):
 		if pair is Array and pair.size() >= 2:
@@ -62,6 +64,7 @@ func copy() -> FloorData:
 	var f := FloorData.new()
 	f.raw = raw
 	f.name = name
+	f.key = key
 	f.district = district
 	f.tiles = tiles.duplicate()
 	f.walls = walls.duplicate()
