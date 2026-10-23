@@ -11491,6 +11491,14 @@ function sandboxExtras(j){
       j.chassis.forEach(function(c){ if(c && c.id && c.name){ var o=JSON.parse(JSON.stringify(c)); Object.keys(o).forEach(function(k){ if(k.charAt(0)==="_") delete o[k]; }); window.KETER_CHASSIS.put(window.KETER_CHASSIS.upgrade(o)); n++; } });
     }
   }catch(e){}
+  /* (v14.17) and its pictures, into the Pixel Studio's library by id (the cards that wear them say so) */
+  try{
+    if(j && j.pictures && typeof j.pictures==="object" && window.KETER_PX){
+      var list=Object.keys(j.pictures).filter(function(id){ var q=j.pictures[id]; return q && q.w && q.h && Array.isArray(q.frames); })
+        .map(function(id){ var q=JSON.parse(JSON.stringify(j.pictures[id])); return [id, q]; });
+      if(list.length && window.KETER_PX.putMany(list)) n+=list.length;
+    }
+  }catch(e){}
   /* (v14.16) and its floors, into the Sandbox's levels by name (one of the same name is replaced) */
   try{
     if(j && Array.isArray(j.floors) && j.floors.length){

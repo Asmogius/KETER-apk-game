@@ -388,8 +388,14 @@ static func chip_of(key: String, card) -> Dictionary:
 ## A card's token as {texture, hexagon}: the token drawn on the card, or the
 ## one its design wears; {} when it has none (the board then shows letters).
 func token_for(card: Dictionary) -> Dictionary:
-	var f := data.card_file(str(card.get("_artName", card.get("name", ""))), "token")
-	if f.is_empty() and Rules.truthy(card.get("pixelToken")):
+	# (0.30) one drawn in the Sandbox's Pixel Studio first ("": the export's taken away)
+	var lk = Sandbox.link_of(Sandbox.key_of(card), "token") if not Sandbox.data.get("links", {}).is_empty() else null
+	if lk is String and lk != "":
+		var mt := Sandbox.picture_texture(lk)
+		if mt != null:
+			return {"texture": mt, "hexagon": false, "file": ""}
+	var f := {} if lk is String else data.card_file(str(card.get("_artName", card.get("name", ""))), "token")
+	if f.is_empty() and lk == null and Rules.truthy(card.get("pixelToken")):
 		f = data.picture_file(card["pixelToken"])
 	if not f.is_empty():
 		var l := _look(f)
@@ -409,8 +415,13 @@ func token_for(card: Dictionary) -> Dictionary:
 ## is not a Unit); failing that its token; null when it has none (a tile then
 ## shows letters).
 func art_for(card: Dictionary) -> Texture2D:
-	var f := data.card_file(str(card.get("_artName", card.get("name", ""))), "art")
-	if f.is_empty() and Rules.truthy(card.get("pixelArt")):
+	var lk = Sandbox.link_of(Sandbox.key_of(card), "art") if not Sandbox.data.get("links", {}).is_empty() else null
+	if lk is String and lk != "":
+		var mt := Sandbox.picture_texture(lk)
+		if mt != null:
+			return mt
+	var f := {} if lk is String else data.card_file(str(card.get("_artName", card.get("name", ""))), "art")
+	if f.is_empty() and lk == null and Rules.truthy(card.get("pixelArt")):
 		f = data.picture_file(card["pixelArt"])
 	if not f.is_empty():
 		var tex := data.texture(str(f.get("file", "")))

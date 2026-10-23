@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.29 adds
-the Sandbox's POI Sandbox; v0.28 brought its Chassis builder.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.30 adds
+the Sandbox's Pixel Studio, its fourth tool; v0.29 brought its POI Sandbox.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,25 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.30 (Companion 14.17): **the Pixel Studio**, the Sandbox's fourth
+tool (its Pixel Studio tab), the Companion's studio made over for a thumb:
+
+- **Every card's art, and every Unit's token**, as it is drawn now, to find
+  by name; and **Your pictures**: the ones you have drawn, and blank canvases.
+- **Draw with a finger** in the KETER palette: Pencil, Eraser, Fill, Pick,
+  Line, Rectangle and Ellipse (outlined or filled), a brush of 1 to 6 pixels,
+  square or round, and mirroring left and right, top and bottom, or both.
+  Two fingers pinch and pan; Undo and Redo; a second finger mid-stroke takes
+  the stroke back.
+- **Save**, and the card wears the picture at once, everywhere the game shows
+  it. **Reset** puts the export's picture back; **Delete** takes the picture
+  away. A blank canvas (16 by 16 up to 256 by 144) is a picture of yours no
+  card wears.
+- Pictures are kept in the Companion's own shape, so **Export** carries them
+  (and which card wears which), and the Companion's Import (14.17) puts them
+  in its Pixel Studio's library. A picture drawn in hex pixels stays the
+  Companion's to draw.
 
 New in 0.29 (Companion 14.16): **the POI Sandbox**, the Sandbox's third
 tool (its POI Sandbox tab), the Companion's floor editor made over for a
@@ -560,7 +579,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-29_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-30_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -571,7 +590,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-29_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-30_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the

@@ -10,7 +10,7 @@
 ## Export writes everything as a Compendium file for the Companion.
 ##
 ## Its other tabs: the Chassis builder (0.28, chassis_screen.gd) and the POI
-## Sandbox (0.29, poi_screen.gd); the Pixel Studio takes its tab in a later version.
+## Sandbox (0.29, poi_screen.gd) and the Pixel Studio (0.30, studio_screen.gd).
 class_name ForgeScreen
 extends Control
 
@@ -133,15 +133,10 @@ func open(r: Roster) -> void:
 func open_tool(k: String) -> void:
 	for t in tools:
 		tools[t].set_pressed_no_signal(t == k)
-	if (k == "chassis" or k == "poi") and dialog == null:
+	if (k == "chassis" or k == "poi" or k == "studio") and dialog == null:
 		tools["forge"].set_pressed_no_signal(true)
 		tools[k].set_pressed_no_signal(false)
 		tool_requested.emit(k)
-		return
-	if k != "forge":
-		tools["forge"].set_pressed_no_signal(true)
-		tools[k].set_pressed_no_signal(false)
-		say("The %s comes to the Sandbox in a later version. Until then it is in the Companion." % "Pixel Studio")
 		return
 	show_list()
 

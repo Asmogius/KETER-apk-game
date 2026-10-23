@@ -24,6 +24,16 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	if OS.get_cmdline_user_args().has("thirty"):
+		# (only 0.30's, while working on them)
+		Kit.fresh()
+		_thirty()
+		await _thirty_scene()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("twentynine"):
 		# (only 0.29's, while working on them)
 		Kit.fresh()
@@ -248,6 +258,7 @@ func _run() -> void:
 	_twentysix_pvp()
 	_twentyeight()
 	_twentynine()
+	_thirty()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -276,6 +287,7 @@ func _run() -> void:
 	await _twentysix_pvp_scene()
 	await _twentyeight_scene()
 	await _twentynine_scene()
+	await _thirty_scene()
 	Kit.fresh()
 	print("\nGAME PASS %d  FAIL %d" % [ok, bad])
 	Rules.hooks = {}              # the rules let go of the last battle
@@ -8911,6 +8923,182 @@ func _twentynine_scene() -> void:
 	ps.back_btn.pressed.emit()
 	await _frames(1)
 	ck("0.29 screen: Home goes home", scene.home.visible and not ps.visible)
+	scene.queue_free()
+	await _frames(2)
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- 0.30: the Pixel Studio
+func _thirty() -> void:
+	Kit.fresh()
+	var px := PackedByteArray([0, 0, 0, 5, 5, 9, 1, 1, 1, 1])
+	var e := PixelModel.encode(px)
+	ck("0.30 model: runs of (count, colour) in base64, as the Companion stores them", e == Marshalls.raw_to_base64(PackedByteArray([3, 0, 2, 5, 1, 9, 4, 1])) and PixelModel.decode(e, 10) == px)
+	var big := PackedByteArray()
+	big.resize(600)
+	ck("0.30 model: a run longer than 255 splits, and decodes whole", PixelModel.decode(PixelModel.encode(big), 600) == big and Marshalls.base64_to_raw(PixelModel.encode(big)).size() == 6)
+	var pic := PixelModel.make(4, 2, PackedByteArray([0, 1, 2, 200, 0, 0, 9, 9]), {200: Color("#123456")}, "Test")
+	ck("0.30 model: a picture in the Companion's shape: one frame, one layer, its flat copy, and its own colours kept", pic["frames"][0]["layers"].size() == 1 and pic["flat"] == pic["frames"][0]["layers"][0]["px"] and pic["custom"] == {"200": "#123456"} and PixelModel.pixels(pic)[3] == 200)
+	var img := PixelModel.image_of(pic)
+	ck("0.30 model: drawn in the palette (1 is its first colour), 0 transparent, its own colours as kept", img.get_pixel(1, 0).to_html(false) == "050403" and img.get_pixel(0, 0).a == 0.0 and img.get_pixel(3, 0).to_html(false) == "123456")
+	var back := PixelModel.from_image(img)
+	ck("0.30 model: and an image read back is the same pixels (a colour not in the palette, one of its own)", back["w"] == 4 and back["h"] == 2 and back["px"][1] == 1 and back["px"][2] == 2 and back["px"][0] == 0 and back["px"][3] >= PixelModel.CUSTOM_FROM and back["custom"][back["px"][3]].to_html(false) == "123456")
+	var layered := pic.duplicate(true)
+	layered["frames"][0]["layers"].append({"name": "Top", "visible": true, "px": PixelModel.encode(PackedByteArray([7, 0, 0, 0, 0, 0, 0, 0]))})
+	layered["frames"][0]["layers"].append({"name": "Hidden", "visible": false, "px": PixelModel.encode(PackedByteArray([0, 8, 8, 8, 8, 8, 8, 8]))})
+	ck("0.30 model: a picture of several layers opens flattened, the hidden ones left out", PixelModel.pixels(layered)[0] == 7 and PixelModel.pixels(layered)[1] == 1)
+	ck("0.30 shapes: a line, a rectangle outlined and filled, an ellipse, mirroring", PixelModel.line(Vector2i(0, 0), Vector2i(5, 2)).size() == 6 and PixelModel.rect(Vector2i(0, 0), Vector2i(3, 2), false).size() == 10 and PixelModel.rect(Vector2i(0, 0), Vector2i(3, 2), true).size() == 12
+		and PixelModel.ellipse(Vector2i(0, 0), Vector2i(6, 6), true).has(Vector2i(3, 3)) and not PixelModel.ellipse(Vector2i(0, 0), Vector2i(6, 6), true).has(Vector2i(0, 0)) and PixelModel.mirrored(Vector2i(1, 2), 8, 8, "xy").size() == 4 and PixelModel.mirrored(Vector2i(1, 2), 8, 8, "xy").has(Vector2i(6, 5)))
+	ck("0.30 brush: 1, 2 and 3 pixels square, 4 round leaves the corners", PixelModel.brush(5, 5, 1).size() == 1 and PixelModel.brush(5, 5, 2).size() == 4 and PixelModel.brush(5, 5, 3).size() == 9 and PixelModel.brush(5, 5, 4, true).size() < 16)
+	var fp := PackedByteArray()
+	fp.resize(16)
+	fp[5] = 3
+	fp[6] = 3
+	ck("0.30 fill: the area of one colour, and no further", PixelModel.fill(fp, 4, 4, 0, 0, 2) == 14 and fp[5] == 3 and fp[15] == 2 and PixelModel.fill(fp, 4, 4, 0, 0, 2) == 0)
+	# the Sandbox's pictures, and the cards that wear them
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var r := Roster.new(x)
+	var fd = r.card_named("Field Dressing")
+	var k := Sandbox.key_of(fd)
+	var before := r.art_for(fd)
+	var id := Sandbox.put_picture(PixelModel.make(4, 2, PackedByteArray([1, 1, 1, 1, 2, 2, 2, 2]), {}))
+	Sandbox.link(k, "art", id)
+	var now := r.art_for(fd)
+	ck("0.30 sandbox: a picture of yours, linked to a card, is the art it wears", before != null and now != null and now != before and now.get_width() == 4 and Sandbox.wearer(id) == [k, "art"])
+	Sandbox.link(k, "art", "")
+	ck("0.30 sandbox: taken away, the card wears the game's own stand-in, not the export's", r.art_for(fd) != before)
+	Sandbox.unlink(k, "art")
+	ck("0.30 sandbox: unlinked, the export's picture is back", r.art_for(fd) == before)
+	var gn = r.card_named("Test Gunner")
+	var gk := Sandbox.key_of(gn)
+	var tid := Sandbox.put_picture(PixelModel.blank(48, 48))
+	Sandbox.link(gk, "token", tid)
+	ck("0.30 sandbox: a token of yours is the one the board draws", r.token_for(gn).get("texture") != null and r.token_for(gn)["texture"].get_width() == 48)
+	Sandbox.link(k, "art", id)
+	var comp := Sandbox.compendium(x.cards())
+	var cfd = comp["cards"].filter(func(c): return c["name"] == "Field Dressing")
+	ck("0.30 export: the Companion's file carries your pictures, and the cards wearing them say so", comp["pictures"].has(id) and comp["pictures"].has(tid) and cfd.size() == 1 and cfd[0]["pixelArt"] == id)
+	Sandbox.save()
+	Sandbox.data = Sandbox.blank()
+	Sandbox.load_saved()
+	ck("0.30 sandbox: saved and read back, pixels and all", Sandbox.picture(id).get("flat") == PixelModel.encode(PackedByteArray([1, 1, 1, 1, 2, 2, 2, 2])) and Sandbox.link_of(k, "art") == id)
+	Sandbox.delete_picture(id)
+	ck("0.30 sandbox: a picture deleted is gone, and the card goes back to the export's", Sandbox.picture(id).is_empty() and Sandbox.link_of(k, "art") == null and r.art_for(fd) == before)
+	Kit.fresh()
+
+
+func _thirty_scene() -> void:
+	Kit.fresh()
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	await _frames(2)
+	scene.open_sandbox()
+	await _frames(1)
+	scene.forge_screen.tools["studio"].pressed.emit()
+	await _frames(2)
+	var ss: StudioScreen = scene.studio_screen
+	ck("0.30 screen: the Pixel Studio tab opens the Pixel Studio: the cards, each with its picture", ss.visible and not scene.forge_screen.visible and ss.mode == "list" and ss._shown.size() > 10 and ss.tools["studio"].button_pressed)
+	ss.tools["poi"].pressed.emit()
+	await _frames(1)
+	ck("0.30 screen: its tabs go to the other tools", scene.poi_screen.visible and not ss.visible)
+	scene.poi_screen.tools["studio"].pressed.emit()
+	await _frames(1)
+	ss.search.text = "field dress"
+	ss.search.text_changed.emit("field dress")
+	await _frames(1)
+	var fi := -1
+	for i in ss._shown.size():
+		if ss._shown[i] is Dictionary and ss._shown[i].has("card") and ss._shown[i]["card"]["name"] == "Field Dressing":
+			fi = i
+	ck("0.30 list: Find a card narrows it", fi >= 0 and ss._shown.size() <= 3)
+	ss._on_list_row(fi, Vector2.ZERO)
+	await _frames(2)
+	ck("0.30 card art: a tap opens the export's picture on the canvas, its own size", ss.mode == "edit" and ss.w == 128 and ss.h == 90 and ss.canvas.visible and ss.canvas.zoom >= 2 and ss.px.size() == 128 * 90)
+	var offers := ss.offers()
+	ck("0.30 studio: it offers every tool, the brush, mirroring and the palette", ["pencil", "eraser", "fill", "pick", "line", "rect", "ellipse"].all(func(t): return offers.has(["tool", t])) and offers.has(["size", 3]) and offers.has(["mirror", "xy"]) and offers.has(["col", 1]) and offers.has(["col", 195]) and offers.has(["col", 0]))
+	ss.act(["col", 141])
+	ss.act(["tool", "pencil"])
+	ss.drag_px([Vector2i(2, 2), Vector2i(10, 2)])
+	ck("0.30 draw: a finger dragged draws in the colour picked", ss.px[2 * 128 + 2] == 141 and ss.px[2 * 128 + 10] == 141 and ss.px[2 * 128 + 6] == 141 and ss.dirty)
+	ss.do_undo()
+	ck("0.30 draw: Undo takes the stroke back, Redo does it again", ss.px[2 * 128 + 6] != 141)
+	ss.do_redo()
+	ss.act(["mirror", "x"])
+	ss.act(["tool", "rect"])
+	ss.act(["filled", true])
+	ss.drag_px([Vector2i(20, 20), Vector2i(23, 23)])
+	ck("0.30 draw: a filled rectangle, mirrored left and right", ss.px[21 * 128 + 21] == 141 and ss.px[21 * 128 + (127 - 21)] == 141)
+	ss.act(["mirror", ""])
+	ss.act(["tool", "pick"])
+	ss.tap_px(Vector2i(6, 2))
+	ck("0.30 pick: a tap takes the colour, and goes back to the pencil", ss.colour == 141 and ss.tool == "pencil")
+	ss.act(["col", 77])
+	ss.act(["tool", "fill"])
+	var was: int = ss.px[60 * 128 + 60]
+	var same := 0
+	for v in ss.px:
+		if v == was:
+			same += 1
+	ss.tap_px(Vector2i(60, 60))
+	var now := 0
+	for v in ss.px:
+		if v == 77:
+			now += 1
+	ck("0.30 fill: a tap fills the area of one colour (and no more)", was != 77 and ss.px[60 * 128 + 60] == 77 and now >= 1 and now <= same + 1)
+	ss.act(["tool", "pencil"])
+	ss.act(["col", 141])
+	ss._on_stroke("begin", ss.canvas.at(Vector2i(100, 80)))
+	ss._on_stroke("cancel", ss.canvas.at(Vector2i(100, 80)))
+	ck("0.30 draw: a second finger coming down cancels the stroke", ss.px[80 * 128 + 100] != 141)
+	ss.save_picture()
+	await _frames(1)
+	var fd = scene.roster.card_named("Field Dressing")
+	var tex: Texture2D = scene.roster.art_for(fd)
+	ck("0.30 card art: Save keeps it, and the card wears it at once", ss.pid != "" and Sandbox.link_of(Sandbox.key_of(fd), "art") == ss.pid and tex != null and tex.get_image().get_pixel(2, 2).to_html(false) == Art.PALETTE[140] and not ss.dirty and ss.reset_btn.visible)
+	ss.ask_reset()
+	if ss.dialog is Dialog:
+		ss.dialog.chosen.emit(1)
+	await _frames(1)
+	ck("0.30 card art: Reset puts the export's back, and yours is gone", Sandbox.link_of(Sandbox.key_of(fd), "art") == null and Sandbox.pictures().is_empty() and ss.mode == "edit" and ss.pid == "")
+	# a hex picture is the Companion's
+	ss.show_list()
+	ss.edit_card(scene.roster.card_named("Test Sapper"), "art")
+	ck("0.30 hex pixels: a picture drawn in hex pixels doesn't open here, and says why", ss.mode == "list" and "hex pixels" in ss.note.text)
+	# a token, drawn new
+	ss.edit_card(scene.roster.card_named("Test Hacker"), "token")
+	ck("0.30 token: a token opens at its size", ss.mode == "edit" and ss.w == 16 and ss.target["what"] == "token")
+	ss.ask_delete()
+	if ss.dialog is Dialog:
+		ss.dialog.chosen.emit(1)
+	await _frames(1)
+	var hk := Sandbox.key_of(scene.roster.card_named("Test Hacker"))
+	ck("0.30 token: Delete takes the export's off the card until Reset", Sandbox.link_of(hk, "token") == "" and ss.mode == "list")
+	Sandbox.unlink(hk, "token")
+	# a blank canvas
+	ss.ask_new()
+	await _frames(1)
+	ck("0.30 canvas: Blank canvas offers its sizes, at the head of Your pictures", ss.view == "mine" and ss._shown[0].has("sizes"))
+	ss.new_canvas(32, 32)
+	ss.act(["tool", "line"])
+	ss.drag_px([Vector2i(0, 0), Vector2i(31, 31)])
+	ss.save_picture()
+	await _frames(1)
+	var cid := ss.pid
+	ck("0.30 canvas: drawn and saved, it is a picture of yours no card wears", Sandbox.picture(cid).get("w") == 32 and Sandbox.wearer(cid).is_empty())
+	ss.show_list()
+	ck("0.30 canvas: and is in Your pictures", ss._shown.any(func(s): return s is Dictionary and s.get("id") == cid))
+	ss.edit_picture(cid)
+	ss.ask_delete()
+	if ss.dialog is Dialog:
+		ss.dialog.chosen.emit(1)
+	await _frames(1)
+	ck("0.30 canvas: Delete takes it for good", Sandbox.picture(cid).is_empty() and ss.mode == "list")
+	ss.back_btn.pressed.emit()
+	await _frames(1)
+	ck("0.30 screen: Home goes home", scene.home.visible and not ss.visible)
 	scene.queue_free()
 	await _frames(2)
 	Kit.fresh()

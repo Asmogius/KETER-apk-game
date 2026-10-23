@@ -6,6 +6,12 @@ the Change Log.
 
 <!-- NEWEST ENTRY GOES BELOW THIS LINE -->
 
+## v14.17 — Pictures from the game's Sandbox
+
+Alongside game 0.30, whose Sandbox now has a Pixel Studio of its own.
+
+- **Import takes the pictures in a file from the game's Sandbox too.** They join your Pixel Studio's library, and a card from that file wearing one wears it here.
+
 ## v14.16 — Floors from the game's Sandbox
 
 Alongside game 0.29, whose Sandbox now has a POI Sandbox of its own.

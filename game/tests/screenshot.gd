@@ -82,7 +82,7 @@ func _run() -> void:
 	var args := OS.get_cmdline_user_args()
 	var out := args[0] if args.size() > 0 else "user://shot.png"
 	var o := {"step": "battle", "floor": "", "heroes": "", "troops": "", "taps": "", "seed": "7", "place": "", "stage": "", "sure": "",
-		"screen": "battle", "mode": "quick", "tab": "heroes", "card": "", "deckonly": "", "empty": "", "timer": "", "districts": "", "carry": "", "map": "", "ws": "", "stock": "", "pick": "0", "dock": "", "motion": "", "after": "40", "options": "", "scroll": "", "view": "", "atmos": "", "freeze": "", "turns": "", "gen": "", "genchunks": "", "whole": "", "kind": "", "forge": "", "pvp": "", "chassis": "", "poi": "", "poitab": "", "poitool": ""}
+		"screen": "battle", "mode": "quick", "tab": "heroes", "card": "", "deckonly": "", "empty": "", "timer": "", "districts": "", "carry": "", "map": "", "ws": "", "stock": "", "pick": "0", "dock": "", "motion": "", "after": "40", "options": "", "scroll": "", "view": "", "atmos": "", "freeze": "", "turns": "", "gen": "", "genchunks": "", "whole": "", "kind": "", "forge": "", "pvp": "", "chassis": "", "poi": "", "poitab": "", "poitool": "", "studio": "", "studioview": ""}
 	for a in args.slice(1):
 		var kv: PackedStringArray = a.split("=", true, 1)
 		if kv.size() == 2:
@@ -219,6 +219,29 @@ func _run() -> void:
 			var hit = scene.roster.card_named(o["forge"])
 			if hit != null:
 				fs.edit(hit)
+		# (0.30) studio=list, or studio=<a card's name>|art or |token; studioview=art/token/mine
+		if o.get("studio", "") != "":
+			scene.open_sandbox_tool("studio")
+			var ss: StudioScreen = scene.studio_screen
+			if o["studioview"] != "":
+				ss.view = o["studioview"]
+				ss.show_list()
+			if o["studio"] != "list":
+				var pr: PackedStringArray = o["studio"].split("|")
+				var sc = scene.roster.card_named(pr[0])
+				if sc != null:
+					ss.edit_card(sc, pr[1] if pr.size() > 1 else "art")
+					ss.act(["col", 141])
+					ss.act(["tool", "pencil"])
+					ss.act(["mirror", "x"])
+			for i in 6:
+				await process_frame
+			if ss.mode == "edit":
+				ss.canvas.fit()
+			for i in 4:
+				await process_frame
+			await _shoot(out)
+			return
 		# (0.29) poi=<a floor's name> opens the POI Sandbox on it (poi=list: its list), poitab=<tab>, poitool=<tool>
 		if o.get("poi", "") != "":
 			scene.open_sandbox_tool("poi")

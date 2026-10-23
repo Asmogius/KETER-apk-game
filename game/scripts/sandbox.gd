@@ -18,6 +18,9 @@
 ## lays them over the export's, so the Workshop, the drops and the Exchange
 ## have them.
 ##
+## (0.30) Pictures too, under "pictures", and which card wears which, under
+## "links": roster.gd shows a card in yours.
+##
 ## (0.29) Floors too, under "floors", by the name they came with (one made here:
 ## "fl_sb<...>"), in the same shapes; content("floors") lays them over the
 ## export's, so the floor list, the World Map and the chunks have them.
@@ -34,7 +37,7 @@ static var error := ""
 
 
 static func blank() -> Dictionary:
-	return {"v": 2, "cards": {}, "chassis": {}, "floors": {}, "made": 0}
+	return {"v": 2, "cards": {}, "chassis": {}, "floors": {}, "pictures": {}, "links": {}, "made": 0}
 
 
 static func load_saved() -> void:
@@ -46,7 +49,7 @@ static func load_saved() -> void:
 	if d is Dictionary and d.get("cards") is Dictionary:
 		data = Rules.ints(d)
 		data["made"] = int(d.get("made", 0))
-		for k in ["chassis", "floors"]:
+		for k in ["chassis", "floors", "pictures", "links"]:
 			if not (data.get(k) is Dictionary):
 				data[k] = {}
 	else:
@@ -179,8 +182,19 @@ static func counts() -> Dictionary:
 ## import installs in its Chassis library.
 static func compendium(all_cards: Array, version := 0, all_chassis: Array = [], all_floors: Array = []) -> Dictionary:
 	return {"schema": SCHEMA, "version": str(version), "made": "KETER, the game's Sandbox", "chassis": all_chassis.map(func(c): return stripped(c)),
-		"floors": all_floors.map(func(f): return stripped(f)),
-		"cards": all_cards.filter(func(c): return c is Dictionary and str(c.get("_src", "")) != "workshop" and str(c.get("_src", "")) != "design" and str(c.get("_src", "")) != "prebuilt").map(func(c): return stripped(c))}
+		"floors": all_floors.map(func(f): return stripped(f)), "pictures": data.get("pictures", {}).duplicate(true),
+		"cards": all_cards.filter(func(c): return c is Dictionary and str(c.get("_src", "")) != "workshop" and str(c.get("_src", "")) != "design" and str(c.get("_src", "")) != "prebuilt").map(func(c): return _wearing(c))}
+
+
+## (0.30) A card as it is kept, wearing the pictures of yours it wears.
+static func _wearing(c: Dictionary) -> Dictionary:
+	var o := stripped(c)
+	var k := key_of(c)
+	for what in ["art", "token"]:
+		var lk = link_of(k, what)
+		if lk is String and lk != "":
+			o["pixelArt" if what == "art" else "pixelToken"] = lk
+	return o
 
 
 ## Writes it where the Companion can pick it up: the phone's Downloads when the
@@ -358,3 +372,88 @@ static func export_game(r: Roster, where := "") -> String:
 	var chs = r.data.content("chassis").get("chassis", [])
 	var fls = r.data.content("floors").get("floors", [])
 	return export_to(r.cards, where, chs if chs is Array else [], fls if fls is Array else [])
+
+
+# ---------------------------------------------------------------- (0.30) pictures
+## Your pictures, by id ("px_sb<...>"), in the Companion's own shape
+## (pixel_model.gd); and which card wears which, by the card's key and
+## "art" or "token": a picture's id, or "" for none (the export's taken away).
+static var _tex := {}          # id -> [saved, Texture2D]
+
+
+static func picture(id: String) -> Dictionary:
+	var p = data.get("pictures", {}).get(id)
+	return p if p is Dictionary else {}
+
+
+static func pictures() -> Dictionary:
+	return data.get("pictures", {})
+
+
+## Keeps a picture: under its id, or a new one (id ""). Returns its id.
+static func put_picture(pic: Dictionary, id := "") -> String:
+	if id == "":
+		data["made"] = int(data.get("made", 0)) + 1
+		id = "px_sb%d_%d" % [int(Time.get_unix_time_from_system()), int(data["made"])]
+	var p := pic.duplicate(true)
+	p["id"] = id
+	p["saved"] = Time.get_datetime_string_from_system(true) + "Z"
+	data["pictures"][id] = p
+	_tex.erase(id)
+	return id
+
+
+## Deletes one of your pictures, and every card that wore it goes back to what it had.
+static func delete_picture(id: String) -> void:
+	data["pictures"].erase(id)
+	_tex.erase(id)
+	for k in data["links"].keys():
+		var l: Dictionary = data["links"][k]
+		for what in l.keys():
+			if str(l[what]) == id:
+				l.erase(what)
+		if l.is_empty():
+			data["links"].erase(k)
+
+
+## What a card wears, by its key: a picture's id, "" for nothing, or null when
+## the Sandbox has no say (the export's picture stands).
+static func link_of(card_key: String, what: String) -> Variant:
+	var l = data.get("links", {}).get(card_key)
+	return l.get(what) if l is Dictionary else null
+
+
+static func link(card_key: String, what: String, id: String) -> void:
+	if not (data["links"].get(card_key) is Dictionary):
+		data["links"][card_key] = {}
+	data["links"][card_key][what] = id
+
+
+static func unlink(card_key: String, what: String) -> void:
+	var l = data["links"].get(card_key)
+	if l is Dictionary:
+		l.erase(what)
+		if l.is_empty():
+			data["links"].erase(card_key)
+
+
+## The card a picture of yours is worn by: [key, what], or [].
+static func wearer(id: String) -> Array:
+	for k in data.get("links", {}):
+		for what in data["links"][k]:
+			if str(data["links"][k][what]) == id:
+				return [str(k), str(what)]
+	return []
+
+
+## One of your pictures as a texture (made again only when it changes), or null.
+static func picture_texture(id: String) -> Texture2D:
+	var p := picture(id)
+	if p.is_empty():
+		return null
+	var c = _tex.get(id)
+	if c is Array and c[0] == p.get("saved"):
+		return c[1]
+	var t := ImageTexture.create_from_image(PixelModel.image_of(p))
+	_tex[id] = [p.get("saved"), t]
+	return t

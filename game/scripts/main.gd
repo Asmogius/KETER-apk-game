@@ -110,6 +110,7 @@ var forge_screen: ForgeScreen   # (0.26) the Sandbox: the Card Forge
 var handoff: HandoffScreen      # (0.26) pass and play: the screen covered between turns
 var chassis_screen: ChassisScreen   # (0.28) the Sandbox: the Chassis builder
 var poi_screen: PoiScreen           # (0.29) the Sandbox: the POI Sandbox
+var studio_screen: StudioScreen     # (0.30) the Sandbox: the Pixel Studio
 var _teams_for_setup := false   # (0.26) Strike Teams was opened from a match's setup: back there after
 var map_view: MapView
 var map_screen: MapScreen
@@ -410,13 +411,16 @@ func open_sandbox() -> void:
 
 ## (0.28) One of the Sandbox's tools: the Card Forge, the Chassis builder, (0.29) the POI Sandbox.
 func open_sandbox_tool(k: String) -> void:
-	forge_screen.visible = k != "chassis" and k != "poi"
+	forge_screen.visible = not ["chassis", "poi", "studio"].has(k)
 	chassis_screen.visible = k == "chassis"
 	poi_screen.visible = k == "poi"
+	studio_screen.visible = k == "studio"
 	if k == "chassis":
 		chassis_screen.open(roster)
 	elif k == "poi":
 		poi_screen.open(roster)
+	elif k == "studio":
+		studio_screen.open(roster)
 	else:
 		forge_screen.open(roster)
 
@@ -440,6 +444,8 @@ func reload_cards() -> void:
 		chassis_screen.roster = roster
 	if poi_screen != null:
 		poi_screen.roster = roster
+	if studio_screen != null:
+		studio_screen.roster = roster
 
 
 func show_home() -> void:
@@ -452,6 +458,7 @@ func show_home() -> void:
 	forge_screen.visible = false
 	chassis_screen.visible = false
 	poi_screen.visible = false
+	studio_screen.visible = false
 	home.visible = true
 	# what loading had to say (a new map, a file that couldn't be read) comes before where things stand
 	var world_line := ""
@@ -3064,6 +3071,13 @@ func _build_ui() -> void:
 	poi_screen.changed.connect(reload_cards)
 	poi_screen.tool_requested.connect(open_sandbox_tool)
 	ui.add_child(poi_screen)
+
+	studio_screen = StudioScreen.new()
+	studio_screen.visible = false
+	studio_screen.closed.connect(show_home)
+	studio_screen.changed.connect(reload_cards)
+	studio_screen.tool_requested.connect(open_sandbox_tool)
+	ui.add_child(studio_screen)
 
 	dock_screen = DockScreen.new()
 	dock_screen.visible = false

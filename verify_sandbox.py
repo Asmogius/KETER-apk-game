@@ -2,7 +2,8 @@
 Sandbox exports carries its chassis beside its cards, and importing it puts
 them in the Chassis library, replacing one of the same id, without what the
 game adds to them; a file with no chassis changes nothing there. (v14.16) Its
-floors join the POI Sandbox's saved levels by name."""
+floors join the POI Sandbox's saved levels by name. (v14.17) Its pictures join
+the Pixel Studio's library."""
 import http.server, socketserver, threading, functools, pathlib, shutil, json
 from playwright.sync_api import sync_playwright
 TMP=pathlib.Path("/tmp/serve_sandbox")
@@ -24,7 +25,7 @@ with sync_playwright() as p:
     pg.on("pageerror",lambda e:errs.append(str(e)))
     pg.goto("http://127.0.0.1:9977/"); pg.wait_for_timeout(1800)
     E=pg.evaluate
-    ck("the Companion is 14.16", E("()=>document.documentElement.innerHTML.indexOf('14.16')>=0"))
+    ck("the Companion is 14.17", E("()=>document.documentElement.innerHTML.indexOf('14.17')>=0"))
     r=E("""()=>{ var C=KETER_CHASSIS, n0=C.list().length, sk=JSON.parse(JSON.stringify(C.get('ch_skitter_frame')||{id:'ch_skitter_frame',name:'Skitter Frame'}));
       sk.powerCap=22; sk._sandbox='edited';
       var file={schema:'keter.compendium/1', cards:[], chassis:[sk, {id:'ch_sb1_1', name:'Sandbox Strider', district:'', bodyPlan:'Quadruped', subtypes:['Melee','Ranged'], powerCap:20, abilityCap:2,
@@ -46,6 +47,11 @@ with sync_playwright() as p:
     ck("one of the same name is replaced, and what the game adds is left behind", f["old"]==2 and f["clean"], f)
     sims=E("()=>typeof simSavedFloors==='function' ? simSavedFloors().map(function(x){ return x.name; }) : null")
     ck("and the Battle Simulator offers it as a floor to fight on", sims is not None and "Sandbox Hall" in sims, sims)
+    pz=E("""()=>{ var pic={v:1,w:2,h:1,name:'From the game',frames:[{layers:[{name:'Layer 1',visible:true,locked:false,opacity:100,mode:'view',px:btoa(String.fromCharCode(2,9))}]}],flat:btoa(String.fromCharCode(2,9))};
+      var got=sandboxExtras({schema:'keter.compendium/1', cards:[], pictures:{'px_sb1_9':pic, 'bad':{w:0}}});
+      var p=KETER_PX.get('px_sb1_9'), flat=p?Array.from(KETER_PX.decode(p.flat,2)):null;
+      return {got:got, name:p&&p.name, flat:flat, bad:KETER_PX.has('bad')}; }""")
+    ck("a Sandbox file's pictures join the Pixel Studio's library, pixels and all", pz["got"]==1 and pz["name"]=="From the game" and pz["flat"]==[9,9] and not pz["bad"], pz)
     ck("no page errors", not errs, errs)
     b.close()
 print(f"\nSANDBOX PASS {len(ok)}  FAIL {len(bad)}")
