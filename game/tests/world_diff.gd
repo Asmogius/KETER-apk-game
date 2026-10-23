@@ -157,7 +157,7 @@ func _snap(dep: Deployment) -> Dictionary:
 		kst.erase("made")
 	return {"dep": d,
 		"out": {"copies": named.call(s.get("copies", {})), "lost": s["lost"], "paid": s.get("paid"), "pre": named.call(s.get("pre", {})), "pack": s.get("pack")} if s is Dictionary else null,
-		"dock": {"reach": k["reach"], "restocks": k["restocks"], "stock": kst, "bounties": k["bounties"], "log": k["log"].map(func(l): return l["text"])},
+		"dock": {"reach": k["reach"], "restocks": k["restocks"], "stock": kst, "bounties": k["bounties"], "log": k["log"].map(func(l): return l["text"]), "heroes": k["heroes"]},
 		"inv": dep.dock.inv if dep.dock != null else {"cards": {}, "pre": {}},
 		"world": {"known": w.state["known"].size(), "knownHash": _keys_hash(w.state["known"]), "stood": _keys_hash(w.state["stood"]), "cleared": w.state["cleared"], "completed": w.state["completed"]},
 		"prog": {"bp": dep.progress.state["bp"], "ch": dep.progress.state["ch"], "named": dep.progress.state["named"]}, "stock": Loot.norm(dep.stock),
@@ -225,7 +225,7 @@ func _case(c: Dictionary) -> void:
 		"deployment":
 			_deployment(A, want)
 		"plan":
-			var dep := _dep(Loot.new(loot_tables, 1), A[1], A[0], A[2], null, null, [])
+			var dep := _dep(Loot.new(loot_tables, 1), A[1], A[0], A[2], A[4] if A.size() > 4 else null, null, [])
 			_check(fn, _plan(dep, _team(A[3])), want)
 		_:
 			_tally("unknown:" + fn, false, null, null)
@@ -274,7 +274,7 @@ func _dock_out(o) -> Variant:
 	if not (o is Dictionary):
 		return null
 	return {"reach": o.get("reach"), "bounties": (o.get("bounties", []) as Array).map(func(b): return {"name": b["name"], "bag": Loot.norm(b["bag"])}),
-		"insured": Loot.norm(o["insured"]) if o.get("insured") != null else null, "restocked": Rules.truthy(o.get("restocked"))}
+		"insured": Loot.norm(o["insured"]) if o.get("insured") != null else null, "restocked": Rules.truthy(o.get("restocked")), "lostHeroes": o.get("lostHeroes")}
 
 
 func _team(o: Dictionary) -> Dictionary:

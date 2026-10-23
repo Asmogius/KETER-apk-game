@@ -429,6 +429,7 @@ func open_teams() -> void:
 	teams_screen.visible = true
 	# a Strike Team that is out can't be changed until it is home
 	teams_screen.locked = func(t): return campaign != null and campaign.deploy.locked_team(t)
+	teams_screen.owns = func(n): return campaign == null or campaign.dock.owns(n)
 	teams_screen.open(roster)
 
 
@@ -2000,7 +2001,7 @@ func show_deploy_result() -> void:
 			var w := campaign.deploy.wipe()
 			campaign.save()
 			var more := campaign.end_lines(w, true)
-			_open_dialog(Dialog.new("Deployment lost", "A wipe loses everything carried: %s%s.\n\nThe Heroes recover at the dock.%s" % [campaign.loot.text(w.get("lostHaul")),
+			_open_dialog(Dialog.new("Deployment lost", "A wipe loses everything carried: %s%s.\n\nThe free Heroes recover at the dock; a recruited one is lost with the team.%s" % [campaign.loot.text(w.get("lostHaul")),
 				(", " + ", ".join(w["lostItems"].map(func(it): return campaign.progress.item_name(it, true)))) if not w.get("lostItems", []).is_empty() else "",
 				("\n\n" + "\n".join(more)) if not more.is_empty() else ""], ["Back to the map"], Color("#ff2a3c")), func(_j):
 				_close_dialog()
@@ -2053,7 +2054,7 @@ func deploy_result_lines() -> Array:
 		"floor": out.append("Floor %d of %d cleared. The only way out is onward, or an Emergency Exit." % [int(o["floor"]) - 1, int(o["count"])])
 		"retry": out.append("The haul is safe while a Hero stands. %s can try this fight again." % _list(o.get("reserves", [])))
 		"wipe":
-			out.append("Deployment lost: a wipe loses everything carried: %s%s. The Heroes recover at the dock." % [t.text(o.get("lostHaul")),
+			out.append("Deployment lost: a wipe loses everything carried: %s%s. The free Heroes recover at the dock; a recruited one is lost with the team." % [t.text(o.get("lostHaul")),
 				(", " + ", ".join(o["lostItems"].map(func(it): return campaign.progress.item_name(it, true)))) if not o.get("lostItems", []).is_empty() else ""])
 			out.append_array(campaign.end_lines(o, true))
 		_: out.append("It is yours once the team walks back onto the dock.")

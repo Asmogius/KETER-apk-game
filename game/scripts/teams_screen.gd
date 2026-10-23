@@ -12,6 +12,9 @@ var teams: Array = []
 ## Says whether a team is out on a deployment (the main scene sets it). One
 ## that is can be copied, and nothing else, until it is home.
 var locked: Callable = Callable()
+## (0.25) Says whether a Hero can lead a team out (the main scene sets it):
+## a free one, or one recruited at the dock. Practice fights take any Hero.
+var owns: Callable = Callable()
 var editing := -1
 var editor: TeamEditor
 var list: TouchList
@@ -86,6 +89,10 @@ func show_list() -> void:
 		if is_locked(i):
 			_add_row(i, str(t["name"]), sub, "Out on a deployment", UI.CYAN, hs)
 			continue
+		var unrecruited := unowned(t)
+		if tally["bad"] == 0 and not unrecruited.is_empty():
+			_add_row(i, str(t["name"]), sub, "Recruit %s to deploy" % ", ".join(unrecruited), UI.GOLD, hs)
+			continue
 		_add_row(i, str(t["name"]), sub, state, UI.SOFT_RED if tally["bad"] > 0 else (UI.GOLD if tally["warn"] > 0 else UI.GREEN), hs)
 	list.scroll_by(keep)
 
@@ -152,6 +159,13 @@ func _on_row(i: int, at: Vector2) -> void:
 
 
 ## Whether a team is out on a deployment.
+## (0.25) The team's Heroes that can't lead it out until they're recruited.
+func unowned(t: Dictionary) -> Array:
+	if not owns.is_valid():
+		return []
+	return t.get("heroes", []).filter(func(n): return roster.card_named(str(n)) != null and not owns.call(str(n)))
+
+
 func is_locked(i: int) -> bool:
 	return i >= 0 and i < teams.size() and locked.is_valid() and locked.call(teams[i])
 
@@ -214,6 +228,7 @@ func edit(i: int) -> void:
 	if is_locked(i):
 		return
 	editing = i
+	editor.owns = owns
 	editor.open(roster, teams[i])
 	editor.visible = true
 

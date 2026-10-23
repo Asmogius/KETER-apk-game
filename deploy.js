@@ -53,6 +53,8 @@
     var all=cards(), T=W().tables(), reasons=[], heroes=[], per={}, forge={}, other=0;
     lo.heroes.forEach(function(r){ var c=resolve(r,all); if(c) heroes.push(c.name); else reasons.push("a Hero in it is missing ("+String(r).split("|").slice(1).join("|")+")"); });
     if(!lo.heroes.length) reasons.push("it has no Hero");
+    /* (v14.14) only Heroes recruited at the dock, or the free ones, can leave with it */
+    if(K() && K().unowned) K().unowned(heroes).forEach(function(n){ reasons.push(n+" isn't recruited: recruit them at the dock, or swap in a free Hero"); });
     lo.deck.forEach(function(r){
       var c=resolve(r,all);
       if(!c){ reasons.push("a card in its Deck is missing ("+String(r).split("|").slice(1).join("|")+")"); return; }
@@ -296,7 +298,7 @@
     pushHistory({n:s.n, result:"wipe", ended:new Date().toISOString(), team:s.lo.name, steps:s.steps, fights:s.fights, haul:haul, items:items, lost:s.lost, out:s.heroesOut.length});
     s.active=false; s.ended=new Date().toISOString(); s.result="wipe"; s.activity=null; note(s,"Wiped out. The haul is lost."); save(s);
     /* packed Consumables and Prototypes are lost with it; insurance may keep some of the haul */
-    var dock=K()?K().deploymentEnded({result:"wipe", haul:haul, explored:explored}):{};
+    var dock=K()?K().deploymentEnded({result:"wipe", haul:haul, explored:explored, heroes:heroNames(s, s.lo.heroes)}):{};
     return {ok:true, lostHaul:haul, lostItems:items, n:s.n, dock:dock, lostPack:s.pack||{}};
   }
   /* Dev Mode: end it on the spot, nothing banked */

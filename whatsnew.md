@@ -6,6 +6,16 @@ the Change Log.
 
 <!-- NEWEST ENTRY GOES BELOW THIS LINE -->
 
+## v14.14 — Recruit Heroes at the dock
+
+Alongside game 0.25.
+
+- **A Recruit tab at the Dock.** A Strike Team now leaves only with Heroes who are yours. Three Heroes are on offer at a time, from the Districts you have fought in, priced in shards by rarity (40 for a Common up to 1,200 for a Mythic). The roster changes when the Exchange restocks, and each level of Exchange stock adds one more.
+- **Three free Heroes**: Dock Hand, Hangar Rifleman and Field Medic. They are plain Heroes of no District, always yours and never lost, so you can always deploy.
+- **A wipe loses the recruited Heroes on the team.** Recruit them again when they are next on offer. Going down in a fight still only sits a Hero out.
+- **Teams with a Hero who isn't yours** stay as they are, but Deploy names that Hero and refuses to leave. Practice fights take any Hero.
+- **Dev Mode** sets which Heroes are free, the prices and how many are on offer.
+
 ## v14.13 — Four cards withdrawn
 
 Alongside game 0.24.

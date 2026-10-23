@@ -40,7 +40,7 @@ for(const c of comp){ if(c.testCard) continue;
 console.log(JSON.stringify(out));
 """
 r = json.loads(subprocess.run(["node", "-e", NODE], capture_output=True, text=True, cwd=".").stdout)
-ck("every effect box on a master card is read: 243 of them (the audit's 223, less the 21 blank Units, plus their 45 drafted abilities, less the four cards deleted in 14.13)", r["boxes"] == 243, r["boxes"])
+ck("every effect box on a master card is read: 249 of them (the audit's 223, less the 21 blank Units, plus their 45 drafted abilities, less the four cards deleted in 14.13, plus the free Heroes' six in 14.14)", r["boxes"] == 249, r["boxes"])
 ck("each reads in keywords the library knows, with no plain rules words, no retired keyword and nothing the Card Forge flags", not r["bad"] and r["keyword"] >= 120, r["bad"][:5])
 ck("none is left flagged or partly written: the four 14.11 couldn't write (Split Chip, Reforge, Hold Fast, Quartermaster's Seal) were deleted in 14.13, and are gone", r["flagged"] == 0 and r["partial"] == 0 and not any(c["name"] in ["Split Chip", "Reforge", "Hold Fast", "Quartermaster's Seal"] for c in json.loads(pathlib.Path("compendium_full.json").read_text(encoding="utf-8"))["cards"]), (r["flagged"], r["partial"]))
 ck("no Unit is left blank: every one has Health, Armor Class and Movement", not r["blankUnits"], r["blankUnits"])
@@ -94,7 +94,7 @@ with sync_playwright() as p:
     E("()=>localStorage.setItem('keter-app-dice',JSON.stringify({dur:0}))")
     r = E("""()=>{ var K=KETER_KW, c=simAllCards().filter(function(x){ return x.name==='Field Dressing'; })[0];
       var runs=K.displayRuns((c.entries||c.effects)[0].text); return {ver:window.KETER_APP_VER||null, coloured:runs.filter(function(x){ return x.kw; }).map(function(x){ return x.cat; })}; }""")
-    ck("the app is 14.13, and Field Dressing's text is coloured keywords (its Target, narrowed to within 1 tile, then its Effect)", r["ver"] == "14.13" and r["coloured"] == ["target", "effect"], r)
+    ck("the app is 14.14, and Field Dressing's text is coloured keywords (its Target, narrowed to within 1 tile, then its Effect)", r["ver"] == "14.14" and r["coloured"] == ["target", "effect"], r)
     pg.locator("#nav button[data-go='home']").click(); pg.wait_for_timeout(500)
     pg.locator('.lt[data-page="battle"]').click(); pg.wait_for_timeout(900)
     E("(g)=>{ window.FLOOR_IN=g; }", FLOOR)

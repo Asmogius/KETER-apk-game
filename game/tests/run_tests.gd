@@ -24,6 +24,16 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	if OS.get_cmdline_user_args().has("twentyfive"):
+		# (only 0.25's, while working on them)
+		Kit.fresh()
+		_twentyfive()
+		await _twentyfive_scene()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("twentythree"):
 		# (only 0.23's, while working on them)
 		Kit.fresh()
@@ -201,6 +211,7 @@ func _run() -> void:
 	_twentyone()
 	_twentytwo()
 	_twentythree()
+	_twentyfive()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -224,6 +235,7 @@ func _run() -> void:
 	await _nineteen_scene()
 	await _twenty_scene()
 	await _twentythree_scene()
+	await _twentyfive_scene()
 	Kit.fresh()
 	print("\nGAME PASS %d  FAIL %d" % [ok, bad])
 	Rules.hooks = {}              # the rules let go of the last battle
@@ -354,7 +366,7 @@ func _roster() -> void:
 	var r := Roster.new(x)
 	var hs := r.heroes()
 	var hn := hs.map(func(c): return c["name"])
-	ck("roster: every Hero card (0.22: Ilsa Varn among them)", hn.has("Rictus") and hn.has("Test Warden") and hn.has("Ilsa Varn, Jump-Frame Pilot") and hs.size() == 9, hn)
+	ck("roster: every Hero card (0.22: Ilsa Varn among them; 0.25: and the three free Heroes)", hn.has("Rictus") and hn.has("Test Warden") and hn.has("Ilsa Varn, Jump-Frame Pilot") and hn.has("Dock Hand") and hs.size() == 12, hn)
 	ck("roster: test cards come last", hs[hs.size() - 1]["_src"] == "test" and hs[0]["_src"] != "test", hn)
 	var ts := r.troops()
 	ck("roster: the Companion's designs and pre-builts first, and marked as the Companion's", ts[0]["name"] == "Frame Trooper" and Roster.origin(ts[0]) == "Companion design", [ts[0]["name"], Roster.origin(ts[0])])
@@ -936,7 +948,7 @@ func _setup() -> void:
 	s.list.tap(row.position + s.list.box.position + Vector2(40, 20))
 	ck("setup: tap a floor to choose it", s.floor_i == wi and not s.next_btn.disabled, s.floor_i)
 	s._go(1)
-	ck("setup: then the Heroes", s.step == "heroes" and s._rows.size() == 9 and s.next_btn.disabled)
+	ck("setup: then the Heroes (0.25: the three free ones among them)", s.step == "heroes" and s._rows.size() == 12 and s.next_btn.disabled)
 	s.toggle_hero("Test Warden")
 	s.toggle_hero("Rictus")
 	s.toggle_hero("Test Striker")
@@ -4849,7 +4861,7 @@ func _ten_scene() -> void:
 	cm.loot.seed_with(31)
 	scene.home.world_btn.pressed.emit()
 	await _frames(2)
-	ck("0.10 dock: five tabs, the Stockpile first", dk.visible and dk.tab == "stockpile" and dk.tabs.keys() == ["stockpile", "exchange", "reclaim", "bounties", "upgrades"] and dk.tabs["stockpile"].button_pressed and dk.tab_row.visible
+	ck("0.10 dock: six tabs (0.25: Recruit among them), the Stockpile first", dk.visible and dk.tab == "stockpile" and dk.tabs.keys() == ["stockpile", "exchange", "recruit", "reclaim", "bounties", "upgrades"] and dk.tabs["stockpile"].button_pressed and dk.tab_row.visible
 		and dk.map_btn.visible and dk.shop_btn.visible and dk.go_btn.text == "Deploy", dk.tabs.keys())
 	ck("0.10 dock: the Stockpile ends with a Testing row: Restock now, Reach +1, Reset the dock", dk.row_texts()[-1] == "Testing" and dk.offers() == [["testing", "restock"], ["testing", "reach"], ["testing", "reset"]], dk.offers())
 	# ---- the Exchange
@@ -8029,4 +8041,158 @@ func _twentythree_scene() -> void:
 	ck("0.23 screen: aimed at the first Grunt, Breach Shot (Line 3) lights its line and rings the Grunt behind", scene.preview == "e1" and scene.board.blast.has(Vector2i(2, 0)) and scene.board.blast.has(Vector2i(3, 0)) and scene.board.view_of("e2").caught, scene.board.blast.keys())
 	scene.queue_free()
 	await _frames(2)
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- 0.25: recruiting Heroes
+const FREE_HEROES := ["Dock Hand", "Hangar Rifleman", "Field Medic"]
+
+
+func _free_hero_ok(r: Roster, n: String) -> bool:
+	var h = r.card_named(n)
+	return h != null and Roster.type_of(h) == "hero" and Dock.hero_rarity(h) == 0 and Dock.hero_district(h) == "" and Art.token_drawn(h) != null
+
+
+func _twentyfive() -> void:
+	Kit.fresh()
+	Dock.every_hero = false               # (as a player has it)
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var r := Roster.new(x)
+	var c := Campaign.new(x, r, x.floors(), 7)
+	var dk := c.dock
+	var dep := c.deploy
+	ck("0.25 cards: the three free Heroes are in the export: common, of no District, each with its token", FREE_HEROES.all(func(n): return _free_hero_ok(r, n)))
+	ck("0.25 dock: the free Heroes are always yours, the others not until recruited", dk.tables["free"] == FREE_HEROES and FREE_HEROES.all(func(n): return dk.owns(n)) and not dk.owns("Rictus") and not dk.owns("Test Warden") and dk.owned_heroes().is_empty())
+	ck("0.25 dock: a Hero's price is by its rarity, and 3 are on offer", dk.tables["heroPrice"] == [40, 80, 150, 300, 600, 1200] and int(dk.tables["heroOnOffer"]) == 3 and dk.hero_price("Rictus") == 600 and dk.hero_price("Volt-Warden Ryska") == 150 and dk.hero_price("Nobody") == 0)
+	var st := dk.stock()
+	ck("0.25 recruit: nobody on offer before a District is fought in (every Hero but the free ones has one)", st["heroes"].is_empty() and st["hired"].is_empty(), st["heroes"])
+	# Deploy: only Heroes who are yours
+	var why := dep.reasons_against(Kit.field_team())
+	ck("0.25 deploy: a team led by Heroes not recruited can't leave, and names each", why.has("Test Warden isn't recruited: recruit them at the dock, or swap in a free Hero.") and why.has("Quillon Vex isn't recruited: recruit them at the dock, or swap in a free Hero."), why)
+	var ft := Kit.field_team("Free Team")
+	ft["heroes"] = ["Dock Hand", "Field Medic"]
+	ft["actions"] = {}
+	ck("0.25 deploy: one led by free Heroes can", not dep.plan(ft)["reasons"].any(func(w): return "recruited" in str(w)), dep.plan(ft)["reasons"])
+	# District 3 fought in: its Heroes come on offer
+	c.progress.see("district", "3")
+	st = dk.restock()
+	var on: Array = st["heroes"]
+	ck("0.25 recruit: with District 3 fought in, 3 of its Heroes are on offer: never a free one, a Test one or one you have", on.size() == 3 and on.all(func(n): return dk.recruitable().any(func(h): return h["name"] == n))
+		and not on.any(func(n): return FREE_HEROES.has(n) or str(n).begins_with("Test ")), on)
+	dep.stock = _stock(0, 1000)
+	var nm: String = on[0]
+	var price = dk.hero_price(nm)
+	var o := dk.recruit(nm)
+	ck("0.25 recruit: recruited, the Hero is yours and the shards are spent", o["ok"] and o["price"] == price and dk.owns(nm) and dk.owned_heroes() == [nm] and dep.stock["shards"] == 1000 - price and st["hired"].has(nm), [o, dep.stock["shards"]])
+	ck("0.25 recruit: once only; a free Hero isn't for hire; and nor is one not on offer", dk.recruit(nm)["why"] == "Already yours" and dk.recruit("Dock Hand")["why"] == "Not on offer" and dk.recruit("Nobody")["why"] == "Not on offer")
+	dep.stock = _stock(0, 10)
+	var dear: String = on[1]
+	o = dk.recruit(dear)
+	ck("0.25 recruit: not enough shards: nothing changes, and it says so", not o["ok"] and o["why"] == "Needs %s shards; you have 10" % Scoring.text(dk.hero_price(dear)) and not dk.owns(dear), o)
+	ck("0.25 recruit: one you have is not on offer again", not dk.recruitable().any(func(h): return h["name"] == nm) and not dk.restock()["heroes"].has(nm))
+	dk.state["upgrades"]["exchange"] = 1
+	ck("0.25 recruit: Exchange stock 1 puts one more on offer", dk.restock()["heroes"].size() == mini(4, dk.recruitable().size()))
+	dk.state["upgrades"]["exchange"] = 0
+	# a stock from before recruiting gets its Heroes when it is next looked at
+	dk.state["stock"].erase("heroes")
+	dk.state["stock"].erase("hired")
+	ck("0.25 recruit: a stock laid out before recruiting gets its Heroes when it is next looked at", dk.stock()["heroes"].size() == 3 and dk.stock()["hired"].is_empty())
+	# a team led by the recruited Hero leaves; a wipe loses them; the free ones come back
+	var t := Kit.field_team("Recruits")
+	t["heroes"] = [nm, "Dock Hand"]
+	t["actions"] = {}
+	ck("0.25 deploy: a team led by a recruited Hero and a free one can leave", not dep.plan(t)["reasons"].any(func(w): return "recruited" in str(w)), dep.plan(t)["reasons"])
+	dep.stock = _stock(100, 0)
+	var s := dep.start(t)
+	ck("0.25 deploy: it leaves", s["ok"], s)
+	var w := dep.wipe()
+	ck("0.25 wipe: the recruited Hero on the team is lost with it; the free one isn't", w["dock"].get("lostHeroes") == [nm] and not dk.owns(nm) and dk.owns("Dock Hand") and dk.owned_heroes().is_empty() and dk.state["log"].any(func(l): return l["text"] == "Lost with the wipe: %s." % nm), w["dock"])
+	ck("0.25 wipe: and the dock's report says so", c.end_lines(w, true).has("Lost with the team: %s. Recruit them again at the dock when they're on offer." % nm), c.end_lines(w, true))
+	ck("0.25 wipe: and the team can't leave again until they are recruited again", dep.reasons_against(t).has("%s isn't recruited: recruit them at the dock, or swap in a free Hero." % nm), dep.reasons_against(t))
+	# kept with the campaign
+	dk.state["heroes"]["Rictus"] = 1
+	c.save()
+	var c2 := Campaign.new(x, Roster.new(x), x.floors(), 7)
+	ck("0.25 save: the recruited Heroes are kept", c2.dock.owns("Rictus") and c2.dock.owned_heroes() == ["Rictus"], c2.dock.state["heroes"])
+	# QM-7 has something to say about it
+	ck("0.25 QM-7: lines for the Recruit tab, and for a Hero recruited", QM7.LINES.has("recruit") and QM7.LINES["recruit"].size() >= 3 and QM7.LINES.has("recruited") and QM7.line("recruit", 0) == QM7.LINES["recruit"][0])
+	Dock.every_hero = true
+	Kit.fresh()
+
+
+func _twentyfive_scene() -> void:
+	Kit.fresh()
+	Dock.every_hero = false
+	Kit.keep([Kit.field_team()])
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	var cm: Campaign = scene.campaign
+	var dk: DockScreen = scene.dock_screen
+	var dock: Dock = cm.dock
+	cm.loot.seed_with(31)
+	scene.open_dock()
+	await _frames(2)
+	dk.tabs["recruit"].pressed.emit()
+	await _frames(2)
+	ck("0.25 screen: the Recruit tab: nobody on offer yet, the free Heroes, none recruited", dk.tab == "recruit" and dk.tabs["recruit"].button_pressed and dk.row_texts().has("Nobody on offer.") and dk.row_texts().has("Free Heroes")
+		and dk.row_texts().has("No Heroes recruited yet.") and FREE_HEROES.all(func(n): return dk.row_texts().has(n)), dk.row_texts())
+	var fr: int = dk.row_texts().find("Dock Hand")
+	ck("0.25 screen: a free Hero's tile: its token, its rarity and numbers, its abilities, Always yours, no price", fr >= 0 and dk._rows[fr].get("tile", false) and _labels(dk._rows[fr]["row"]).has("Always yours")
+		and _labels(dk._rows[fr]["row"]).any(func(l): return str(l).begins_with("Common · any District · melee") and "HP 32" in str(l) and "Wrench Swing" in str(l)) and dk._rows[fr]["acts"].is_empty() and _first_icon(dk._rows[fr]["row"], "shards") == null,
+		_labels(dk._rows[fr]["row"]) if fr >= 0 else dk.row_texts())
+	ck("0.25 screen: teams that can't leave as they stand are named", dk.row_texts().any(func(l): return str(l).begins_with("Can't deploy until their Heroes are recruited") and "Test Vanguard (Test Warden, Test Striker, Quillon Vex)" in str(l)), dk.row_texts())
+	ck("0.25 screen: its \"?\" says what it is for", "yours until a team it goes out with is wiped out" in dk.hint.text and "Free Heroes: Always yours" in dk.help_text, [dk.hint.text, dk.help_text])
+	# District 3 fought in: Heroes on offer, and one recruited from the screen
+	cm.progress.see("district", "3")
+	dock.restock()
+	var gift := Loot.bag()
+	gift["shards"] = 2000
+	dock.add_to_stockpile(gift)
+	dk.show_tab("recruit")
+	await _frames(2)
+	var nm: String = dock.stock()["heroes"][0]
+	var hr: int = dk.row_texts().find(nm)
+	ck("0.25 screen: each on offer is a tile with its price in gold, and Recruit", dk.row_texts().has("On offer") and hr >= 0 and dk._rows[hr]["acts"] == [["recruit", nm]] and _labels(dk._rows[hr]["row"]).has(Scoring.text(dock.hero_price(nm)))
+		and _first_icon(dk._rows[hr]["row"], "shards") != null, _labels(dk._rows[hr]["row"]) if hr >= 0 else dk.row_texts())
+	await _frames(1)
+	var chip := _chip_of(dk.list, ["recruit", nm])
+	var had := chip != null
+	if had:
+		dk.list.tap(chip.global_position - dk.list.global_position + chip.size / 2)
+	await _frames(1)
+	ck("0.25 screen: a tap on Recruit recruits them, says so, and lists them as yours", had and dock.owns(nm) and dk.note.text == "%s recruited for %s shards: they can lead a Strike Team now." % [nm, Scoring.text(dock.hero_price(nm))]
+		and dk.row_texts().has("Recruited") and dk.row_texts().count(nm) == 2, [dk.note.text, dk.row_texts()])
+	var saved = JSON.parse_string(FileAccess.get_file_as_string(Campaign.path)) if FileAccess.file_exists(Campaign.path) else null
+	ck("0.25 screen: and it is saved", saved is Dictionary and saved["dock"]["heroes"].has(nm))
+	var again: int = dk.row_texts().find(nm)
+	ck("0.25 screen: its tile on offer now says Recruited, with no price", again >= 0 and dk._rows[again]["acts"].is_empty() and _labels(dk._rows[again]["row"]).has("Recruited"), _labels(dk._rows[again]["row"]) if again >= 0 else null)
+	dk.act(["recruit", "Nobody"])
+	ck("0.25 screen: what can't be done is said", dk.note.text == "Not on offer.", dk.note.text)
+	# Deploy: the team that can't go says why
+	dk.show_teams()
+	await _frames(2)
+	dk.choose_team(0)
+	await _frames(1)
+	ck("0.25 screen: Deploy won't take a team whose Heroes aren't recruited, and says which", "Test Warden isn't recruited" in dk.hint.text + dk.note.text + " ".join(dk.row_texts()), [dk.hint.text, dk.note.text])
+	# the Strike Teams list and the team editor
+	scene.open_teams()
+	await _frames(2)
+	var ts: TeamsScreen = scene.teams_screen
+	ck("0.25 teams: a team says which Heroes to recruit before it can deploy", ts.visible and _labels(ts._rows[0]["row"]).has("Recruit Test Warden, Test Striker, Quillon Vex to deploy"), _labels(ts._rows[0]["row"]))
+	ts.edit(0)
+	await _frames(2)
+	var ed: TeamEditor = ts.editor
+	ed.open_tab("heroes")
+	await _frames(1)
+	var marks := {}
+	for it in ed.grid.items:
+		marks[str(it["card"]["name"])] = str(it.get("mark", ""))
+	ck("0.25 team editor: Heroes not recruited are marked; the free ones and the recruited aren't", marks.get("Test Warden") == "In team · 1 · Not recruited" and marks.get("Rictus") == "Not recruited" and marks.get("Dock Hand") == "" and marks.get(nm) == ""
+		and "Not recruited fights practice battles" in ed.hint.text, marks)
+	scene.queue_free()
+	await _frames(2)
+	Dock.every_hero = true
 	Kit.fresh()

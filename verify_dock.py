@@ -6,7 +6,10 @@ a time, selling at half price); restocking only after new ground; Reclaiming
 paid at home, lost on a wipe); upgrades (starter bay, insurance, scanner,
 Exchange stock); the dock closed while a team is out; pre-built copies and
 packed Consumables and Prototypes on a deployment; the Dock page, the Deploy
-screen's packing, the Workshop's Pre-built tab and the Stockpile's list."""
+screen's packing, the Workshop's Pre-built tab and the Stockpile's list.
+And (v14.14) Recruit: the free Heroes always yours, a few others on offer
+from Districts fought in at a price by rarity, a team that can't leave with
+a Hero not recruited, and a wipe losing the recruited Heroes who went out."""
 import http.server, socketserver, threading, functools, pathlib, shutil, sys, json
 from playwright.sync_api import sync_playwright
 TMP=pathlib.Path("/tmp/serve_dock")
@@ -34,6 +37,7 @@ window.T={
   win:function(){ SIM.units.forEach(function(u){ if(u.side==='enemy') u.hp=0; }); simCheckDowns(); SIM.wave=6; SIM.enemyPile=[]; simFinish({winner:'ally'}); return document.getElementById('modal').innerText; },
   lose:function(){ SIM.units.forEach(function(u){ if(u.side==='ally' && /hero/i.test(u.cardType)) u.hp=0; }); simCheckDowns(); simFinish({winner:'enemy'}); return document.getElementById('modal').innerText; },
   close:function(){ document.getElementById('modal').classList.remove('on'); },
+  hire:function(){ var s=KETER_DOCK.state(); s.heroes['Test Warden']=1; s.heroes['Test Striker']=1; KETER_DOCK._save(s); return true; },
   pre:function(name, order){ var W=KETER_WORKSHOP, d=W.blank('ch_test_general'); d.name=name; d.prebuilt=true; d.order=order; d.abilities[0].name='Shot'; d.abilities[0].text='[[target enemy]] takes [[damage 2]].'; return W.put(d); }
 }; return true; }"""
 
@@ -49,6 +53,29 @@ with sync_playwright() as p:
     E=pg.evaluate
     E(LIB)
     E("()=>{ KETER_WORLD.newMap(4242); KETER_LOOT.seed(5); }")
+
+    # ================= recruiting (v14.14) =================
+    r=E("""()=>{ var K=T.K, t=K.tables(), pl=T.D.plan(0);
+      return {free:t.free, price:t.heroPrice, n:t.heroOnOffer, owns:['Dock Hand','Hangar Rifleman','Field Medic','Test Warden','Rictus'].map(K.owns),
+        reasons:pl.reasons, offer:K.stock().heroes, cards:K.heroCards().map(function(c){ return c.name; })}; }""")
+    ck("three free Heroes, always yours; the rest not until recruited", r["free"]==["Dock Hand","Hangar Rifleman","Field Medic"] and r["owns"]==[True,True,True,False,False], r)
+    ck("Heroes priced by rarity: 40 to 1,200 shards, 3 on offer", r["price"]==[40,80,150,300,600,1200] and r["n"]==3, r)
+    ck("the free Heroes are cards in the compendium", all(n in r["cards"] for n in ["Dock Hand","Hangar Rifleman","Field Medic"]), r["cards"])
+    ck("a team led by Heroes not recruited can't leave", "Test Warden isn't recruited: recruit them at the dock, or swap in a free Hero" in r["reasons"] and "Test Striker isn't recruited: recruit them at the dock, or swap in a free Hero" in r["reasons"], r["reasons"])
+    ck("nobody on offer before any District is fought in (every Hero has one)", r["offer"]==[], r["offer"])
+    r=E("""()=>{ var K=T.K, P=T.P, ps=P.state(); ps.seen.district['3']=1; P._save?P._save(ps):localStorage.setItem(P.PROG_KEY,JSON.stringify(ps));
+      var st=K.restock(), offer=st.heroes.slice(), rec=K.recruitable().map(function(c){ return c.name; });
+      T.cash(5000); var nm=offer[0], price=K.heroPrice(nm), r1=K.recruit(nm), r2=K.recruit(nm), no=K.recruit('Dock Hand');
+      return {offer:offer, rec:rec, nm:nm, price:price, rar:K.heroRarity(K.cardOf(nm)), r1:r1, r2:r2, no:no, sh:T.L.stock().shards, mine:K.ownedHeroes(), hired:K.stock().hired}; }""")
+    ck("District 3 fought in: 3 of its Heroes on offer, never a free one nor a Test one", len(r["offer"])==3 and all(n in r["rec"] for n in r["offer"]) and not any(n.startswith("Test ") or n in ("Dock Hand","Hangar Rifleman","Field Medic") for n in r["rec"]), r)
+    ck("recruiting one pays its rarity's price, and it's yours", r["r1"]=={"ok":True,"price":r["price"]} and r["price"]==[40,80,150,300,600,1200][r["rar"]] and r["sh"]==5000-r["price"] and r["mine"]==[r["nm"]] and r["hired"]=={r["nm"]:1}, r)
+    ck("once only; and a free Hero isn't for hire", r["r2"]["why"]=="Already yours" and r["no"]["why"]=="Not on offer", r)
+    r=E("""()=>{ var K=T.K, nm=K.ownedHeroes()[0], o=K.deploymentEnded({result:'wipe', heroes:[nm,'Dock Hand']}); var h=K.deploymentEnded({result:'home', heroes:['Dock Hand']});
+      var s=K.state(); s.upgrades.exchange=1; K._save(s); var n=K.restock().heroes.length; s=K.state(); s.upgrades.exchange=0; K._save(s);
+      return {lost:o.lostHeroes, mine:K.ownedHeroes(), free:K.owns('Dock Hand'), n:n, log:K.state().log[0].text}; }""")
+    ck("a wipe loses the recruited Heroes who went out; the free ones come back", r["lost"] and len(r["lost"])==1 and r["mine"]==[] and r["free"], r)
+    ck("Exchange stock 1: one more Hero on offer, as Districts allow", r["n"]==min(4, len(E("()=>T.K.recruitable()"))), r)
+    E("()=>{ T.hire(); var ps=T.P.state(); delete ps.seen.district['3']; localStorage.setItem(T.P.PROG_KEY,JSON.stringify(ps)); var s=T.K.state(); s.stock=null; T.K._save(s); }")
 
     # ================= the starting dock =================
     r=E("""()=>{ var s=T.K.state(), st=T.K.stock(), t=T.K.tables(); return {reach:s.reach, rr:T.K.reachRarity(), lots:st.lots.length, bps:st.bps.length, items:st.items.length, pre:st.pre.length, b:s.bounties.length,
@@ -165,7 +192,7 @@ with sync_playwright() as p:
       return {a:a.reasons, aok:a.ok, pre:b.pre, packed:b.packed, ok:b.ok}; }""")
     ck("packing only what you own", r["aok"] is False and r["a"]==["only 2 Test Stim to pack"], r)
     ck("the plan shows the pre-built copies going and what's packed", r["pre"]==[{"id":PRE[0],"name":"Pre Alpha","copies":5}] and sorted(x["name"] for x in r["packed"])==["Test Aegis Core","Test Stim"] and r["ok"], r)
-    r=E("""()=>{ T.W.resetState(); var k0=T.W.knownCount(); var s=T.D.start(0,{'Test Stim':1,'Test Aegis Core':1}); var cur=T.D.cur(), deck=T.D.deckRefs();
+    r=E("""()=>{ T.hire(); T.W.resetState(); var k0=T.W.knownCount(); var s=T.D.start(0,{'Test Stim':1,'Test Aegis Core':1}); var cur=T.D.cur(), deck=T.D.deckRefs();
       return {ok:s.ok, pre:cur.pre, pack:cur.pack, inv:T.K.inv(), deck:deck.filter(function(r){ return /^prebuilt\|/.test(r); }).length, len:deck.length, team:T.D.team().pack, left:T.D.copiesLeft(Object.keys(cur.pre)[0]), k0:cur.known0}; }""")
     ck("deploying takes the pre-built copies from the dock", r["ok"] and list(r["pre"].values())==[5] and r["inv"]["pre"]=={} , r)
     ck("and the packed items: one Stim left at the dock, the Aegis Core gone with the team", r["inv"]["cards"]=={"Test Stim":1} and r["pack"]=={"cons":{"Test Stim":1},"protos":{"Test Aegis Core":1}}, r)
@@ -214,12 +241,12 @@ with sync_playwright() as p:
     ck("the next deployment has no pre-built copies", r["pre"]==[], r)
 
     # ================= restock only after new ground =================
-    r=E("""()=>{ var n0=T.K.stock().n; T.D.start(0); var h=T.home(); var n1=T.K.stock().n;
+    r=E("""()=>{ T.hire(); var n0=T.K.stock().n; T.D.start(0); var h=T.home(); var n1=T.K.stock().n;
       T.D.start(0); var W=T.W, far=Object.keys(W.map().tiles).filter(function(k){ return W.dist(k,W.map().dock)===4 && W.isOpen(k) && !W.known(k); })[0]; T.go(far); var h2=T.home();
       return {n0:n0, n1:n1, r1:!!h.dock.restocked, n2:T.K.stock().n, r2:!!h2.dock.restocked}; }""")
     ck("a deployment that saw nothing new doesn't restock", r["n1"]==r["n0"] and not r["r1"], r)
     ck("one that did, does", r["n2"]==r["n0"]+1 and r["r2"], r)
-    r=E("""()=>{ var n0=T.K.stock().n; T.D.start(0); var W=T.W, far=Object.keys(W.map().tiles).filter(function(k){ return W.dist(k,W.map().dock)===7 && W.isOpen(k) && !W.known(k); })[0]; T.go(far);
+    r=E("""()=>{ T.hire(); var n0=T.K.stock().n; T.D.start(0); var W=T.W, far=Object.keys(W.map().tiles).filter(function(k){ return W.dist(k,W.map().dock)===7 && W.isOpen(k) && !W.known(k); })[0]; T.go(far);
       var w=T.D.wipe(); return {n0:n0, n:T.K.stock().n, r:!!w.dock.restocked}; }""")
     ck("a wipe that explored restocks too", r["n"]==r["n0"]+1 and r["r"], r)
 
@@ -231,7 +258,7 @@ with sync_playwright() as p:
       var bs=T.K.postBounties(); return {bs:bs, big:big.map(function(c){ return c.cardType; }), other:other&&other.name, kinds:bs.map(function(b){ return b.kind; })}; }""")
     ck("two Enemies and one Elite, Mini-Boss or Boss", len(r["bs"])==3 and r["kinds"][:2]==["enemy","enemy"] and r["kinds"][2] in ("elite","miniboss","boss"), r)
     ck("only ones you've met, from Districts fought in (or of no District)", all(b["district"] in ("3","") for b in r["bs"]) and r["other"] not in [b["name"] for b in r["bs"]], r)
-    r=E("""()=>{ var s=T.K.state(); s.bounties=[{name:'Wiped Foe', kind:'enemy', district:'3', claimed:false}]; T.K._save(s); T.D.start(0);
+    r=E("""()=>{ var s=T.K.state(); s.bounties=[{name:'Wiped Foe', kind:'enemy', district:'3', claimed:false}]; T.K._save(s); T.hire(); T.D.start(0);
       var c=T.D.cur(); c.kills=[{name:'Wiped Foe', skull:2}]; T.D._save(c); T.D.wipe(); return T.K.bounties()[0].claimed; }""")
     ck("a wipe loses the claim", r is False, r)
 
@@ -252,13 +279,14 @@ with sync_playwright() as p:
     ck("the scanner at level 3 sees what open tiles hold 4 steps away", r["k4"]==r["n4"] and r["k5"]==0, r)
     ck("without it, one step", r["k2"]==0 and r["k1"]==r["n1"], r)
     r=E("""()=>{ T.cash(2000,{troop:[20,0,0,0,0,0], equipment:[20,6,3,0,0,0], aether:[20,6,3,0,0,0]}); T.K.upgrade('insurance'); T.K.upgrade('insurance');
-      var stim=T.K.owned('Test Stim'), burst=T.P.owned('Burst'); T.D.start(0,{'Test Stim':1}); var c=T.D.cur(); var b=T.L.bag(); b.shards=100; b.parts.troop[0]=10; b.parts.aether[2]=4; c.haul=b; c.items=['bp:Burst:1']; T.D._save(c);
+      T.hire(); var stim=T.K.owned('Test Stim'), burst=T.P.owned('Burst'); T.D.start(0,{'Test Stim':1}); var c=T.D.cur(); var b=T.L.bag(); b.shards=100; b.parts.troop[0]=10; b.parts.aether[2]=4; c.haul=b; c.items=['bp:Burst:1']; T.D._save(c);
       var W=T.W, k=W.neighbours(W.map().dock).filter(W.isOpen)[0]; T.go(k); T.D.ambush(k,{}); c=T.D.cur(); c.activity.floors=['TEST \u00b7 Waves']; T.D._save(c);
       T.cash(0,{troop:[0,0,0,0,0,0], equipment:[0,0,0,0,0,0], aether:[0,0,0,0,0,0]}); T.fight(); var h=T.lose(); var st=T.L.stock(); T.close();
-      return {ins:T.K.insurance(), active:T.D.active(), h:h, sh:st.shards, t:st.parts.troop[0], a:st.parts.aether[2], burst:T.P.owned('Burst'), burst0:burst, stim0:stim, stim:T.K.owned('Test Stim')}; }""")
+      return {ins:T.K.insurance(), active:T.D.active(), h:h, sh:st.shards, t:st.parts.troop[0], a:st.parts.aether[2], burst:T.P.owned('Burst'), burst0:burst, stim0:stim, stim:T.K.owned('Test Stim'), mine:T.K.ownedHeroes()}; }""")
     ck("a wipe with Salvage insurance 2 keeps 20% of the haul's shards and parts", r["ins"]==20 and not r["active"] and r["sh"]==20 and r["t"]==2 and r["a"]==0, r)
     ck("but not its blueprints, nor anything packed", r["burst"]==r["burst0"] and r["stim"]==r["stim0"]-1, r)
     ck("the wipe's report says what was packed and what insurance kept", "Test Stim" in r["h"] and "Salvage insurance" in r["h"], r["h"][:400])
+    ck("and the recruited Heroes lost with the team", "Lost with the team: Test Warden, Test Striker" in r["h"] and r["mine"]==[], [r["h"][:400], r["mine"]])
     r=E("""()=>{ var before=T.K.stock().lots.length; T.cash(2000,{equipment:[20,6,3,0,0,0]}); var s=T.K.state(); s.upgrades.exchange=0; T.K._save(s); T.K.upgrade('exchange');
       var st=T.K.restock(); return {lots:st.lots.length, pre:st.pre.length}; }""")
     ck("Exchange stock 1: one more lot and one more pre-built on offer", r["lots"]==4 and r["pre"]==4, r)
@@ -288,6 +316,9 @@ with sync_playwright() as p:
     tx=E("()=>document.getElementById('dkBody').innerText")
     ck("the Upgrades tab: level, now and next, and the cost", "Starter bay · level 0 of 3" in tx and "Now: 4 free starter copies" in tx and "Costs 150 shards and 10 Common Troop parts" in tx, tx[:400])
     ck("no Dev tools for a player", pg.locator("#dkRestock").count()==0)
+    pg.locator('[data-dktab="recruit"]').click(); pg.wait_for_timeout(200)
+    tx=E("()=>document.getElementById('dkBody').innerText")
+    ck("the Recruit tab: on offer, the free Heroes and the ones you have", all(x in tx.upper() for x in ["ON OFFER","FREE HEROES","RECRUITED"]) and "Dock Hand" in tx and "Always yours" in tx, tx[:600])
 
     # ================= Dev Mode =================
     E("()=>{ localStorage.setItem('keter-app-dev','1'); KETER_DOCK_UI.render(); }"); pg.wait_for_timeout(200)
@@ -301,6 +332,7 @@ with sync_playwright() as p:
     E("()=>{ var el=document.querySelector('[data-dkt=\"price.2\"]'); el.value='45'; el.dispatchEvent(new Event('change',{bubbles:true})); }")
     E("()=>{ var el=document.querySelector('[data-dkt=\"cost.starter.0.0\"]'); el.value='120'; el.dispatchEvent(new Event('change',{bubbles:true})); }")
     r=E("()=>({p:KETER_DOCK.itemPrice('Repair Kit'), r:KETER_DOCK.tables().price[2], c:KETER_DOCK.nextCost('starter').shards, saved:JSON.parse(localStorage.getItem(KETER_DOCK.TAB_KEY))})")
+    ck("Dev Mode: the free Heroes ticked, and Heroes' prices", E("()=>document.querySelector('[data-dkfree=\"Dock Hand\"]').checked && !document.querySelector('[data-dkfree=\"Rictus\"]').checked && !!document.querySelector('[data-dkt=\"heroPrice.5\"]')"))
     ck("prices and costs are editable, and only changes are kept", r["p"]==33 and r["r"]==45 and r["c"]==120 and set(r["saved"].keys())=={"price","cost","items"}, r)
     E("()=>{ KETER_DOCK.resetTables(); }")
     r=E("()=>({t:KETER_DOCK.tables().price[2], items:KETER_DOCK.tables().items.length})")
@@ -324,7 +356,7 @@ with sync_playwright() as p:
     ck("and joins the end of the list, not your designs", r["n"]==n0+1 and r["last"]=="New pre-built", r)
 
     # ================= the Stockpile and the Deploy screen =================
-    E("()=>{ localStorage.removeItem('keter-app-dev'); KETER_DOCK.addCard('Test Stim',1); var v=KETER_DOCK.inv(); v.pre={}; v.pre[KETER_WORKSHOP.prebuilts()[0].id]=2; KETER_DOCK._saveInv(v); KETER_GO('loot'); }"); pg.wait_for_timeout(300)
+    E("()=>{ T.hire(); localStorage.removeItem('keter-app-dev'); KETER_DOCK.addCard('Test Stim',1); var v=KETER_DOCK.inv(); v.pre={}; v.pre[KETER_WORKSHOP.prebuilts()[0].id]=2; KETER_DOCK._saveInv(v); KETER_GO('loot'); }"); pg.wait_for_timeout(300)
     tx=E("()=>document.getElementById('v-loot').innerText")
     ck("the Stockpile lists what the dock keeps", "ALSO KEPT HERE" in tx.upper() and "Test Stim" in tx and "Test Aegis Core" in tx and "Pre Beta" in tx, tx[-400:])
     E("()=>{ KETER_GO('world'); }"); pg.wait_for_timeout(300)

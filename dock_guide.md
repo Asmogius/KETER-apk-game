@@ -107,8 +107,36 @@ or was wiped out. A deployment that only walked known ground doesn't restock
 it.
 
 A restock rolls new lots, new blueprints and chassis, moves the Consumables,
-Prototypes and pre-builts on to the next few in their lists, and posts a new
-Bounty Board.
+Prototypes and pre-builts on to the next few in their lists, posts a new
+Bounty Board, and changes the Heroes on offer at **Recruit**.
+
+## Recruit
+
+A Strike Team can leave only with Heroes who are yours: the **free Heroes**,
+or Heroes you have **recruited** here. (Practice fights take any Hero.)
+
+- **The free Heroes**: **Dock Hand** (melee), **Hangar Rifleman** (ranged)
+  and **Field Medic** (support). Plain Heroes of no District. They are
+  always yours and are never lost, so you can always send a team out, shards
+  or none.
+- **On offer**: 3 Heroes at a time, drawn at random from the Districts your
+  teams have fought in (and any Hero of no District). Never a free Hero, one
+  you already have, or one whose name starts *Test*. Each level of **Exchange
+  stock** adds one more. The roster changes when the Exchange restocks.
+- **The price** is in shards, by the Hero's rarity:
+
+| Common | Uncommon | Rare | Epic | Legendary | Mythic |
+| --- | --- | --- | --- | --- | --- |
+| 40 | 80 | 150 | 300 | 600 | 1,200 |
+
+- **A recruited Hero is yours until a wipe.** One copy of each, which can
+  lead any of your Strike Teams. Going down in a fight only sits them out
+  for the rest of that deployment, as ever; but if the deployment is
+  **wiped out**, every recruited Hero on the team is lost with it. The free
+  Heroes come back. A lost Hero can be recruited again when they are next on
+  offer.
+- **A team with a Hero who isn't yours** stays in your Strike Teams, but
+  Deploy refuses it, naming that Hero: recruit them, or swap in a free Hero.
 
 ## Reclaiming
 
@@ -143,7 +171,7 @@ Each upgrade has three levels, paid in shards and parts:
 
 | Upgrade | Level 1 | Level 2 | Level 3 |
 | --- | --- | --- | --- |
-| **Exchange stock** | +1 rare lot and pre-built on offer | +2 | +3 |
+| **Exchange stock** | +1 rare lot, pre-built and Hero on offer | +2 | +3 |
 | **Starter bay** | 6 free starter copies | 8 | 10 |
 | **Salvage insurance** | keep 10% of a wiped haul | 20% | 30% |
 | **Long-range scanner** | see 2 steps away | 3 | 4 |
@@ -193,6 +221,9 @@ how many of each to take.
   order the Exchange offers them.
 - **What the Exchange carries**: tick the Consumables and Prototypes it
   sells, and set each price.
+- **Recruiting**: tick which Heroes are free, set the price of a Hero of
+  each rarity and how many are on offer. **Recruit every Hero** and **Lose
+  every recruited Hero** are for testing.
 - **Prices and stock**, **Bounties** and **Upgrades**: every number on this
   page.
 - **Restock now**, **Reach +1** and **Reset the dock**, for testing.
@@ -208,3 +239,8 @@ each tab is for is behind its **?**. The Exchange's goods are tiles, each with
 its picture, a gold price tag and its buttons, and an empty section is a single
 quiet line. QM-7's portrait and its blink are slots under **Game look** in the
 Pixel Studio's Assets tab, like the rest of the game's look.
+
+Game 0.25 adds the **Recruit** tab, a tile for each Hero with its token,
+rarity, numbers and abilities. Your Strike Teams list says which teams need
+a Hero recruited before they can deploy, and the team editor marks those
+Heroes **Not recruited**.

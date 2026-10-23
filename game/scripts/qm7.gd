@@ -19,6 +19,16 @@ const LINES := {
 		"Buy what you need. Sell what you don't. I keep the ledger either way.",
 		"Please do not stare at the rarer stock. The others dim when it is near.",
 	],
+	"recruit": [
+		"Personnel on offer. I do not vouch for any of them.",
+		"A Hero is yours until the Districts say otherwise. They usually do.",
+		"The free ones are always here. They have nowhere else to go.",
+		"Recruitment is paid in shards. Loyalty is extra, and not in stock.",
+	],
+	"recruited": [
+		"Signed on. I have issued a locker and a next of kin form.",
+		"Recruited. Please bring them back. The paperwork is worse otherwise.",
+	],
 	"reclaim": [
 		"Three of a kind make one better. It is the only arithmetic down here that improves things.",
 		"Reclaiming is not waste. Waste is what the Districts do.",
@@ -92,7 +102,7 @@ const LINES := {
 static func line(moment: String, n: int) -> String:
 	var own: Array = LINES.get(moment, [])
 	var pool: Array = own.duplicate()
-	if moment in ["stockpile", "exchange", "reclaim", "bounties", "upgrades"]:
+	if moment in ["stockpile", "exchange", "recruit", "reclaim", "bounties", "upgrades"]:
 		pool += LINES["anytime"]
 	if pool.is_empty():
 		pool = LINES["anytime"]

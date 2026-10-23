@@ -1,6 +1,6 @@
 {
  "schema": "keter.compendium/1",
- "version": "30",
+ "version": "31",
  "cards": [
   {
    "id": "D3-E06",
@@ -9761,6 +9761,154 @@
    ],
    "batch": 1,
    "rarity": "uncommon"
+  },
+  {
+   "id": "D0-H01",
+   "cardType": "hero",
+   "name": "Dock Hand",
+   "createdBy": "Claude",
+   "lastEditedBy": "Claude",
+   "affinities": [],
+   "level": 1,
+   "entries": [
+    {
+     "name": "Wrench Swing",
+     "kind": "Active",
+     "text": "",
+     "role": "melee",
+     "damage": "5",
+     "armorPenetration": "5",
+     "energyCost": "1"
+    },
+    {
+     "name": "Shove",
+     "kind": "Active",
+     "text": "[[target enemy]] takes [[Push 1]].",
+     "role": "melee",
+     "damage": "3",
+     "armorPenetration": "5",
+     "energyCost": "1"
+    }
+   ],
+   "rarity": "common",
+   "origin": "Human",
+   "archetypes": [
+    "Fighter"
+   ],
+   "combatRoles": [
+    "melee"
+   ],
+   "stats": {
+    "hp": "32",
+    "ac": "10",
+    "int": "10",
+    "slots": "1",
+    "apT": "4",
+    "move": "3",
+    "ldr": "2"
+   },
+   "lore": "Loads the crates, fixes the lifts, and goes out when nobody else will.",
+   "loreEnabled": true
+  },
+  {
+   "id": "D0-H02",
+   "cardType": "hero",
+   "name": "Hangar Rifleman",
+   "createdBy": "Claude",
+   "lastEditedBy": "Claude",
+   "affinities": [],
+   "level": 1,
+   "entries": [
+    {
+     "name": "Rifle Shot",
+     "kind": "Active",
+     "text": "",
+     "role": "ranged",
+     "damage": "5",
+     "attackRange": "4",
+     "toHit": "9",
+     "armorPenetration": "3",
+     "energyCost": "1"
+    },
+    {
+     "name": "Aimed Shot",
+     "kind": "Active",
+     "text": "",
+     "role": "ranged",
+     "damage": "7",
+     "attackRange": "5",
+     "toHit": "10",
+     "armorPenetration": "3",
+     "energyCost": "2"
+    }
+   ],
+   "rarity": "common",
+   "origin": "Human",
+   "archetypes": [
+    "Gunfighter"
+   ],
+   "combatRoles": [
+    "ranged"
+   ],
+   "stats": {
+    "hp": "26",
+    "ac": "11",
+    "int": "11",
+    "slots": "1",
+    "apT": "4",
+    "move": "3",
+    "ldr": "2"
+   },
+   "lore": "Hangar watch, issue rifle, two magazines. The Hangar sends what it has.",
+   "loreEnabled": true
+  },
+  {
+   "id": "D0-H03",
+   "cardType": "hero",
+   "name": "Field Medic",
+   "createdBy": "Claude",
+   "lastEditedBy": "Claude",
+   "affinities": [],
+   "level": 1,
+   "entries": [
+    {
+     "name": "Patch Up",
+     "kind": "Active",
+     "text": "[[target ally]] gains [[heal 4]].",
+     "role": "support",
+     "energyCost": "1"
+    },
+    {
+     "name": "Sidearm",
+     "kind": "Active",
+     "text": "",
+     "role": "ranged",
+     "damage": "3",
+     "attackRange": "3",
+     "toHit": "8",
+     "armorPenetration": "2",
+     "energyCost": "1"
+    }
+   ],
+   "rarity": "common",
+   "origin": "Human",
+   "archetypes": [
+    "Healer"
+   ],
+   "combatRoles": [
+    "support"
+   ],
+   "stats": {
+    "hp": "24",
+    "ac": "10",
+    "int": "10",
+    "slots": "1",
+    "apT": "4",
+    "move": "3",
+    "ldr": "3"
+   },
+   "lore": "A satchel of dressings and a pistol she hopes not to need.",
+   "loreEnabled": true
   }
  ]
 }

@@ -203,6 +203,8 @@ func end_lines(r: Dictionary, wiped: bool) -> Array:
 						names.append(("%d × %s" % [int(m[nm]), nm]) if int(m[nm]) > 1 else str(nm))
 	if not names.is_empty():
 		out.append(("Lost with it, as packed: %s." if wiped else "Back to the dock, unused: %s.") % ", ".join(names))
+	if dk.get("lostHeroes") is Array and not dk["lostHeroes"].is_empty():
+		out.append("Lost with the team: %s. Recruit them again at the dock when they're on offer." % ", ".join(dk["lostHeroes"]))
 	for b in dk.get("bounties", []):
 		out.append("Bounty on %s paid: %s." % [b["name"], loot.text(b["bag"])])
 	if dk.get("insured") != null:

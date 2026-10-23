@@ -19,6 +19,13 @@
 ## Upgrades, paid in shards and parts: more Exchange stock, more free starter
 ## copies, insurance on a wiped haul, and a longer-range scanner.
 ##
+## Recruiting (0.25): a few Heroes on offer, from the Districts you have fought
+## in (or none), changing when the Exchange restocks; more of them with each
+## level of Exchange stock. A Hero is priced by its rarity and is yours until a
+## Strike Team it went out with is wiped out. The free Heroes (the dock's
+## tables list them) are always yours and never lost, so a team can always
+## leave; a Hero whose name starts "Test " is never on offer.
+##
 ## The dock is closed while a Strike Team is out.
 ##
 ## The game's own, beside dock.js: an export whose Exchange list is empty (none
@@ -29,7 +36,7 @@ class_name Dock
 extends RefCounted
 
 const UPGRADES := [
-	{"id": "exchange", "name": "Exchange stock", "what": "More lots of rarer components, and more pre-built Troops on offer at once."},
+	{"id": "exchange", "name": "Exchange stock", "what": "More lots of rarer components, and more pre-built Troops and Heroes on offer at once."},
 	{"id": "starter", "name": "Starter bay", "what": "More free starter copies every deployment."},
 	{"id": "insurance", "name": "Salvage insurance", "what": "Keep a share of the haul's shards and parts after a wipe."},
 	{"id": "scanner", "name": "Long-range scanner", "what": "See what tiles hold further from where the Strike Team stands."}]
@@ -41,12 +48,14 @@ const DEFAULTS := {"v": 1,
 	"reclaimUp": 3, "reclaimSwap": 2,
 	"bounty": {"shards": {"enemy": 15, "elite": 30, "miniboss": 60, "boss": 120}, "n": {"enemy": 1, "elite": 2, "miniboss": 3, "boss": 5}},
 	"items": [],
+	"heroPrice": [40, 80, 150, 300, 600, 1200], "heroOnOffer": 3,
+	"free": ["Dock Hand", "Hangar Rifleman", "Field Medic"],
 	"effect": {"exchange": [1, 2, 3], "starter": [6, 8, 10], "insurance": [10, 20, 30], "scanner": [2, 3, 4]},
 	"cost": {"exchange": [[150, "equipment", 0, 10], [400, "equipment", 1, 6], [900, "equipment", 2, 3]],
 		"starter": [[150, "troop", 0, 10], [400, "troop", 1, 6], [900, "troop", 2, 3]],
 		"insurance": [[150, "aether", 0, 10], [400, "aether", 1, 6], [900, "aether", 2, 3]],
 		"scanner": [[150, "equipment", 0, 10], [400, "equipment", 1, 6], [900, "equipment", 2, 3]]}}
-const SCALARS := ["sell", "bpFirst", "bpLater", "chassis", "preMult", "lots", "lotMax", "bpOffers", "chOffers", "itemsOnOffer", "preOnOffer", "reclaimUp", "reclaimSwap"]
+const SCALARS := ["sell", "bpFirst", "bpLater", "chassis", "preMult", "lots", "lotMax", "bpOffers", "chOffers", "itemsOnOffer", "preOnOffer", "reclaimUp", "reclaimSwap", "heroOnOffer"]
 const CLOSED := "The dock is closed while a Strike Team is out"
 ## What a Consumable or Prototype costs when the export ticks none for the Exchange.
 const FALLBACK_PRICE := 20
@@ -69,6 +78,8 @@ var world: World = null
 ## The game's own: with no Consumables or Prototypes ticked for the Exchange,
 ## it carries all of them. (Off, it is dock.js exactly: the comparison turns it off.)
 var fallback_items := true
+## For the tests made before recruiting (0.25): every Hero counts as yours.
+static var every_hero := false
 
 
 func _init(dep: Deployment = null, tables_content = null) -> void:
@@ -142,6 +153,13 @@ static func read_tables(m) -> Dictionary:
 			for i in 6:
 				pr.append(_whole(maxf(0.0, float(num(m["price"][i], DEFAULTS["price"][i])))))
 			t["price"] = pr
+		if m.get("heroPrice") is Array and m["heroPrice"].size() == 6:
+			var hp := []
+			for i in 6:
+				hp.append(_whole(maxf(0.0, float(num(m["heroPrice"][i], DEFAULTS["heroPrice"][i])))))
+			t["heroPrice"] = hp
+		if m.get("free") is Array:
+			t["free"] = m["free"].filter(func(x): return x is String and x != "")
 		for k in SCALARS:
 			if m.get(k) != null and _finite(m, k):
 				t[k] = _whole(maxf(0.0, jsplus(m[k])))
@@ -207,7 +225,7 @@ func carries_all() -> bool:
 
 # ---------------------------------------------------------------- the dock's own state
 static func blank() -> Dictionary:
-	return {"v": 1, "reach": 0, "upgrades": {"exchange": 0, "starter": 0, "insurance": 0, "scanner": 0}, "stock": null, "bounties": [], "rot": {"pre": 0, "items": 0}, "restocks": 0, "log": []}
+	return {"v": 1, "reach": 0, "upgrades": {"exchange": 0, "starter": 0, "insurance": 0, "scanner": 0}, "stock": null, "bounties": [], "rot": {"pre": 0, "items": 0}, "restocks": 0, "log": [], "heroes": {}}
 
 
 ## A saved state with anything missing filled in (dock.js's state()).
@@ -223,6 +241,8 @@ static func tidy(s) -> Dictionary:
 		o["bounties"] = []
 	if not (o.get("log") is Array):
 		o["log"] = []
+	if not (o.get("heroes") is Dictionary):
+		o["heroes"] = {}
 	var r := Scoring.plus(o.get("reach"))
 	o["reach"] = int(r) if not is_nan(r) and r != 0.0 else 0
 	if not o.has("stock"):
@@ -421,14 +441,21 @@ func restock(opts: Dictionary = {}) -> Dictionary:
 		"pre": _cycle(pre.map(func(d): return d["id"]), int(state["rot"]["pre"]), float(t["preOnOffer"]) + float(extra)), "sold": {}}
 	state["restocks"] = int(state["restocks"]) + 1
 	state["bounties"] = post_bounties()
+	state["stock"]["heroes"] = pick_heroes(float(t["heroOnOffer"]) + float(extra))
+	state["stock"]["hired"] = {}
 	note("The Exchange restocked; the Bounty Board changed.")
 	return state["stock"]
 
 
-## What is on offer now (the first stock is laid out the first time it is asked for).
+## What is on offer now (the first stock is laid out the first time it is asked for;
+## a stock from before recruiting gets its Heroes the first time it is looked at).
 func stock() -> Dictionary:
 	if not (state["stock"] is Dictionary):
 		restock({"first": true})
+	if not (state["stock"].get("heroes") is Array):
+		var up: int = state["upgrades"]["exchange"]
+		state["stock"]["heroes"] = pick_heroes(float(tables["heroOnOffer"]) + float(tables["effect"]["exchange"][up - 1] if up > 0 else 0))
+		state["stock"]["hired"] = {}
 	return state["stock"]
 
 
@@ -567,6 +594,91 @@ func buy_pre(id: String, n) -> Dictionary:
 		return short(price)
 	inv["pre"][id] = int(inv["pre"].get(id, 0)) + many
 	return {"ok": true, "price": price}
+
+
+# ---------------------------------------------------------------- recruiting Heroes (0.25)
+## Every Hero card, once by name.
+func hero_cards() -> Array:
+	var had := {}
+	var out := []
+	for c in (roster.from_export if roster != null else []):
+		if Roster.type_of(c) == "hero" and not had.has(c["name"]):
+			had[c["name"]] = true
+			out.append(c)
+	return out
+
+
+func is_free(name: String, t = null) -> bool:
+	var tb: Dictionary = t if t is Dictionary else tables
+	return tb["free"].has(name)
+
+
+static func is_test_hero(c: Dictionary) -> bool:
+	return str(c.get("name", "")).begins_with("Test ")
+
+
+## A Hero's District: none, or one fought in, puts it on offer.
+static func hero_district(c: Dictionary) -> String:
+	var d := Progress.enemy_district(c)
+	return "" if d == "any" else d
+
+
+## Whether a Hero can lead a Strike Team out: a free one, or one recruited.
+func owns(name: String) -> bool:
+	return every_hero or is_free(name) or Rules.truthy(state["heroes"].get(name))
+
+
+func owned_heroes() -> Array:
+	return js_keys(state["heroes"])
+
+
+static func hero_rarity(c) -> int:
+	var r := str(c.get("rarity", "") if c is Dictionary and c.get("rarity") != null else "").to_lower()
+	for i in Loot.RARITIES.size():
+		if Loot.RARITIES[i]["id"] == r:
+			return i
+	return 0
+
+
+func hero_price(name: String, t = null):
+	var tb: Dictionary = t if t is Dictionary else tables
+	var c = card_of(name)
+	return tb["heroPrice"][hero_rarity(c)] if c != null else 0
+
+
+func recruitable() -> Array:
+	var fought := districts_fought()
+	return hero_cards().filter(func(c):
+		var d := hero_district(c)
+		return not is_free(c["name"]) and not is_test_hero(c) and not Rules.truthy(state["heroes"].get(c["name"])) and (d == "" or fought.has(d)))
+
+
+func pick_heroes(n) -> Array:
+	return _pick_n(recruitable().map(func(c): return c["name"]), n)
+
+
+func recruit(name: String) -> Dictionary:
+	if closed():
+		return {"ok": false, "why": CLOSED}
+	var st := stock()
+	if not st["heroes"].has(name):
+		return {"ok": false, "why": "Not on offer"}
+	if owns(name):
+		return {"ok": false, "why": "Already yours"}
+	if card_of(name) == null:
+		return {"ok": false, "why": "That Hero is gone"}
+	var price = hero_price(name)
+	if not pay(price):
+		return short(price)
+	state["heroes"][name] = 1
+	state["stock"]["hired"][name] = 1
+	note("%s recruited." % name)
+	return {"ok": true, "price": price}
+
+
+## The team's Heroes that aren't yours: it can't leave with them.
+func unowned(names: Array) -> Array:
+	return names.filter(func(n): return not owns(str(n)))
 
 
 # ---------------------------------------------------------------- Reclaiming
@@ -733,6 +845,14 @@ func deployment_ended(o: Dictionary) -> Dictionary:
 		state["reach"] = mini(6, int(ms))
 		out["reach"] = state["reach"]
 		note("Reach extended to Skull Level %d." % state["reach"])
+	# (0.25) a wipe loses the recruited Heroes who went out with it; the free ones come back
+	if o.get("result") == "wipe" and o.get("heroes") is Array:
+		var lost: Array = o["heroes"].filter(func(n): return Rules.truthy(state["heroes"].get(n)))
+		for n in lost:
+			state["heroes"].erase(n)
+		if not lost.is_empty():
+			out["lostHeroes"] = lost
+			note("Lost with the wipe: %s." % ", ".join(lost))
 	if o.get("result") == "home":
 		out["bounties"] = claim(o["kills"] if o.get("kills") is Array else [])
 	var ins = insurance()

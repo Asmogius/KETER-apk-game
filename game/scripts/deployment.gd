@@ -117,6 +117,10 @@ func plan(team: Dictionary, pack = null) -> Dictionary:
 			reasons.append("a Hero in it is missing (%s)" % str(h))
 	if team.get("heroes", []).is_empty():
 		reasons.append("it has no Hero")
+	# (0.25) only Heroes recruited at the dock, or the free ones, can leave with it
+	if dock != null:
+		for n in dock.unowned(heroes):
+			reasons.append("%s isn't recruited: recruit them at the dock, or swap in a free Hero" % n)
 	var per := {}
 	var per_order := []
 	var forge := {}
@@ -731,7 +735,7 @@ func wipe() -> Dictionary:
 	s = c
 	note("Wiped out. The haul is lost.")
 	# packed Consumables and Prototypes are lost with it; insurance may keep some of the haul
-	var dk := dock.deployment_ended({"result": "wipe", "haul": haul, "explored": explored}) if dock != null else {}
+	var dk := dock.deployment_ended({"result": "wipe", "haul": haul, "explored": explored, "heroes": c["team"].get("heroes", []).map(func(h): return str(h))}) if dock != null else {}
 	return {"ok": true, "lostHaul": haul, "lostItems": items, "n": c["n"], "dock": dk, "lostPack": c["pack"].duplicate(true)}
 
 

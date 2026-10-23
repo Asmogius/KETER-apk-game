@@ -536,6 +536,7 @@ func _world(scene: Node2D, o: Dictionary) -> void:
 ## The dock: dock= ops, ";"-separated.
 ##   tab:<k>   give:<name>:<n>   reach:<n>   meet   restock   wantall   up:<id>:<level>   items:<name>,<name>
 ##   deploy   pick:<i>   pack:<name>:<by>   testing:<which>   ok:<n>   act:<what>:<args>   wait:<frames>
+##   (0.25) strict (only the Heroes recruited, and the free ones, are yours)   hire:<name>   scroll:<px>
 func _dock(scene: Node2D, o: Dictionary) -> void:
 	var cm: Campaign = scene.campaign
 	var dk: DockScreen = scene.dock_screen
@@ -552,6 +553,11 @@ func _dock(scene: Node2D, o: Dictionary) -> void:
 					if Progress.is_foe(c):
 						cm.progress.see("enemy", c["name"])
 			"restock": cm.dock.restock()
+			"strict": Dock.every_hero = false
+			"hire": cm.dock.state["heroes"][bits[1]] = 1
+			"scroll":
+				await process_frame
+				dk.list.scroll_by(float(bits[1]))
 			"wantall":
 				# (a Bounty Board that wants every Enemy, so that whatever is met wears the tag)
 				cm.dock.state["bounties"] = cm.dock.foes().map(func(k): return {"name": k["name"], "kind": k["cardType"], "district": Progress.enemy_district(k), "claimed": false})

@@ -3601,8 +3601,8 @@
    "kind": "body",
    "name": "Bipedal",
    "rect": [
+    0,
     336,
-    288,
     48,
     48
    ]
@@ -3802,6 +3802,19 @@
     48
    ]
   },
+  "dock_hand": {
+   "big": false,
+   "cardType": "hero",
+   "id": "D0-H01",
+   "kind": "hero",
+   "name": "Dock Hand",
+   "rect": [
+    240,
+    288,
+    48,
+    48
+   ]
+  },
   "dross_the_forge_blind": {
    "big": true,
    "cardType": "hero",
@@ -3893,6 +3906,19 @@
     48
    ]
   },
+  "field_medic": {
+   "big": false,
+   "cardType": "hero",
+   "id": "D0-H03",
+   "kind": "hero",
+   "name": "Field Medic",
+   "rect": [
+    336,
+    288,
+    48,
+    48
+   ]
+  },
   "foundry_sentinel": {
    "big": false,
    "cardType": "troop",
@@ -3906,6 +3932,19 @@
     48
    ]
   },
+  "hangar_rifleman": {
+   "big": false,
+   "cardType": "hero",
+   "id": "D0-H02",
+   "kind": "hero",
+   "name": "Hangar Rifleman",
+   "rect": [
+    288,
+    288,
+    48,
+    48
+   ]
+  },
   "hexapod": {
    "big": false,
    "cardType": null,
@@ -3913,7 +3952,7 @@
    "kind": "body",
    "name": "Hexapod",
    "rect": [
-    0,
+    144,
     336,
     48,
     48
@@ -4004,7 +4043,7 @@
    "kind": "body",
    "name": "Octopod",
    "rect": [
-    48,
+    192,
     336,
     48,
     48
@@ -4134,8 +4173,8 @@
    "kind": "body",
    "name": "Quadcopter",
    "rect": [
-    384,
-    288,
+    48,
+    336,
     48,
     48
    ]
@@ -4147,8 +4186,8 @@
    "kind": "body",
    "name": "Quadruped",
    "rect": [
-    432,
-    288,
+    96,
+    336,
     48,
     48
    ]
@@ -4316,7 +4355,7 @@
    "kind": "troop",
    "name": "Skitter Harrier Mk I",
    "rect": [
-    288,
+    432,
     288,
     48,
     48
@@ -4329,7 +4368,7 @@
    "kind": "troop",
    "name": "Skitter Runner Mk I",
    "rect": [
-    240,
+    384,
     288,
     48,
     48
@@ -4381,7 +4420,7 @@
    "kind": "standin",
    "name": "Beast stand-in",
    "rect": [
-    240,
+    384,
     336,
     48,
     48
@@ -4394,7 +4433,7 @@
    "kind": "standin",
    "name": "Drone stand-in",
    "rect": [
-    192,
+    336,
     336,
     48,
     48
@@ -4407,7 +4446,7 @@
    "kind": "standin",
    "name": "Melee stand-in",
    "rect": [
-    96,
+    240,
     336,
     48,
     48
@@ -4420,7 +4459,7 @@
    "kind": "standin",
    "name": "Ranged stand-in",
    "rect": [
-    144,
+    288,
     336,
     48,
     48

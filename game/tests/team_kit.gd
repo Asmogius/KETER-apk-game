@@ -24,6 +24,8 @@ static func fresh() -> void:
 	Motion.path = SETTINGS
 	Motion.reset()
 	Motion.still = true
+	# (0.25) the tests' teams lead with Heroes nobody has recruited: they count as yours, unless a test says not
+	Dock.every_hero = true
 
 
 ## Three Heroes (the third has the Action Slots, and carries an Action card),

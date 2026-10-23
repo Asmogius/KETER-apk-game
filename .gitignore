@@ -8,3 +8,7 @@ whatsnew.html
 __pycache__/
 # Godot's cache
 game/.godot/
+# made by verify_game.py from the Companion's code (make_*_cases.js)
+game/tests/fixtures/*_cases.json
+# contact sheets from game/tools/art
+game/tools/art/out/

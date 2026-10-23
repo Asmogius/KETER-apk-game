@@ -19,6 +19,10 @@ const MAX_CHIPS := 30
 const MAX_CONSUMABLES := 9
 
 var roster: Roster
+## (0.25) Says whether a Hero can lead the team out on a deployment (a free
+## one, or one recruited at the dock); the others are marked, and fight only
+## practice battles.
+var owns: Callable = Callable()
 var team: Dictionary = {}
 var tab := "heroes"
 var deck_filter := "all"
@@ -162,10 +166,15 @@ func _gone_items(names: Array, extra: Callable = Callable()) -> Array:
 func _show_heroes(keep: bool) -> void:
 	var n: int = team["heroes"].size()
 	hint.text = "Up to 3 Heroes share the team's Deck. A floor lets in 1, 2 or 3 of them by its size; the rest wait in reserve. Tap a Hero to read it and add it. %s" % (("%d in the team." % n) if n > 0 else "None in the team yet.")
+	if owns.is_valid():
+		hint.text += " A Hero marked Not recruited fights practice battles; to deploy with them, recruit them at the dock."
 	var items := _gone_items(team["heroes"], func(_n): return {"mark": "In team"})
 	for c in roster.heroes():
 		var at: int = team["heroes"].find(c["name"])
-		items.append(_item(c, {"chosen": at >= 0, "mark": ("In team · %d" % (at + 1)) if at >= 0 else ""}))
+		var mark := ("In team · %d" % (at + 1)) if at >= 0 else ""
+		if owns.is_valid() and not owns.call(str(c["name"])):
+			mark = (mark + " · " if mark != "" else "") + "Not recruited"
+		items.append(_item(c, {"chosen": at >= 0, "mark": mark}))
 		_shown.append({"card": c})
 	grid.empty_text = "The export has no Hero cards."
 	grid.set_items(items, keep)

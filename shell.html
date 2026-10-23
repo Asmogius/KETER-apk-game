@@ -3641,7 +3641,7 @@ function simDeployResultHTML(R0){
   else if(o.next==="wipe"){ h+='<div class="simloot"><p><b>Deployment lost \u2014 a wipe loses everything carried</b></p>'+
       '<ul style="opacity:.6;text-decoration:line-through;">'+bagList(o.lostHaul||L.bag())+itemList(o.lostItems)+packList(o.lostPack)+'</ul>'+
       (o.dock&&o.dock.insured?'<p style="margin:4px 0;"><b>Salvage insurance</b> kept some of it, now in your stockpile:</p><ul>'+bagList(o.dock.insured)+'</ul>':'')+
-      '<p style="margin:4px 0;">The copies were spent. The Heroes recover at the dock.</p></div>'; row=btn("simDepMap","Back to the map",true); }
+      '<p style="margin:4px 0;">The copies were spent. '+(o.dock&&o.dock.lostHeroes&&o.dock.lostHeroes.length?'Lost with the team: '+esc(o.dock.lostHeroes.join(", "))+'. Recruit them again at the dock when they\u2019re on offer; the free Heroes recover there.':'The Heroes recover at the dock.')+'</p></div>'; row=btn("simDepMap","Back to the map",true); }
   else row=btn("simDepMap","Back to the map",true);
   return h+'<div class="row" style="display:flex;gap:7px;margin-top:11px;">'+row+'</div>';
 }

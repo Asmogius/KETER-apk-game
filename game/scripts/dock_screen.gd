@@ -4,7 +4,8 @@
 ## dock keeps for you, the blueprints and chassis you own, the deployments so
 ## far, and a Testing row); the Exchange (components, lots of rarer ones,
 ## blueprints and chassis, Consumables and Prototypes, pre-built Troops, and
-## selling); Reclaiming; the Bounty Board; and Upgrades. Everything but looking
+## selling); (0.25) Recruit (the Heroes on offer, the free ones and the ones
+## you have); Reclaiming; the Bounty Board; and Upgrades. Everything but looking
 ## waits while a Strike Team is out.
 ##
 ## (0.15) QM-7, the Hangar's logistics robot, keeps the dock: its portrait
@@ -27,7 +28,7 @@ signal map_requested                   # look at the map, or go back to the team
 signal deployed                        # a Strike Team has just left
 signal workshop_requested
 
-const TABS := [["stockpile", "Stockpile"], ["exchange", "Exchange"], ["reclaim", "Reclaim"], ["bounties", "Bounties"], ["upgrades", "Upgrades"]]
+const TABS := [["stockpile", "Stockpile"], ["exchange", "Exchange"], ["recruit", "Recruit"], ["reclaim", "Reclaim"], ["bounties", "Bounties"], ["upgrades", "Upgrades"]]
 
 var campaign: Campaign = null
 var roster: Roster = null
@@ -75,7 +76,7 @@ func _init() -> void:
 	head.add_child(tab_row)
 	for k in TABS:
 		var key: String = k[0]
-		var b := UI.button(k[1], func(): show_tab(key), 136)
+		var b := UI.button(k[1], func(): show_tab(key), 124)
 		b.toggle_mode = true
 		tab_row.add_child(b)
 		tabs[key] = b
@@ -224,6 +225,7 @@ func show_tab(k: String) -> void:
 	help_text = ""
 	match k:
 		"exchange": _exchange_rows()
+		"recruit": _recruit_rows()
 		"reclaim": _reclaim_rows()
 		"bounties": _bounty_rows()
 		"upgrades": _upgrade_rows()
@@ -265,7 +267,7 @@ func _on_blink() -> void:
 func show_help() -> void:
 	if dialog != null:
 		return
-	var name: String = "Deploy" if choosing else ({"stockpile": "Stockpile", "exchange": "Exchange", "reclaim": "Reclaim", "bounties": "Bounties", "upgrades": "Upgrades"}.get(tab, "The dock"))
+	var name: String = "Deploy" if choosing else ({"stockpile": "Stockpile", "exchange": "Exchange", "recruit": "Recruit", "reclaim": "Reclaim", "bounties": "Bounties", "upgrades": "Upgrades"}.get(tab, "The dock"))
 	dialog = Dialog.new(name, hint.text + ("\n\n" + help_text if help_text != "" else ""), ["Close"], UI.CYAN)
 	add_child(dialog)
 	dialog.chosen.connect(func(_k): _close_dialog())
@@ -434,6 +436,67 @@ func _card_picture(card, kind: String) -> Texture2D:
 		if f != null:
 			return f
 	return Art.card_standin("prototype" if kind == "prototype" else "consumable")
+
+
+# ---------------------------------------------------------------- Recruit (0.25)
+func _recruit_rows() -> void:
+	var dk := dock()
+	var st := dk.stock()
+	hint.text = "Heroes to lead your Strike Teams, paid in Aether shards by their rarity; you hold %d. A Hero you recruit is yours until a team it goes out with is wiped out. The free Heroes are always yours, so a team can always leave. The roster changes when the Exchange restocks.%s" % [dk.stockpile()["shards"], _closed_note()]
+	# teams that can't leave as they stand
+	var stuck := []
+	for t in StrikeTeams.load_all():
+		var not_yet := dk.unowned(t.get("heroes", []).filter(func(n): return roster.card_named(str(n)) != null))
+		if not not_yet.is_empty():
+			stuck.append("%s (%s)" % [t.get("name", "?"), ", ".join(not_yet)])
+	if not stuck.is_empty():
+		_quiet("Can't deploy until their Heroes are recruited, or swapped for free ones: %s." % "; ".join(stuck))
+	if st["heroes"].is_empty():
+		_quiet("Nobody on offer.", "Heroes come from the Districts your teams have fought in, and those of no District.", "On offer")
+	else:
+		_head("On offer", "", "A few Heroes at a time, from the Districts your teams have fought in, and those of no District. Recruited, a Hero is yours until a team it goes out with is wiped out.")
+		var offer := []
+		for nm in st["heroes"]:
+			var c = dk.card_of(nm)
+			if c == null:
+				continue
+			var hired: bool = Rules.truthy(st["hired"].get(nm)) or dk.owns(nm)
+			offer.append(_hero_tile(c, Scoring.text(dk.hero_price(nm)) if not hired else null,
+				[["Recruited", null, UI.DIM]] if hired else [["Recruit", ["recruit", nm], UI.CYAN]]))
+		_tiles(offer)
+	var free := dk.hero_cards().filter(func(c): return dk.is_free(c["name"]))
+	if free.is_empty():
+		_quiet("No free Heroes.", "", "Free Heroes")
+	else:
+		_head("Free Heroes", "", "Always yours, never lost: a team led by them can always leave.")
+		_tiles(free.map(func(c): return _hero_tile(c, null, [["Always yours", null, UI.DIM]])))
+	var mine := dk.owned_heroes().filter(func(n): return dk.card_of(n) != null)
+	if mine.is_empty():
+		_quiet("No Heroes recruited yet.", "", "Recruited")
+	else:
+		_head("Recruited", "", "Yours until a team they go out with is wiped out.")
+		_tiles(mine.map(func(n): return _hero_tile(dk.card_of(n), null, [["Yours", null, UI.DIM]])))
+
+
+## A Hero on a tile: its token, its rarity, District and roles, its numbers and its abilities.
+func _hero_tile(c: Dictionary, price, chips: Array) -> Dictionary:
+	var r := Dock.hero_rarity(c)
+	var d := Dock.hero_district(c)
+	var stats: Dictionary = c.get("stats") if c.get("stats") is Dictionary else {}
+	var nums := []
+	for k in [["hp", "HP"], ["ac", "AC"], ["move", "Move"], ["slots", "Slots"], ["ldr", "Leadership"]]:
+		if stats.get(k[0]) != null and str(stats[k[0]]) != "":
+			nums.append("%s %s" % [k[1], str(stats[k[0]])])
+	var abil := []
+	for e in (c.get("entries") if c.get("entries") is Array else []):
+		if e is Dictionary and str(e.get("name", "")) != "":
+			abil.append(str(e["name"]))
+	var roles: Array = c.get("combatRoles") if c.get("combatRoles") is Array else []
+	var tok := roster.token_for(c) if roster != null else {}
+	return {"text": str(c["name"]), "colour": rarity_colour(r), "edge": rarity_colour(r).darkened(0.3),
+		"sub": "%s · %s%s\n%s%s" % [Loot.RARITIES[r]["label"], ("District " + d) if d != "" else "any District", (" · " + ", ".join(roles)) if not roles.is_empty() else "",
+			" · ".join(nums), ("\n" + " · ".join(abil)) if not abil.is_empty() else ""],
+		"picture": tok.get("texture"), "price": price, "chips": chips}
 
 
 # ---------------------------------------------------------------- Reclaiming
@@ -709,7 +772,7 @@ func _on_row(i: int, at: Vector2) -> void:
 # ---------------------------------------------------------------- what a tap does
 ## ["buy_parts", type, rarity, n, lot], ["sell_parts", type, rarity, n],
 ## ["buy_item", it], ["buy_card", name, n], ["sell_card", name, n],
-## ["buy_pre", id, n], ["combine", type, rarity], ["swap", from, to, rarity],
+## ["buy_pre", id, n], ["recruit", name], ["combine", type, rarity], ["swap", from, to, rarity],
 ## ["upgrade", id], ["testing", what], ["pack", name, by].
 func act(what: Array) -> void:
 	var dk := dock()
@@ -721,6 +784,7 @@ func act(what: Array) -> void:
 		"buy_card": r = dk.buy_card(what[1], what[2])
 		"sell_card": r = dk.sell_card(what[1], what[2])
 		"buy_pre": r = dk.buy_pre(what[1], what[2])
+		"recruit": r = dk.recruit(what[1])
 		"combine": r = dk.combine(what[1], what[2], 1)
 		"swap": r = dk.swap(what[1], what[2], what[3], 1)
 		"upgrade": r = dk.upgrade(what[1])
@@ -733,7 +797,7 @@ func act(what: Array) -> void:
 	if r.get("ok"):
 		campaign.save()
 		_say(_done_text(what, r))
-		moment = {"buy_parts": "bought", "buy_item": "bought", "buy_card": "bought", "buy_pre": "bought", "sell_parts": "sold", "sell_card": "sold",
+		moment = {"buy_parts": "bought", "buy_item": "bought", "buy_card": "bought", "buy_pre": "bought", "recruit": "recruited", "sell_parts": "sold", "sell_card": "sold",
 			"combine": "made", "swap": "made", "upgrade": "upgraded"}.get(what[0], "")
 	else:
 		_say(str(r.get("why", "That can't be done")) + ".", true)
@@ -749,6 +813,7 @@ func _done_text(what: Array, r: Dictionary) -> String:
 		"buy_card": return "Bought %s for %s shards: it's kept here." % [what[1], Scoring.text(r["price"])]
 		"sell_card": return "Sold %s for %d shards." % [what[1], r["gain"]]
 		"buy_pre": return "Bought a copy for %d shards: it joins the next deployment." % r["price"]
+		"recruit": return "%s recruited for %s shards: they can lead a Strike Team now." % [what[1], Scoring.text(r["price"])]
 		"combine": return "Combined: 1 %s made." % Loot.RARITIES[int(what[2]) + 1]["label"]
 		"swap": return "Swapped: 1 %s part made." % str(what[2])
 		"upgrade": return "Upgraded to level %d." % r["level"]

@@ -1,8 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.24 withdraws
-the last four cards in plain text; v0.23 brought in Handbook Revision 16.3's
-eleven keywords and every effect box the audit rewrote.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.25 recruits
+Heroes at the dock; v0.24 withdrew the last four cards in plain text.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -12,6 +11,21 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.25 (Companion 14.14): **Recruit, a tab at the dock.** A Strike
+Team leaves only with Heroes who are yours:
+
+- **Three free Heroes**, Dock Hand (melee), Hangar Rifleman (ranged) and
+  Field Medic (support): plain Heroes of no District, always yours and never
+  lost, so a team can always leave. Each has its token.
+- **Three on offer**, from the Districts your teams have fought in, priced in
+  shards by rarity (40 to 1,200); one more for each level of Exchange stock.
+  The roster changes when the Exchange restocks.
+- **A recruited Hero is yours until a wipe**: one copy, for any of your
+  teams. A wipe loses the recruited Heroes who went out with it.
+- **A team with a Hero who isn't yours** is kept, but can't deploy: the
+  Strike Teams list says which Hero to recruit, and the team editor marks
+  them Not recruited. Practice fights take any Hero.
 
 New in 0.24 (Companion 14.13): **Split Chip, Reforge, Hold Fast and
 Quartermaster's Seal are withdrawn**, with their pictures. They were the last

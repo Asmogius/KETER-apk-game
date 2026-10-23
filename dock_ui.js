@@ -1,6 +1,7 @@
 /* ===========================================================================
    The Dock page (v12.9): the Exchange, Reclaiming, the Bounty Board, the
-   dock's upgrades, and the stockpile. Dev Mode adds the dock's tables, the
+   dock's upgrades, and the stockpile; and (v14.14) Recruit, the Heroes on
+   offer, the free ones and the ones you have. Dev Mode adds the dock's tables, the
    Consumables and Prototypes the Exchange carries, and a restock button.
    =========================================================================== */
 (function(){
@@ -29,8 +30,8 @@
       '<div class="dkstat"><b>'+fmt(st.shards)+'</b> shards · '+fmt(L().count(st))+' components · reach: '+(s.reach?'Skull '+s.reach+' ('+rar(reachR)+' at most)':'none yet — Commons only')+'</div>'+
       '<div class="pxrow"><button class="ghost" data-page="world">World Map</button><button class="ghost" data-page="workshop">Workshop</button><button class="ghost" data-page="loot">Stockpile</button></div>'+
       (MSG?'<p class="wsmsg">'+MSG+'</p>':'')+
-      '<div class="seg pxseg">'+tab("exchange","Exchange")+tab("reclaim","Reclaim")+tab("bounties","Bounties")+tab("upgrades","Upgrades")+'</div>'+
-      '<div id="dkBody">'+(TAB==="exchange"?exchangeHTML():TAB==="reclaim"?reclaimHTML():TAB==="bounties"?bountyHTML():upgradesHTML())+'</div>'+
+      '<div class="seg pxseg">'+tab("exchange","Exchange")+tab("recruit","Recruit")+tab("reclaim","Reclaim")+tab("bounties","Bounties")+tab("upgrades","Upgrades")+'</div>'+
+      '<div id="dkBody">'+(TAB==="exchange"?exchangeHTML():TAB==="recruit"?recruitHTML():TAB==="reclaim"?reclaimHTML():TAB==="bounties"?bountyHTML():upgradesHTML())+'</div>'+
       (dev()?devHTML():'')+'</div>';
   }
   function btn(attr, label, disabled, primary){ return '<button class="ghost'+(primary&&!disabled?" primary":"")+'" '+attr+(disabled?" disabled":"")+'>'+label+'</button>'; }
@@ -81,6 +82,27 @@
     return h;
   }
 
+  /* ---- Recruit (v14.14) ---- */
+  function heroStats(c){ var st=c.stats||{}, out=[];
+    [["hp","HP"],["ac","AC"],["move","Move"],["slots","Action Slots"],["ldr","Leadership"]].forEach(function(k){ if(st[k[0]]!=null && st[k[0]]!=="") out.push(k[1]+" "+st[k[0]]); }); return out.join(" · "); }
+  function heroRow(c, right, extra){
+    var X=K(), d=X.heroDistrict(c), R=L().RARITIES[X.heroRarity(c)];
+    return '<div class="dkrow dkpre"><span><b>'+esc(c.name)+'</b><i><span style="color:'+R.lite+'">'+R.label+'</span>'+(d?' · District '+esc(d):' · any District')+((c.combatRoles||[]).length?' · '+esc((c.combatRoles||[]).join(", ")):'')+'</i>'+
+      '<i>'+esc(heroStats(c))+'</i>'+(c.entries||[]).map(function(e){ return '<i class="dktext"><b>'+esc(e.name||e.kind)+'</b> '+esc(plain(e.text))+'</i>'; }).join("")+(extra||'')+'</span>'+right+'</div>';
+  }
+  function recruitHTML(){
+    var X=K(), t=X.tables(), stk=X.stock(), closed=X.closed(), h='', mine=X.ownedHeroes();
+    h+='<p class="pxnote">Heroes to lead your Strike Teams. A recruited Hero is yours until a team it goes out with is wiped out. The free Heroes are always yours. The roster changes when the Exchange restocks.</p>';
+    h+='<p class="pxsub">On offer</p>'+(stk.heroes.length?'<div class="dklist">'+stk.heroes.map(function(nm){
+      var c=X.cardOf(nm); if(!c) return ''; var hired=stk.hired&&stk.hired[nm], have=X.owns(nm);
+      return heroRow(c, btn('data-dkhire="'+esc(nm)+'"', hired||have?"Recruited":"Recruit · "+X.heroPrice(nm)+" shards", closed||hired||have, true));
+    }).join("")+'</div>':'<p class="pxnote">Nobody on offer. Heroes come from the Districts your teams have fought in.</p>');
+    var free=X.heroCards().filter(function(c){ return X.isFree(c.name,t); });
+    h+='<p class="pxsub">Free Heroes</p>'+(free.length?'<div class="dklist">'+free.map(function(c){ return heroRow(c,'<i class="wldok">Always yours</i>'); }).join("")+'</div>':'<p class="pxnote">None: Dev Mode lists them.</p>');
+    h+='<p class="pxsub">Recruited</p>'+(mine.length?'<div class="dklist">'+mine.map(function(nm){ var c=X.cardOf(nm); return c?heroRow(c,'<i class="wldok">Yours</i>'):''; }).join("")+'</div>':'<p class="pxnote">None yet.</p>');
+    return h;
+  }
+
   /* ---- Reclaiming ---- */
   function reclaimHTML(){
     var X=K(), t=X.tables(), st=L().stock(), closed=X.closed(), top=X.reachRarity(), h='';
@@ -108,7 +130,7 @@
   }
 
   /* ---- upgrades ---- */
-  function effectText(id, v){ return id==="starter"?v+" free starter copies":id==="insurance"?v+"% of a wiped haul kept":id==="scanner"?"see "+v+" steps away":"+"+v+" lot"+(v===1?"":"s")+" of rarer parts and +"+v+" pre-built"+(v===1?"":"s")+" on offer"; }
+  function effectText(id, v){ return id==="starter"?v+" free starter copies":id==="insurance"?v+"% of a wiped haul kept":id==="scanner"?"see "+v+" steps away":"+"+v+" lot"+(v===1?"":"s")+" of rarer parts and +"+v+" pre-built"+(v===1?"":"s")+" and +"+v+" Hero"+(v===1?"":"es")+" on offer"; }
   function upgradesHTML(){
     var X=K(), closed=X.closed();
     return '<div class="dklist">'+X.UPGRADES.map(function(u){
@@ -126,6 +148,7 @@
     var all=[]; try{ all=window.KETER_ALLCARDS().filter(function(c){ return c.cardType==="consumable"||c.cardType==="prototype"; }); }catch(e){}
     var seen={}; all=all.filter(function(c){ if(seen[c.name]) return false; seen[c.name]=1; return true; });
     var carried={}; t.items.forEach(function(x){ carried[x.name]=x.price; });
+    var heroes=X.heroCards();
     return '<div class="wsdev wlddev"><p class="pxsub">Dev Mode · the dock</p>'+
       '<div class="pxrow"><button class="ghost" id="dkRestock">Restock now</button><button class="ghost" id="dkReach">Reach +1</button><button class="ghost" id="dkReset">Reset the dock</button></div>'+
       '<details class="wldsec"><summary>What the Exchange carries</summary><p class="wldnote">Tick the Consumables and Prototypes it sells, and set each price. It shows a few at a time, in this order.</p>'+
@@ -140,6 +163,11 @@
         '<label class="chf"><span>Chassis on offer</span>'+n("chOffers",t.chOffers)+'</label><label class="chf"><span>Consumables etc. on offer</span>'+n("itemsOnOffer",t.itemsOnOffer)+'</label>'+
         '<label class="chf"><span>Pre-builts on offer</span>'+n("preOnOffer",t.preOnOffer)+'</label><label class="chf"><span>Combine: how many</span>'+n("reclaimUp",t.reclaimUp)+'</label>'+
         '<label class="chf"><span>Swap: how many</span>'+n("reclaimSwap",t.reclaimSwap)+'</label></div></details>'+
+      '<details class="wldsec"><summary>Recruiting</summary><p class="wldnote">Tick the free Heroes: always yours, never lost. The others are recruited at a price by their rarity.</p>'+
+        (heroes.length?heroes.map(function(c){ return '<div class="wldrow wldmini"><label class="wldchk"><input type="checkbox" data-dkfree="'+esc(c.name)+'"'+(X.isFree(c.name,t)?" checked":"")+'> '+esc(c.name)+' <i>'+esc(c.rarity||"common")+'</i></label></div>'; }).join(""):'<p class="wldnote">No Hero cards yet.</p>')+
+        '<div class="chgrid">'+L().RARITIES.map(function(r,i){ return '<label class="chf"><span>'+r.label+' Hero</span>'+n("heroPrice."+i,t.heroPrice[i])+'</label>'; }).join("")+
+        '<label class="chf"><span>Heroes on offer</span>'+n("heroOnOffer",t.heroOnOffer)+'</label></div>'+
+        '<div class="pxrow"><button class="ghost" id="dkHeroesAll">Recruit every Hero</button><button class="ghost" id="dkHeroesNone">Lose every recruited Hero</button></div></details>'+
       '<details class="wldsec"><summary>Bounties</summary><div class="chgrid">'+Object.keys(X.KIND_LABEL).map(function(k){
         return '<label class="chf"><span>'+X.KIND_LABEL[k]+': shards per Skull</span>'+n("bounty.shards."+k,t.bounty.shards[k])+'</label><label class="chf"><span>'+X.KIND_LABEL[k]+': components</span>'+n("bounty.n."+k,t.bounty.n[k])+'</label>'; }).join("")+'</div></details>'+
       '<details class="wldsec"><summary>Upgrades</summary>'+X.UPGRADES.map(function(u){
@@ -167,21 +195,26 @@
     if((a=t.getAttribute("data-dksellcard"))){ var n5=q("sc:"+a); said(X.sellCard(a,n5), function(r){ return "Sold for "+r.gain+" shards."; }); return; }
     if((a=t.getAttribute("data-dkup"))){ var p2=a.split(":"), n6=q("u:"+a); said(X.combine(p2[0],+p2[1],n6), function(r){ return "Made "+r.made+" × "+esc(pname(p2[0],+p2[1]+1))+"."; }); return; }
     if(id==="dkSwap"){ var f=$("dkFrom").value, to=$("dkTo").value, rr=+$("dkRar").value, n7=q("w"); said(X.swap(f,to,rr,n7), function(r){ return "Made "+r.made+" × "+esc(pname(to,rr))+"."; }); return; }
+    if((a=t.getAttribute("data-dkhire"))){ said(X.recruit(a), function(r){ return esc(a)+" recruited for "+r.price+" shards."; }); return; }
+    if(id==="dkHeroesAll"){ var s2=X.state(); X.heroCards().forEach(function(c){ if(!X.isFree(c.name)) s2.heroes[c.name]=1; }); X._save(s2); MSG="Every Hero is yours."; draw(); return; }
+    if(id==="dkHeroesNone"){ var s3=X.state(); s3.heroes={}; X._save(s3); MSG="No recruited Heroes."; draw(); return; }
     if((a=t.getAttribute("data-dkupg"))){ said(X.upgrade(a), function(r){ return "Upgraded to level "+r.level+"."; }); return; }
     if(id==="dkRestock"){ X.restock(); MSG="Restocked."; draw(); return; }
     if(id==="dkReach"){ var s=X.state(); s.reach=Math.min(6,(s.reach||0)+1); X._save(s); MSG="Reach set to Skull "+s.reach+"."; draw(); return; }
-    if(id==="dkReset"){ if(confirm("Reset the dock? Stock, bounties, upgrades, reach and everything kept here (Consumables, Prototypes, pre-built copies) are cleared.")){ X.reset(); MSG="The dock is reset."; draw(); } return; }
-    if(id==="dkTabReset"){ if(confirm("Put the dock’s tables back to their starting values? The Exchange’s list of Consumables and Prototypes stays.")){ X.resetTables(); draw(); } return; }
+    if(id==="dkReset"){ if(confirm("Reset the dock? Stock, bounties, upgrades, reach, recruited Heroes and everything kept here (Consumables, Prototypes, pre-built copies) are cleared.")){ X.reset(); MSG="The dock is reset."; draw(); } return; }
+    if(id==="dkTabReset"){ if(confirm("Put the dock’s tables back to their starting values? The Exchange’s list of Consumables and Prototypes, and which Heroes are free, stay.")){ X.resetTables(); draw(); } return; }
   });
   document.addEventListener("input",function(e){ if(!HOST||!HOST.contains(e.target)) return; var a=e.target.getAttribute("data-dkq"); if(a) QTY[a]=e.target.value; });
   document.addEventListener("change",function(e){
     if(!HOST || !HOST.contains(e.target)) return;
     var el=e.target, a, X=K();
     if((a=el.getAttribute("data-dkitem"))){ var t=X.tables(); if(el.checked){ if(!t.items.some(function(x){ return x.name===a; })) t.items.push({name:a, price:20}); } else t.items=t.items.filter(function(x){ return x.name!==a; }); X.saveTables(t); draw(); return; }
+    if((a=el.getAttribute("data-dkfree"))){ var tf=X.tables(); tf.free=tf.free.filter(function(x){ return x!==a; }); if(el.checked) tf.free.push(a); X.saveTables(tf); draw(); return; }
     if((a=el.getAttribute("data-dkiprice"))){ var t2=X.tables(); t2.items.forEach(function(x){ if(x.name===a) x.price=Math.max(0,parseFloat(el.value)||0); }); X.saveTables(t2); return; }
     if((a=el.getAttribute("data-dkt"))){
       var t3=X.tables(), p=a.split("."), v=Math.max(0,parseFloat(el.value)||0);
       if(p[0]==="price") t3.price[+p[1]]=v;
+      else if(p[0]==="heroPrice") t3.heroPrice[+p[1]]=v;
       else if(p[0]==="bounty") t3.bounty[p[1]][p[2]]=v;
       else if(p[0]==="effect") t3.effect[p[1]][+p[2]]=v;
       else if(p[0]==="cost") t3.cost[p[1]][+p[2]][+p[3]]=(+p[3]===2?Math.min(5,Math.round(v)):v);

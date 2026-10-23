@@ -20,6 +20,13 @@
    Upgrades, paid in shards and parts: more Exchange stock, more free starter
    copies, insurance on a wiped haul, and a longer-range scanner.
 
+   Recruiting (v14.14): a few Heroes on offer, from the Districts you have
+   fought in (or none), changing when the Exchange restocks; more of them with
+   each level of Exchange stock. A Hero is priced by its rarity and is yours
+   until a Strike Team it went out with is wiped out. The free Heroes (Dev
+   Mode lists them) are always yours and never lost, so a team can always
+   leave; a Hero whose name starts "Test " is never on offer.
+
    The dock is closed while a Strike Team is out.
    =========================================================================== */
 (function(){
@@ -28,7 +35,7 @@
   var L=function(){ return window.KETER_LOOT; }, P=function(){ return window.KETER_PROG; };
   var W=function(){ return window.KETER_WORLD; }, D=function(){ return window.KETER_DEPLOY; }, WS=function(){ return window.KETER_WORKSHOP; };
   var UPGRADES=[
-    {id:"exchange", name:"Exchange stock", what:"More lots of rarer components, and more pre-built Troops on offer at once."},
+    {id:"exchange", name:"Exchange stock", what:"More lots of rarer components, and more pre-built Troops and Heroes on offer at once."},
     {id:"starter", name:"Starter bay", what:"More free starter copies every deployment."},
     {id:"insurance", name:"Salvage insurance", what:"Keep a share of the haul's shards and parts after a wipe."},
     {id:"scanner", name:"Long-range scanner", what:"See what tiles hold further from where the Strike Team stands."}];
@@ -40,6 +47,8 @@
     reclaimUp:3, reclaimSwap:2,
     bounty:{shards:{enemy:15, elite:30, miniboss:60, boss:120}, n:{enemy:1, elite:2, miniboss:3, boss:5}},
     items:[],   /* Consumables and Prototypes the Exchange carries: {name, price} */
+    heroPrice:[40,80,150,300,600,1200], heroOnOffer:3,
+    free:["Dock Hand","Hangar Rifleman","Field Medic"],   /* (v14.14) Heroes always yours */
     effect:{exchange:[1,2,3], starter:[6,8,10], insurance:[10,20,30], scanner:[2,3,4]},
     cost:{exchange:[[150,"equipment",0,10],[400,"equipment",1,6],[900,"equipment",2,3]],
           starter:[[150,"troop",0,10],[400,"troop",1,6],[900,"troop",2,3]],
@@ -58,7 +67,9 @@
     var t=clone(DEFAULTS), m=read(TAB_KEY,null);
     if(m && typeof m==="object"){
       if(Array.isArray(m.price)&&m.price.length===6) t.price=m.price.map(function(v,i){ return Math.max(0,num(v,DEFAULTS.price[i])); });
-      ["sell","bpFirst","bpLater","chassis","preMult","lots","lotMax","bpOffers","chOffers","itemsOnOffer","preOnOffer","reclaimUp","reclaimSwap"].forEach(function(k){ if(m[k]!=null&&isFinite(+m[k])) t[k]=Math.max(0,+m[k]); });
+      if(Array.isArray(m.heroPrice)&&m.heroPrice.length===6) t.heroPrice=m.heroPrice.map(function(v,i){ return Math.max(0,num(v,DEFAULTS.heroPrice[i])); });
+      if(Array.isArray(m.free)) t.free=m.free.filter(function(x){ return typeof x==="string" && x; });
+      ["sell","bpFirst","bpLater","chassis","preMult","lots","lotMax","bpOffers","chOffers","itemsOnOffer","preOnOffer","reclaimUp","reclaimSwap","heroOnOffer"].forEach(function(k){ if(m[k]!=null&&isFinite(+m[k])) t[k]=Math.max(0,+m[k]); });
       if(m.bounty) ["shards","n"].forEach(function(s){ if(m.bounty[s]) Object.keys(KIND_LABEL).forEach(function(k){ if(isFinite(+m.bounty[s][k])) t.bounty[s][k]=Math.max(0,+m.bounty[s][k]); }); });
       if(Array.isArray(m.items)) t.items=m.items.filter(function(x){ return x&&x.name; }).map(function(x){ return {name:String(x.name), price:Math.max(0,num(x.price,20))}; });
       if(m.effect) UPGRADES.forEach(function(u){ if(Array.isArray(m.effect[u.id])&&m.effect[u.id].length===3) t.effect[u.id]=m.effect[u.id].map(function(v,i){ return num(v,DEFAULTS.effect[u.id][i]); }); });
@@ -71,7 +82,9 @@
   function saveTables(t){
     var d={}, D0=DEFAULTS;
     if(JSON.stringify(t.price.map(Number))!==JSON.stringify(D0.price)) d.price=t.price.map(Number);
-    ["sell","bpFirst","bpLater","chassis","preMult","lots","lotMax","bpOffers","chOffers","itemsOnOffer","preOnOffer","reclaimUp","reclaimSwap"].forEach(function(k){ if(+t[k]!==D0[k]) d[k]=+t[k]; });
+    if(JSON.stringify(t.heroPrice.map(Number))!==JSON.stringify(D0.heroPrice)) d.heroPrice=t.heroPrice.map(Number);
+    if(JSON.stringify(t.free)!==JSON.stringify(D0.free)) d.free=t.free.slice();
+    ["sell","bpFirst","bpLater","chassis","preMult","lots","lotMax","bpOffers","chOffers","itemsOnOffer","preOnOffer","reclaimUp","reclaimSwap","heroOnOffer"].forEach(function(k){ if(+t[k]!==D0[k]) d[k]=+t[k]; });
     ["shards","n"].forEach(function(s){ Object.keys(KIND_LABEL).forEach(function(k){ if(+t.bounty[s][k]!==D0.bounty[s][k]){ d.bounty=d.bounty||{}; d.bounty[s]=d.bounty[s]||{}; d.bounty[s][k]=+t.bounty[s][k]; } }); });
     if(t.items.length) d.items=t.items;
     UPGRADES.forEach(function(u){
@@ -80,11 +93,13 @@
     });
     return write(TAB_KEY,d);
   }
-  function resetTables(){ var keep=tables().items; try{ localStorage.removeItem(TAB_KEY); }catch(e){} if(keep.length) write(TAB_KEY,{items:keep}); }
+  function resetTables(){ var t=tables(), keep=t.items, d={}; try{ localStorage.removeItem(TAB_KEY); }catch(e){}
+    if(keep.length) d.items=keep; if(JSON.stringify(t.free)!==JSON.stringify(DEFAULTS.free)) d.free=t.free; if(Object.keys(d).length) write(TAB_KEY,d); }
 
   /* ---- the dock's own state ---- */
-  function blank(){ return {v:1, reach:0, upgrades:{exchange:0, starter:0, insurance:0, scanner:0}, stock:null, bounties:[], rot:{pre:0, items:0}, restocks:0, log:[]}; }
-  function state(){ var s=read(KEY,null)||blank(); s.upgrades=s.upgrades||{}; UPGRADES.forEach(function(u){ s.upgrades[u.id]=parseInt(s.upgrades[u.id],10)||0; }); s.rot=s.rot||{pre:0,items:0}; s.bounties=s.bounties||[]; s.log=s.log||[]; s.reach=+s.reach||0; return s; }
+  function blank(){ return {v:1, reach:0, upgrades:{exchange:0, starter:0, insurance:0, scanner:0}, stock:null, bounties:[], rot:{pre:0, items:0}, restocks:0, log:[], heroes:{}}; }
+  function state(){ var s=read(KEY,null)||blank(); s.upgrades=s.upgrades||{}; UPGRADES.forEach(function(u){ s.upgrades[u.id]=parseInt(s.upgrades[u.id],10)||0; }); s.rot=s.rot||{pre:0,items:0}; s.bounties=s.bounties||[]; s.log=s.log||[]; s.reach=+s.reach||0;
+    if(!s.heroes || typeof s.heroes!=="object" || Array.isArray(s.heroes)) s.heroes={}; return s; }
   function save(s){ return write(KEY,s); }
   function reset(){ try{ localStorage.removeItem(KEY); localStorage.removeItem(INV_KEY); }catch(e){} }
   function note(s,text){ s.log.unshift({t:new Date().toISOString(), text:text}); s.log=s.log.slice(0,40); }
@@ -140,10 +155,14 @@
       pre:cycle(pre.map(function(d){ return d.id; }), s.rot.pre, t.preOnOffer+extra), sold:{}};
     s.restocks++;
     s.bounties=postBounties();
+    s.stock.heroes=pickHeroes(s, t.heroOnOffer+extra); s.stock.hired={};
     note(s, "The Exchange restocked; the Bounty Board changed.");
     save(s); return s.stock;
   }
-  function stock(){ var s=state(); if(!s.stock){ restock({first:true}); s=state(); } return s.stock; }
+  /* a stock from before recruiting gets its Heroes the first time it is looked at */
+  function stock(){ var s=state(); if(!s.stock){ restock({first:true}); s=state(); }
+    if(!Array.isArray(s.stock.heroes)){ var t=tables(), up=s.upgrades.exchange; s.stock.heroes=pickHeroes(s, t.heroOnOffer+(up?t.effect.exchange[up-1]:0)); s.stock.hired={}; save(s); }
+    return s.stock; }
   /* seeing a blueprint or chassis on the shelf names it */
   function seeStock(){ var st=stock(); st.bps.concat(st.chs).forEach(function(it){ P().name(it); }); }
 
@@ -207,6 +226,34 @@
     var v=inv(); v.pre[id]=(v.pre[id]||0)+n; saveInv(v);
     logStock("Bought "+n+" pre-built "+d.name, spent(price)); return {ok:true, price:price};
   }
+
+  /* ---- recruiting Heroes (v14.14) ---- */
+  /* every Hero card, once by name (the Workshop's designs and pre-builts are Troops) */
+  function heroCards(){ var seen={}; return cards().filter(function(c){ if(!c || c.cardType!=="hero" || c._src==="design" || c._src==="prebuilt" || seen[c.name]) return false; seen[c.name]=1; return true; }); }
+  function isFree(name, t){ return (t||tables()).free.indexOf(name)>=0; }
+  function isTestHero(c){ return /^Test /.test(String(c&&c.name||"")); }
+  /* a Hero's District: none, or one fought in, puts it on offer */
+  function heroDistrict(c){ var d=P().enemyDistrict(c); return d==="any"?"":d; }
+  function owns(name){ return isFree(name) || !!state().heroes[name]; }
+  function ownedHeroes(){ return Object.keys(state().heroes); }
+  function heroRarity(c){ var r=String(c&&c.rarity||"").toLowerCase(), i=L().RARITIES.map(function(x){ return x.id; }).indexOf(r); return i<0?0:i; }
+  function heroPrice(name, t){ t=t||tables(); var c=cardOf(name); return c?t.heroPrice[heroRarity(c)]:0; }
+  function recruitable(s){
+    s=s||state(); var t=tables(), fought=districtsFought();
+    return heroCards().filter(function(c){ var d=heroDistrict(c); return !isFree(c.name,t) && !isTestHero(c) && !s.heroes[c.name] && (!d || fought.indexOf(d)>=0); });
+  }
+  function pickHeroes(s, n){ var list=recruitable(s).map(function(c){ return c.name; }), out=[]; while(out.length<n && list.length) out.push(list.splice(Math.floor(rnd()*list.length),1)[0]); return out; }
+  function recruit(name){
+    if(closed()) return {ok:false, why:CLOSED};
+    var st=stock(); if(st.heroes.indexOf(name)<0) return {ok:false, why:"Not on offer"};
+    if(owns(name)) return {ok:false, why:"Already yours"};
+    if(!cardOf(name)) return {ok:false, why:"That Hero is gone"};
+    var price=heroPrice(name); if(!pay(price)) return short(price);
+    var s=state(); s.heroes[name]=1; s.stock.hired[name]=1; note(s, name+" recruited."); save(s);
+    logStock("Recruited "+name, spent(price)); return {ok:true, price:price};
+  }
+  /* the team's Heroes that aren't yours: it can't leave with them */
+  function unowned(names){ return (names||[]).filter(function(n){ return !owns(n); }); }
 
   /* ---- Reclaiming ---- */
   function combine(type, rarity, times){
@@ -278,6 +325,12 @@
   function deploymentEnded(o){
     o=o||{}; var s=state(), out={};
     if(o.result==="home" && +o.maxSkull>s.reach){ s.reach=Math.min(6,+o.maxSkull); out.reach=s.reach; note(s, "Reach extended to Skull Level "+s.reach+"."); }
+    /* (v14.14) a wipe loses the recruited Heroes who went out with it; the free ones come back */
+    if(o.result==="wipe" && Array.isArray(o.heroes)){
+      var lost=o.heroes.filter(function(n){ return s.heroes[n]; });
+      lost.forEach(function(n){ delete s.heroes[n]; });
+      if(lost.length){ out.lostHeroes=lost; note(s, "Lost with the wipe: "+lost.join(", ")+"."); }
+    }
     save(s);
     if(o.result==="home") out.bounties=claim(o.kills||[]);
     if(o.result==="wipe" && insurance() && o.haul){
@@ -295,5 +348,6 @@
     restock:restock, stock:stock, seeStock:seeStock, buyParts:buyParts, sellParts:sellParts, buyItem:buyItem, buyCard:buyCard, sellCard:sellCard, buyPre:buyPre,
     combine:combine, swap:swap, bounties:bounties, bountyPay:bountyPay, claim:claim, postBounties:postBounties,
     level:level, effect:effect, nextCost:nextCost, upgrade:upgrade, starterFree:starterFree, scanRange:scanRange, insurance:insurance,
-    deploymentEnded:deploymentEnded, _save:save, _saveInv:saveInv};
+    deploymentEnded:deploymentEnded, _save:save, _saveInv:saveInv,
+    heroCards:heroCards, isFree:isFree, owns:owns, ownedHeroes:ownedHeroes, heroRarity:heroRarity, heroPrice:heroPrice, recruitable:recruitable, recruit:recruit, unowned:unowned, heroDistrict:heroDistrict};
 })();

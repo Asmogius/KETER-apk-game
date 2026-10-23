@@ -891,6 +891,39 @@ def ilsa_varn():
     return S
 
 
+# ---------------------------------------------------------------- the free Heroes (0.25): the Hangar's own
+@unit("Dock Hand", yaw=40, scale=1.08, kind="hero")
+def dock_hand():
+    S, H = person(pose="melee", build=1.05, mats={"legs": "drab", "boots": "rubber", "hips": "drab", "torso": "cloth",
+                                                  "chest": "hazard", "arms": "cloth", "hands": "leather", "knees": "rubber"})
+    S += head("cap", H["head"], {"skin": "flesh", "hat": "hazard", "eye": "glass"}, size=1.0)
+    S += hammer(H["R"], mat="steel", head="gunmetal", length=8.0)                                # a heavy spanner
+    return S
+
+
+@unit("Hangar Rifleman", yaw=45, scale=1.08, kind="hero")
+def hangar_rifleman():
+    S, H = person(pose="rifle", build=1.0, mats={"legs": "olive", "boots": "rubber", "hips": "olive", "torso": "drab",
+                                                 "chest": "olive", "pads": "drab", "arms": "drab", "hands": "graphite", "knees": "olive"},
+                  backpack="olive")
+    S += head("helmet", H["head"], {"helmet": "olive", "eye": "glass"}, size=1.0)
+    S += rifle(H["R"], H["L"], mat="graphite", length=14.0, scope=False)
+    return S
+
+
+@unit("Field Medic", yaw=40, scale=1.08, kind="hero")
+def field_medic():
+    S, H = person(pose="pistol", build=0.95, mats={"legs": "cloth", "boots": "rubber", "hips": "cloth", "torso": "white",
+                                                   "chest": "white", "pads": "white", "arms": "white", "hands": "rubber"},
+                  backpack="blood")
+    c = H["chest"]
+    S.append(box((c[0], c[1] + 0.4, 3.2), (0.6, 1.8, 0.3), "blood", r=0.1))                    # the cross on her chest
+    S.append(box((c[0], c[1] + 0.4, 3.2), (1.8, 0.6, 0.3), "blood", r=0.1))
+    S += head("face", H["head"], {"skin": "flesh", "hair": "graphite", "eye": "dark", "eye2": "dark"}, size=1.0)
+    S += pistol(H["R"], mat="graphite")
+    return S
+
+
 @unit("Skitter Runner Mk I", yaw=50, scale=0.85, kind="troop", centre="box")
 def skitter_runner():
     S, P = spider({"body": "concrete", "joints": "vantage", "legs": "steel", "feet": "graphite", "head": "graphite", "eye": "glow_amber"},
@@ -961,6 +994,7 @@ BATCH4 = ["Aether Battery", "Aetherium Golem", "Augmented Weapons Specialist", "
 BATCH3 = ["CERBERUS Blitz Bot", "CERBERUS Barriage Bot", "CERBERUS Breacher Bot", "CERBERUS Overlord Bot", "ONYX Assassin", "ONYX Blademaster",
           "ONYX Breacher", "ONYX Brute", "ONYX Guardian", "ONYX Sharpshooter", "ONYX Stitcher", "ONYX Wraith", "SecurMax Civilian Guard Bot",
           "BRICK Security Bot", "Foundry Sentinel"]
+FREE = ["Dock Hand", "Hangar Rifleman", "Field Medic"]
 BATCH5 = ["Skitterling", "Skitter Stalker", "Brood Matriarch", "Ilsa Varn, Jump-Frame Pilot", "Skitter Runner Mk I", "Skitter Harrier Mk I"]
 BATCH2 = ["Arachnabot", "Chrome Fiend", "Construction Titan", "Chrome Junkie", "Centibot", "Vaccinator", "Long Range Vaccinator",
           "Decimation Titan", "Earthshaker Titan", "Starkiller Titan", "Titan Command Center"]

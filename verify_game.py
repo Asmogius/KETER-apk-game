@@ -382,6 +382,7 @@ if not SCREENS_ONLY:
        dp.get("deployments", 0) >= 250 and dp.get("step", 0) >= 3000 and dp.get("ambush on the way", 0) >= 100 and dp.get("ambush on its tile", 0) >= 40 and dp.get("POI entered", 0) >= 100 and dp.get("POI entered (Unique)", 0) >= 10 and dp.get("fight: floor", 0) >= 40
        and dp.get("fight: map (POI cleared)", 0) >= 60 and dp.get("cache", 0) >= 100 and dp.get("event (check won)", 0) >= 15 and dp.get("event (check failed) into a fight", 0) >= 10 and dp.get("fight: retry", 0) >= 60 and dp.get("fight: map (escaped)", 0) >= 10
        and dp.get("fight: wipe", 0) >= 60 and dp.get("home", 0) >= 30, dp)
+    ck("0.25: and recruited Heroes lost with the wipes, and teams with a Hero not recruited refused", dp.get("Heroes lost", 0) >= 20, dp)
 
     # 0.20: battlefields grown from chunks, from running chunkgen.js on this export's chunks
     gen6 = subprocess.run(["node", str(ROOT / "make_chunk_cases.js"), str(CONTENT)], capture_output=True, text=True, timeout=300)
@@ -431,6 +432,8 @@ if not SCREENS_ONLY:
        dks.get("restock", 0) >= 200 and dks.get("buyParts", 0) >= 150 and dks.get("sellParts", 0) >= 40 and dks.get("buyItem", 0) >= 25 and dks.get("buyCard", 0) >= 25 and dks.get("sellCard", 0) >= 50 and dks.get("buyPre", 0) >= 40
        and dks.get("combine", 0) >= 15 and dks.get("swap", 0) >= 30 and dks.get("upgrade", 0) >= 10 and dks.get("ended", 0) >= 200 and dks.get("claim", 0) >= 100 and dks.get("bounties paid", 0) >= 60 and dks.get("insured", 0) >= 30
        and all(dks.get("refused: " + k, 0) >= 20 for k in ["buyParts", "sellParts", "buyItem", "buyCard", "sellCard", "buyPre", "combine", "swap", "upgrade"]), dks)
+    ck("0.25: and recruiting: Heroes recruited and refused, stocks from before recruiting given their Heroes, and recruited Heroes lost with a wipe",
+       dks.get("recruit", 0) >= 40 and dks.get("refused: recruit", 0) >= 40 and dks.get("oldStock", 0) >= 20 and dks.get("Heroes lost", 0) >= 20, dks)
 
 # 3. the screens, drawn
 def shot(path, *args):
@@ -816,8 +819,9 @@ if shutil.which("xvfb-run"):
     ck("0.10: the dock's Stockpile, with what it keeps, renders", ok41 and "SCRIPT ERROR" not in log41, log41[-300:])
     if ok41:
         px = Image.open(p41).convert("RGB").load()
-        ck("0.10: five tabs along the top, the Stockpile's lit in cyan (0.11); its headings in cyan, the shards in pale yellow, and what it keeps listed", lit(px, 546, 1258, 30, 60) > 300 and count(p41, (548, 16, 680, 72), CYAN) > 80 and count(p41, (692, 16, 824, 72), CYAN) == 0 and count(p41, (20, 250, 170, 385), CYAN) > 220
-           and count(p41, (78, 302, 236, 322), LOOT, 12) > 100 and lit(px, 30, 200, 405, 425) > 60 and lit(px, 30, 200, 477, 497) > 80, (lit(px, 546, 1258, 30, 60), count(p41, (548, 16, 680, 72), CYAN), count(p41, (692, 16, 824, 72), CYAN), count(p41, (20, 250, 170, 385), CYAN), count(p41, (78, 302, 236, 322), LOOT, 12), lit(px, 30, 200, 405, 425), lit(px, 30, 200, 477, 497)))
+        # (0.25: six tabs, Recruit among them, so the row starts further left)
+        ck("0.10: six tabs along the top, the Stockpile's lit in cyan (0.11); its headings in cyan, the shards in pale yellow, and what it keeps listed", lit(px, 466, 1258, 30, 60) > 300 and count(p41, (468, 16, 584, 72), CYAN) > 80 and count(p41, (600, 16, 722, 72), CYAN) == 0 and count(p41, (20, 250, 170, 385), CYAN) > 220
+           and count(p41, (78, 302, 236, 322), LOOT, 12) > 100 and lit(px, 30, 200, 405, 425) > 60 and lit(px, 30, 200, 477, 497) > 80, (lit(px, 466, 1258, 30, 60), count(p41, (468, 16, 584, 72), CYAN), count(p41, (600, 16, 722, 72), CYAN), count(p41, (20, 250, 170, 385), CYAN), count(p41, (78, 302, 236, 322), LOOT, 12), lit(px, 30, 200, 405, 425), lit(px, 30, 200, 477, 497)))
     p42 = pathlib.Path("/tmp/keter_game_exchange.png")
     ok42, log42 = shot(p42, "screen=dock", "stock=0:300", "dock=tab:exchange")
     ck("0.10: the Exchange renders", ok42 and "SCRIPT ERROR" not in log42, log42[-300:])
@@ -826,6 +830,17 @@ if shutil.which("xvfb-run"):
         # (0.15: tiles: each its picture, its price on a gold tag, Buy and Buy 5 in cyan; the shards held under the heading)
         ck("0.10: what it sells under cyan headings, as tiles: each its picture, its price in gold, and Buy", count(p42, (20, 250, 320, 505), CYAN) > 450 and count(p42, (146, 374, 310, 418), CYAN) > 60 and count(p42, (32, 374, 96, 422), GOLD, 12) > 80 and count(p42, (32, 318, 80, 364), GREEN, 16) > 70,
            (count(p42, (20, 250, 320, 505), CYAN), count(p42, (146, 374, 310, 418), CYAN), count(p42, (32, 374, 96, 422), GOLD, 12), count(p42, (32, 318, 80, 364), GREEN, 16)))
+    # 0.25: the Recruit tab: Heroes on offer as tiles, each its token, its price in gold and Recruit; one recruited says so
+    p425 = pathlib.Path("/tmp/keter_game_recruit.png")
+    ok425, log425 = shot(p425, "screen=dock", "stock=0:900", "dock=strict;meet;restock;hire:Rictus;tab:recruit")
+    ck("0.25: the Recruit tab renders", ok425 and "SCRIPT ERROR" not in log425, log425[-300:])
+    if ok425:
+        px = Image.open(p425).convert("RGB").load()
+        ck("0.25: its tab lit in cyan; what it can't deploy said; Heroes on offer as tiles, each its token, its price in gold, and Recruit in cyan",
+           count(p425, (736, 16, 856, 72), CYAN) > 80 and count(p425, (468, 16, 584, 72), CYAN) == 0 and count(p425, (20, 238, 1250, 282), (136, 163, 188)) > 600 and count(p425, (20, 306, 120, 330), CYAN) > 40
+           and count(p425, (34, 512, 122, 554), GOLD, 16) > 60 and count(p425, (228, 512, 306, 552), CYAN) > 30 and len(set(px[x, y] for x in range(36, 76, 2) for y in range(390, 460, 2))) >= 6,
+           (count(p425, (736, 16, 856, 72), CYAN), count(p425, (468, 16, 584, 72), CYAN), count(p425, (20, 238, 1250, 282), (136, 163, 188)), count(p425, (20, 306, 120, 330), CYAN), count(p425, (34, 512, 122, 554), GOLD, 16), count(p425, (228, 512, 306, 552), CYAN),
+            len(set(px[x, y] for x in range(36, 76, 2) for y in range(390, 460, 2)))))
     p43 = pathlib.Path("/tmp/keter_game_bounties.png")
     ok43, log43 = shot(p43, "screen=dock", "dock=meet;restock;tab:bounties")
     ck("0.10: the Bounty Board renders", ok43 and "SCRIPT ERROR" not in log43, log43[-300:])
@@ -1081,7 +1096,7 @@ ck("0.20: and the chunks': chunk_gen.gd and chunk_diff.gd", "KETER/scripts/chunk
 ck("0.18: and the atmosphere: atmos.gd", "KETER/scripts/atmos.gd" in names, [n for n in names if "/scripts/a" in n])
 ck("0.17: and card art: cardart.png, and the script that draws it", "KETER/art/cardart.png" in names and "KETER/tools/art/cardart.py" in names, [n for n in names if "/art/" in n][:30])
 readme = gz.read("KETER/README.md").decode()
-ck("the README is this version's, and names the Companion it reads", ("**v%s withdraws\nthe last four cards in plain text" % make_game.game_version()) in readme and "Companion 13.5" in readme and "Companion 13.9" in readme and "Companion 14.0" in readme and "Companion 14.1" in readme and "Companion 14.2" in readme and "Companion\n14.3" in readme and "Companion 14.4" in readme and "Companion 14.5" in readme and "Companion 14.6" in readme and "Companion 14.7" in readme and "Companion 14.8" in readme and "Companion 14.9" in readme and "Companion 14.10" in readme and "Companion 14.11" in readme and "Companion 14.12" in readme and "Companion 14.13" in readme
+ck("the README is this version's, and names the Companion it reads", ("**v%s recruits\nHeroes at the dock" % make_game.game_version()) in readme and "Companion 13.5" in readme and "Companion 13.9" in readme and "Companion 14.0" in readme and "Companion 14.1" in readme and "Companion 14.2" in readme and "Companion\n14.3" in readme and "Companion 14.4" in readme and "Companion 14.5" in readme and "Companion 14.6" in readme and "Companion 14.7" in readme and "Companion 14.8" in readme and "Companion 14.9" in readme and "Companion 14.10" in readme and "Companion 14.11" in readme and "Companion 14.12" in readme and "Companion 14.13" in readme and "Companion 14.14" in readme
    and ("v0-%s_KETER_game.zip" % make_game.game_version().split(".")[1]) in readme, readme[:200])
 
 print(f"\nGAME PASS {len(ok)}  FAIL {len(bad)}")

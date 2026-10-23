@@ -9,8 +9,9 @@
    Enemies met, tables changed in Dev Mode or not, pre-built Troops, and now
    and then a Strike Team out. Then a run of what a player does there:
    restocking, buying and selling components, lots, blueprints, chassis,
-   Consumables, Prototypes and pre-built copies; Reclaiming; upgrades; a
-   deployment coming home (reach, bounties paid) or wiped out (insurance);
+   Consumables, Prototypes and pre-built copies; recruiting Heroes (v14.14);
+   Reclaiming; upgrades; a deployment coming home (reach, bounties paid) or
+   wiped out (insurance, and the recruited Heroes who went out lost);
    and the effects the rest of the game asks for. After each, what it said,
    and the dock, its stockpile and what it holds, compared.
 
@@ -64,6 +65,7 @@ const count = (k, n) => { tally[k] = (tally[k] || 0) + (n === undefined ? 1 : n)
 
 /* ---- the dock's tables, from what Dev Mode may have saved ---- */
 const itemNames = baseCards.filter(c => c.cardType === "consumable" || c.cardType === "prototype").map(c => c.name);
+const heroNames = baseCards.filter(c => c.cardType === "hero").map(c => c.name);
 const weird = [null, "", "abc", "12", -3, 0, 2.5, 7, "1e1", true, [], {}];
 function someTables(){
   if(chance(0.35)) return null;
@@ -74,6 +76,10 @@ function someTables(){
       lots: [0, 2, 3, 5], lotMax: [1, 3, 5], bpOffers: [0, 1, 2, 3], chOffers: [0, 1, 2], itemsOnOffer: [1, 3, 5], preOnOffer: [0, 2, 3], reclaimUp: [2, 3, 4, 2.6], reclaimSwap: [1, 2, 3, 0.4] }[k]) : pick(weird);
   });
   if(chance(0.3)) m.bounty = { shards: { enemy: ri(5, 30), boss: chance(0.5) ? "x" : 200 }, n: chance(0.5) ? { elite: ri(1, 4) } : null };
+  /* (v14.14) recruiting */
+  if(chance(0.2)) m.heroPrice = chance(0.8) ? [ri(10, 50), ri(50, 100), ri(100, 200), 300, ri(400, 700), 1200] : [40, "x", null, -5, 600];
+  if(chance(0.2)) m.heroOnOffer = chance(0.8) ? pick([0, 1, 2, 3, 5, 9]) : pick(weird);
+  if(chance(0.2)) m.free = chance(0.8) ? heroNames.filter(() => chance(0.4)) : pick([[], ["Nobody", 3, null, ""], "Dock Hand"]);
   if(chance(0.6)){ m.items = []; for(let n = ri(0, 6); n > 0; n--) m.items.push(chance(0.9) ? { name: pick(itemNames), price: chance(0.8) ? ri(5, 60) : pick(weird) } : pick([null, {}, { price: 3 }])); }
   if(chance(0.25)) m.effect = { starter: [5, 7, 12], scanner: chance(0.5) ? [2, 2, 5] : [1, "x"], insurance: [15, 25, "40"] };
   if(chance(0.25)) m.cost = { exchange: [[100, "troop", 0, 5], [300, "nope", 1, 2], "bad"], scanner: [[50, "aether", "2", "3"], [60, "aether", 9, -1], [70, "equipment", 2, 1]] };
@@ -115,6 +121,9 @@ function someDock(){
   const s = { v: 1, reach: pick([0, 0, 1, 2, 3, 4, 5, 6]), upgrades: { exchange: ri(0, 3), starter: ri(0, 3), insurance: ri(0, 3), scanner: ri(0, 3) }, stock: null, bounties: [], rot: { pre: ri(0, 4), items: ri(0, 4) }, restocks: ri(0, 5), log: [] };
   if(chance(0.1)) s.upgrades.exchange = "2";
   if(chance(0.05)) delete s.rot;
+  /* (v14.14) Heroes recruited, or a dock from before recruiting */
+  if(chance(0.8)){ s.heroes = {}; heroNames.forEach(n => { if(chance(0.25)) s.heroes[n] = 1; }); }
+  if(chance(0.04)) s.heroes = pick([[], "x", null]);
   return s;
 }
 function someInv(pre){
@@ -127,7 +136,7 @@ function someInv(pre){
 function snap(){
   const s = DK.state(), st = s.stock ? Object.assign({}, s.stock) : null;
   if(st) delete st.made;
-  return { dock: { reach: s.reach, upgrades: s.upgrades, stock: st, bounties: s.bounties, rot: s.rot, restocks: s.restocks, log: s.log.map(l => l.text) },
+  return { dock: { reach: s.reach, upgrades: s.upgrades, stock: st, bounties: s.bounties, rot: s.rot, restocks: s.restocks, log: s.log.map(l => l.text), heroes: s.heroes },
     inv: DK.inv(), stock: L.stock(), prog: (function(){ const p = P.state(); return { bp: p.bp, ch: p.ch, named: p.named }; })() };
 }
 const types = L.TYPES.map(t => t.id);
@@ -136,6 +145,8 @@ function someOp(){
   const lotsNow = st.lots || [];
   const r = rnd();
   if(r < 0.07) return ["restock"];
+  if(rnd() < 0.12) return ["recruit", chance(0.8) && (st.heroes || []).length ? pick(st.heroes) : pick(heroNames.concat(["Nobody"]))];
+  if(rnd() < 0.02) return ["oldStock"];
   if(r < 0.10) return ["stock"];
   if(r < 0.12) return ["seeStock"];
   if(r < 0.24){ const common = chance(0.4) || !lotsNow.length; if(common) return ["buyParts", pick(types), 0, pick([1, 1, 2, 5, 40, "3", 0])];
@@ -152,7 +163,8 @@ function someOp(){
     const result = pick(["home", "home", "wipe", "abandoned"]);
     const kills = []; for(let n = ri(0, 5); n > 0; n--) kills.push(chance(0.85) ? { name: chance(0.6) && DK.state().bounties.length ? pick(DK.state().bounties).name : pick(foes), skull: ri(1, 6) } : { name: pick(foes), skull: "3" });
     const haul = L.bag(); haul.shards = ri(0, 400); L.TYPES.forEach(ty => { haul.parts[ty.id][ri(0, 3)] = ri(0, 12); });
-    return ["ended", { result, maxSkull: ri(0, 6), kills, haul: chance(0.9) ? haul : null, explored: chance(0.6) }];
+    const heroes = chance(0.85) ? heroNames.filter(() => chance(0.3)) : null;
+    return ["ended", { result, maxSkull: ri(0, 6), kills, haul: chance(0.9) ? haul : null, explored: chance(0.6), heroes }];
   }
   if(r < 0.95) return ["claim", [{ name: chance(0.7) && DK.state().bounties.length ? pick(DK.state().bounties).name : pick(foes), skull: ri(1, 6) }]];
   return ["effects"];
@@ -172,6 +184,9 @@ function doOp(op){
     case "swap": return DK.swap(op[1], op[2], op[3], op[4]);
     case "upgrade": return DK.upgrade(op[1]);
     case "ended": return DK.deploymentEnded(op[1]);
+    case "recruit": return DK.recruit(op[1]);
+    /* a stock laid out before recruiting: its Heroes come the next time it is looked at */
+    case "oldStock": { const s = DK.state(); if(s.stock){ delete s.stock.heroes; delete s.stock.hired; DK._save(s); } return null; }
     case "claim": return DK.claim(op[1]);
     case "effects": {
       const st = DK.state().stock || { bps: [], chs: [], pre: [], items: [] };
@@ -179,6 +194,8 @@ function doOp(op){
         levels: DK.UPGRADES.map(u => DK.level(u.id)), effects: DK.UPGRADES.map(u => DK.effect(u.id)), next: DK.UPGRADES.map(u => DK.nextCost(u.id)),
         bpPrices: st.bps.concat(st.chs).concat(["bp:Burst:2", "bp:Burst:3", "ch:ch_test_verdant", "nope"]).map(it => DK.bpPrice(it)),
         preCosts: WS.prebuilts().map(d => DK.preCost(d)), itemPrices: itemNames.map(n => DK.itemPrice(n)),
+        heroPrices: heroNames.concat(["Nobody"]).map(n => DK.heroPrice(n)), owns: heroNames.map(n => DK.owns(n)),
+        unowned: DK.unowned(heroNames.concat(["Nobody"])), recruitable: DK.recruitable().map(c => c.name), owned: DK.ownedHeroes(),
         bountyPay: ["enemy", "elite", "miniboss", "boss", "nope"].map(k => { const sk = pick([0, 1, 3, 6, 7, "2", null]); return { kind: k, skull: sk, pay: DK.bountyPay(k, sk) }; }), closed: DK.closed() };
     }
   }
@@ -203,6 +220,7 @@ for(let ci = 0; ci < 400; ci++){
     const sn = snap();
     if(op[0] === "ended" && res && res.bounties && res.bounties.length) count("bounties paid", res.bounties.length);
     if(op[0] === "ended" && res && res.insured) count("insured");
+    if(op[0] === "ended" && res && res.lostHeroes) count("Heroes lost");
     steps.push({ op, out: clone(res), snap: sn });
   }
   add("dock", [sd, m, prog, stock0, dock0, inv0, preCards, out], steps);

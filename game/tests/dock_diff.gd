@@ -3,8 +3,8 @@
 ## replayed here and compared: its tables as Dev Mode may have saved them,
 ## and runs of what a player does at the dock (restocking; buying and selling
 ## components, lots, blueprints, chassis, Consumables, Prototypes and
-## pre-built copies; Reclaiming; upgrades; deployments coming home or wiped
-## out), after each step what it said and how the dock, its stockpile and
+## pre-built copies; recruiting Heroes; Reclaiming; upgrades; deployments
+## coming home or wiped out), after each step what it said and how the dock, its stockpile and
 ## what it holds then stand, roll for roll.
 ##   godot --headless --path . --script res://tests/dock_diff.gd
 extends SceneTree
@@ -129,7 +129,7 @@ static func _undated(v) -> Variant:
 func _snap(dk: Dock, dep: Deployment, p: Progress) -> Dictionary:
 	var s: Dictionary = dk.state
 	return {"dock": {"reach": s["reach"], "upgrades": s["upgrades"], "stock": _undated(s["stock"]), "bounties": s["bounties"], "rot": s["rot"], "restocks": s["restocks"],
-		"log": s["log"].map(func(l): return l["text"])}, "inv": dk.inv, "stock": Loot.norm(dep.stock), "prog": {"bp": p.state["bp"], "ch": p.state["ch"], "named": p.state["named"]}}
+		"log": s["log"].map(func(l): return l["text"]), "heroes": s["heroes"]}, "inv": dk.inv, "stock": Loot.norm(dep.stock), "prog": {"bp": p.state["bp"], "ch": p.state["ch"], "named": p.state["named"]}}
 
 
 func _effects(dk: Dock, ws: Workshop) -> Dictionary:
@@ -145,7 +145,18 @@ func _effects(dk: Dock, ws: Workshop) -> Dictionary:
 		"levels": levels, "effects": effs, "next": nexts,
 		"bpPrices": (st["bps"] + st["chs"] + ["bp:Burst:2", "bp:Burst:3", "ch:ch_test_verdant", "nope"]).map(func(it): return dk.bp_price(it)),
 		"preCosts": ws.prebuilts().map(func(d): return dk.pre_cost(d)), "itemPrices": _item_names().map(func(n): return dk.item_price(n)),
-		"closed": dk.closed()}
+		"closed": dk.closed(),
+		"heroPrices": (_hero_names() + ["Nobody"]).map(func(n): return dk.hero_price(n)), "owns": _hero_names().map(func(n): return dk.owns(n)),
+		"unowned": dk.unowned(_hero_names() + ["Nobody"]), "recruitable": dk.recruitable().map(func(h): return h["name"]), "owned": dk.owned_heroes()}
+
+
+var _heroes_cache := []
+func _hero_names() -> Array:
+	if _heroes_cache.is_empty():
+		for c in roster.from_export:
+			if c.get("_src") != "design" and c.get("_src") != "prebuilt" and c.get("cardType") == "hero":
+				_heroes_cache.append(str(c["name"]))
+	return _heroes_cache
 
 
 var _items_cache := []
@@ -204,6 +215,11 @@ func _dock(c: Dictionary) -> void:
 			"swap": out = dk.swap(op[1], op[2], op[3], op[4])
 			"upgrade": out = dk.upgrade(op[1])
 			"ended": out = dk.deployment_ended(op[1])
+			"recruit": out = dk.recruit(op[1])
+			"oldStock":
+				if dk.state["stock"] is Dictionary:
+					dk.state["stock"].erase("heroes")
+					dk.state["stock"].erase("hired")
 			"claim": out = dk.claim(op[1])
 			"effects":
 				out = _effects(dk, ws)

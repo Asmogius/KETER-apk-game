@@ -461,7 +461,9 @@ for(let i = 0; i < 520; i++){
     if(!opts.length) break;
     /* the Actions that do most are tried first: a Burst, an area, a Push */
     const rich = opts.filter(o => /Burst|AoE|Chain|Pierce|Line|Cone|Hardened|Aim|Push|Deploy|heal/.test(unit(st, o[0]).actions[o[1]].text || ""));
-    const o = (rich.length && chance(0.7)) ? pick(rich) : pick(opts), sd = ri(1, 1e6);
+    /* (v14.14) a Line or a Cone, the rarest shapes, first of all when there is one */
+    const shaped = rich.filter(o => /Line|Cone/.test(unit(st, o[0]).actions[o[1]].text || ""));
+    const o = (shaped.length && chance(0.5)) ? pick(shaped) : (rich.length && chance(0.7)) ? pick(rich) : pick(opts), sd = ri(1, 1e6);
     tried[o[3]] = 1;
     st = fresh(sd);
     sb.simConfirmAttack(unit(st, o[0]), unit(st, o[2]), unit(st, o[0]).actions[o[1]]);

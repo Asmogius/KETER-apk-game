@@ -180,7 +180,7 @@ function snap(){
     prog: progNow(), stock: L.stock(),
     out: s ? { copies: byName(s.copies), lost: byName(s.lost), paid: s.paid || null, pre: byName(s.pre), pack: s.pack || null } : null,
     dock: (function(){ const k = DK.state(), st = k.stock ? Object.assign({}, k.stock) : null; if(st) delete st.made;
-      return { reach: k.reach, restocks: k.restocks, stock: st, bounties: k.bounties, log: k.log.map(l => l.text) }; })(), inv: DK.inv(),
+      return { reach: k.reach, restocks: k.restocks, stock: st, bounties: k.bounties, log: k.log.map(l => l.text), heroes: k.heroes }; })(), inv: DK.inv(),
     history: hist.map(h => ({ n: h.n, result: h.result, team: h.team, steps: h.steps, fights: h.fights, haul: L.norm(h.haul), items: h.items, out: h.out }))
   };
 }
@@ -264,9 +264,12 @@ for(let i = 0; i < 300; i++){
     if(!team.heroes.length) team.heroes = [pick(heroNames)];
   }
   setProg(prog0); L.setStock(stock0);
+  /* (v14.14) the Heroes recruited: most of them, now and then not one of the team's */
+  const dock0 = { heroes: {} }; heroNames.forEach(n => { if(chance(0.92)) dock0.heroes[n] = 1; });
+  store[DK.KEY] = JSON.stringify(dock0);
   store["keter-app-loadouts"] = JSON.stringify([loadout(team)]);
   const p = D.plan(0);
-  add("plan", [DESIGNS, prog0, stock0, team], planOut(p)); count(p.ok ? "plans that can go" : p.fits ? "plans short of parts" : "plans refused");
+  add("plan", [DESIGNS, prog0, stock0, team, dock0], planOut(p)); count(p.ok ? "plans that can go" : p.fits ? "plans short of parts" : "plans refused");
 }
 const itemNames = baseCards.filter(c => c.cardType === "consumable" || c.cardType === "prototype").map(c => c.name);
 function somePre(){
@@ -280,8 +283,10 @@ function somePre(){
 }
 function someDock(){
   const k = { v: 1, reach: pick([0, 0, 1, 2, 3]), upgrades: { exchange: ri(0, 1), starter: pick([0, 0, 1, 2, 3]), insurance: pick([0, 0, 1, 3]), scanner: pick([0, 0, 0, 1, 3]) }, stock: null,
-    bounties: [], rot: { pre: 0, items: 0 }, restocks: 0, log: [] };
+    bounties: [], rot: { pre: 0, items: 0 }, restocks: 0, log: [], heroes: {} };
   if(chance(0.5)) for(let n = ri(1, 3); n > 0; n--) k.bounties.push({ name: pick(foeNames), kind: "enemy", district: "", claimed: false });
+  /* (v14.14) every Hero recruited: a wipe loses the team's, and a later trip with them is refused */
+  heroNames.forEach(n => { k.heroes[n] = 1; });
   return k;
 }
 function someInv(pre){
@@ -392,8 +397,8 @@ for(let ci = 0; ci < 150; ci++){
 function chooseOut(o){ return o ? { event: o.event.id, label: o.choice.label, check: o.check, roll: o.roll, won: !!o.won, text: o.text, got: L.norm(o.got), items: o.items, lost: o.lost ? L.norm(o.lost) : null, fight: !!o.fight, spec: specOut(o.spec) } : null; }
 function homeOut(h){ return h ? { ok: !!h.ok, why: h.why || null, haul: h.haul ? L.norm(h.haul) : null, items: h.items || null, n: h.n || null, dock: dockOut(h.dock) } : null; }
 function dockOut(o){
-  if(o){ if((o.bounties || []).length) count("bounties paid", o.bounties.length); if(o.insured) count("insured"); if(o.restocked) count("restocked"); if(o.reach != null) count("reach extended"); }
-  return o ? { reach: o.reach == null ? null : o.reach, bounties: (o.bounties || []).map(b => ({ name: b.name, bag: L.norm(b.bag) })), insured: o.insured ? L.norm(o.insured) : null, restocked: !!o.restocked } : null; }
+  if(o){ if((o.bounties || []).length) count("bounties paid", o.bounties.length); if(o.insured) count("insured"); if(o.restocked) count("restocked"); if(o.reach != null) count("reach extended"); if(o.lostHeroes) count("Heroes lost"); }
+  return o ? { reach: o.reach == null ? null : o.reach, bounties: (o.bounties || []).map(b => ({ name: b.name, bag: L.norm(b.bag) })), insured: o.insured ? L.norm(o.insured) : null, restocked: !!o.restocked, lostHeroes: o.lostHeroes || null } : null; }
 
 const out = path.join(ROOT, "game", "tests", "fixtures", "world_cases.json");
 fs.writeFileSync(out, JSON.stringify({ made: "world.js, deploy.js, dock.js, progress.js, loot.js and keywords.js", map: M.name, tiles: keys.length, floors: floors.length, cases }));
