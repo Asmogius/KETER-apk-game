@@ -24,6 +24,14 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	if OS.get_cmdline_user_args().has("thirtytwo"):
+		_thirtytwo()
+		await _thirtytwo_scene()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("thirtyone"):
 		_thirtyone()
 		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
@@ -265,6 +273,7 @@ func _run() -> void:
 	_twentynine()
 	_thirty()
 	_thirtyone()
+	_thirtytwo()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -294,6 +303,7 @@ func _run() -> void:
 	await _twentyeight_scene()
 	await _twentynine_scene()
 	await _thirty_scene()
+	await _thirtytwo_scene()
 	Kit.fresh()
 	print("\nGAME PASS %d  FAIL %d" % [ok, bad])
 	Rules.hooks = {}              # the rules let go of the last battle
@@ -3824,10 +3834,16 @@ func _eight() -> void:
 	f = FileAccess.open(Campaign.path, FileAccess.WRITE)
 	f.store_string("{ not json")
 	f.close()
+	var c6b := Campaign.new(x, Roster.new(x), floors, 11)
+	ck("0.32 save: a file that can't be read (a phone died part-way) is read from the save before it, and says so", not c6b.deploy.history.is_empty() and "the one before it was used" in c6b.note, c6b.note)
+	for bad_p in [Campaign.path, Campaign.path + ".bak"]:
+		f = FileAccess.open(bad_p, FileAccess.WRITE)
+		f.store_string("{ not json")
+		f.close()
 	var c6 := Campaign.new(x, Roster.new(x), floors, 11)
 	ck("save: a file that can't be read starts afresh and says so", not c6.deploy.active() and Loot.is_empty(c6.deploy.stock) and "couldn't be read" in c6.note)
 	c6.reset()
-	ck("save: starting over forgets everything", not FileAccess.file_exists(Campaign.path) and c6.world.known_count() == 0 and c6.deploy.history.is_empty())
+	ck("save: starting over forgets everything", not SafeFile.exists(Campaign.path) and c6.world.known_count() == 0 and c6.deploy.history.is_empty())
 	# a POI's reward counts what its last floor has just left (what Companion 13.5 puts right, here from the start)
 	c6.world.tables["ambushStep"] = 0
 	c6.deploy.start(Kit.field_team())
@@ -9130,3 +9146,114 @@ func _thirtyone() -> void:
 	ck("0.31 free Heroes: two of them generate 4 Neutral Aether a turn, which pays a District's card's generic cost", Rules.aether_income(units, "ally") == {"generic": 4}
 		and Rules.aether_can_pay({"generic": 4}, {"generic": 3, "affinity": 0, "district": "3"}) and not Rules.aether_can_pay({"generic": 4}, {"generic": 0, "affinity": 1, "district": "3"}))
 	Kit.fresh()
+
+
+# ---------------------------------------------------------------- 0.32: three save files
+const TEST_SAVES := "user://test_saves/"
+
+
+## The slots in a folder of the tests' own, empty; and the run's files back where the tests keep them, after.
+func _saves_fresh() -> void:
+	SaveSlots.root = TEST_SAVES
+	for n in range(1, SaveSlots.COUNT + 1):
+		SaveSlots.delete(n)
+	var ix := SaveSlots._index_file()
+	if FileAccess.file_exists(ix):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(ix))
+	SaveSlots.current = 1
+
+
+func _saves_done() -> void:
+	_saves_fresh()
+	SaveSlots.root = SaveSlots.ROOT
+	Kit.fresh()
+
+
+func _thirtytwo() -> void:
+	Kit.fresh()
+	_saves_fresh()
+	SaveSlots.use(2)
+	ck("0.32 slots: a slot played is where its run and its teams are kept", Campaign.path == TEST_SAVES.path_join("2/campaign.json") and StrikeTeams.path == TEST_SAVES.path_join("2/strike_teams.json") and SaveSlots.index()["current"] == 2)
+	ck("0.32 slots: an empty one says so, and is called by its number", not SaveSlots.used(2) and SaveSlots.name_of(2) == "Save 2" and SaveSlots.line_of(2).begins_with("Empty"))
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var r := Roster.new(x)
+	var c := Campaign.new(x, r, x.floors(), 7)
+	c.dock.state["stock"] = c.dock.state.get("stock")
+	c.deploy.stock = Loot.norm({"shards": 1240})
+	c.save()
+	StrikeTeams.save_all([Kit.team("Vanguard"), Kit.team("Second")])
+	var sm := SaveSlots.summary(2)
+	ck("0.32 slots: what a slot holds is read without playing it: shards, Strike Teams, when", SaveSlots.used(2) and sm["shards"] == 1240 and sm["teams"] == 2 and sm["saved"] != "" and "1,240 shards" in SaveSlots.line_of(2), SaveSlots.line_of(2))
+	SaveSlots.use(1)
+	ck("0.32 slots: another slot is another run: its own (empty) stockpile and teams", StrikeTeams.load_all().is_empty() and Campaign.new(x, r, x.floors(), 7).deploy.stock.get("shards", 0) == 0)
+	SaveSlots.use(2)
+	ck("0.32 slots: and back, the run is as it was", StrikeTeams.load_all().size() == 2 and int(Campaign.new(x, r, x.floors(), 7).deploy.stock["shards"]) == 1240)
+	SaveSlots.rename(2, "  Hard run  ")
+	ck("0.32 rename: a slot takes a name (trimmed), and loses it again", SaveSlots.name_of(2) == "Hard run" and SaveSlots.rename(2, "") and SaveSlots.name_of(2) == "Save 2")
+	SaveSlots.rename(2, "Hard run")
+	ck("0.32 copy: a run and its teams copied to an empty slot, named after it", SaveSlots.copy(2, 3) and SaveSlots.summary(3)["shards"] == 1240 and SaveSlots.summary(3)["teams"] == 2 and SaveSlots.name_of(3) == "Hard run (copy)")
+	ck("0.32 copy: never from an empty slot, nor onto itself", not SaveSlots.copy(1, 2) and not SaveSlots.copy(2, 2))
+	SaveSlots.delete(3)
+	ck("0.32 delete: a slot wiped is empty, its name gone; the others untouched", not SaveSlots.used(3) and SaveSlots.name_of(3) == "Save 3" and SaveSlots.summary(2)["shards"] == 1240)
+	# a game saved before 0.32: its run becomes Save 1
+	_saves_fresh()
+	SaveSlots.old_campaign = "user://test_old_campaign.json"
+	SaveSlots.old_teams = "user://test_old_teams.json"
+	for pair in [[SaveSlots.old_campaign, JSON.stringify({"kind": "campaign", "stock": {"shards": 77}})], [SaveSlots.old_teams, JSON.stringify({"teams": [Kit.team("Old")]})]]:
+		var f := FileAccess.open(pair[0], FileAccess.WRITE)
+		f.store_string(pair[1])
+		f.close()
+	SaveSlots.start()
+	ck("0.32 upgrade: a run saved before 0.32 becomes Save 1, teams and all, and leaves its old place", SaveSlots.current == 1 and SaveSlots.summary(1)["shards"] == 77 and SaveSlots.summary(1)["teams"] == 1
+		and not FileAccess.file_exists(SaveSlots.old_campaign) and not FileAccess.file_exists(SaveSlots.old_teams))
+	SaveSlots.old_campaign = SaveSlots.OLD_CAMPAIGN
+	SaveSlots.old_teams = SaveSlots.OLD_TEAMS
+	_saves_done()
+
+
+func _thirtytwo_scene() -> void:
+	Kit.fresh()
+	_saves_fresh()
+	SaveSlots.use(1)
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	await _frames(2)
+	scene.campaign.deploy.stock = Loot.norm({"shards": 500})
+	scene.campaign.save()
+	StrikeTeams.save_all([Kit.team("Slot One Team")])
+	scene.show_home()
+	await _frames(1)
+	ck("0.32 home: the save file played is named in the corner", "Save 1" in scene.home.save_btn.text)
+	scene.home.save_btn.pressed.emit()
+	await _frames(1)
+	var sv: SavesScreen = scene.saves_screen
+	ck("0.32 screen: it opens on the three slots, the one played marked, the others offering Play or Start", sv.visible and not scene.home.visible and sv._rows.size() == 3 and sv.offers().has(["start", 2]) == false and sv.offers().has(["play", 2]) and sv.offers().has(["copy", 1, 2]) and sv.offers().has(["delete", 1]) and not sv.offers().has(["play", 1]))
+	sv.act(["play", 2])
+	await _frames(1)
+	ck("0.32 switch: another slot is a new run: an empty stockpile, no Strike Teams", SaveSlots.current == 2 and int(scene.campaign.deploy.stock.get("shards", 0)) == 0 and StrikeTeams.load_all().is_empty())
+	sv.act(["copy", 1, 2])
+	if sv.dialog is Dialog:
+		sv.dialog.chosen.emit(1)
+	await _frames(1)
+	ck("0.32 copy: copied over the one played, the game plays the copy at once", int(scene.campaign.deploy.stock.get("shards", 0)) == 500 and StrikeTeams.load_all().size() == 1)
+	sv.act(["rename", 2])
+	if sv.dialog is NameDialog:
+		sv.dialog.named.emit("Try-out")
+	await _frames(1)
+	ck("0.32 rename: from its row", SaveSlots.name_of(2) == "Try-out")
+	sv.act(["delete", 2])
+	if sv.dialog is Dialog:
+		sv.dialog.chosen.emit(1)
+	await _frames(1)
+	ck("0.32 delete: the one played, deleted, starts a new run in it", SaveSlots.current == 2 and not SaveSlots.used(2) and int(scene.campaign.deploy.stock.get("shards", 0)) == 0)
+	sv.act(["play", 1])
+	await _frames(1)
+	sv.back_btn.pressed.emit()
+	await _frames(1)
+	ck("0.32 home: back on Home, playing Save 1 again, as it was", scene.home.visible and "Save 1" in scene.home.save_btn.text and int(scene.campaign.deploy.stock["shards"]) == 500)
+	scene.queue_free()
+	await _frames(2)
+	_saves_done()

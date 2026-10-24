@@ -111,6 +111,7 @@ var handoff: HandoffScreen      # (0.26) pass and play: the screen covered betwe
 var chassis_screen: ChassisScreen   # (0.28) the Sandbox: the Chassis builder
 var poi_screen: PoiScreen           # (0.29) the Sandbox: the POI Sandbox
 var studio_screen: StudioScreen     # (0.30) the Sandbox: the Pixel Studio
+var saves_screen: SavesScreen       # (0.32) the three save files
 var _teams_for_setup := false   # (0.26) Strike Teams was opened from a match's setup: back there after
 var map_view: MapView
 var map_screen: MapScreen
@@ -171,6 +172,9 @@ var _cam_tween: Tween = null
 func _ready() -> void:
 	# (0.12) the speed, shake and sound you chose, and the game's sounds; a tap on any button is heard
 	Motion.settings()
+	# (0.32) the save file last played: its run and its Strike Teams
+	if SaveSlots.auto:
+		SaveSlots.start()
 	sound = Sound.new()
 	add_child(sound)
 	get_tree().node_added.connect(_on_node_added)
@@ -409,6 +413,26 @@ func open_sandbox() -> void:
 	open_sandbox_tool("forge")
 
 
+## (0.32) The three save files, from Home.
+func open_saves() -> void:
+	_turn()
+	_leave_battle()
+	_hide_world()
+	home.visible = false
+	setup.visible = false
+	teams_screen.visible = false
+	saves_screen.visible = true
+	saves_screen.open()
+
+
+## (0.32) Another save file is played: its run is read, and its Strike Teams
+## are the ones the screens show from now on.
+func reload_run() -> void:
+	if data.is_open() and not floors.is_empty() and roster != null:
+		campaign = Campaign.new(data, roster, data.floors())
+	home.show_save(SaveSlots.name_of(SaveSlots.current))
+
+
 ## (0.28) One of the Sandbox's tools: the Card Forge, the Chassis builder, (0.29) the POI Sandbox.
 func open_sandbox_tool(k: String) -> void:
 	forge_screen.visible = not ["chassis", "poi", "studio"].has(k)
@@ -459,7 +483,9 @@ func show_home() -> void:
 	chassis_screen.visible = false
 	poi_screen.visible = false
 	studio_screen.visible = false
+	saves_screen.visible = false
 	home.visible = true
+	home.show_save(SaveSlots.name_of(SaveSlots.current))
 	# what loading had to say (a new map, a file that couldn't be read) comes before where things stand
 	var world_line := ""
 	if campaign != null:
@@ -3079,6 +3105,12 @@ func _build_ui() -> void:
 	studio_screen.tool_requested.connect(open_sandbox_tool)
 	ui.add_child(studio_screen)
 
+	saves_screen = SavesScreen.new()
+	saves_screen.visible = false
+	saves_screen.closed.connect(show_home)
+	saves_screen.switched.connect(reload_run)
+	ui.add_child(saves_screen)
+
 	dock_screen = DockScreen.new()
 	dock_screen.visible = false
 	dock_screen.closed.connect(show_home)
@@ -3098,6 +3130,7 @@ func _build_ui() -> void:
 	home.quick_pressed.connect(func(): open_setup("quick"))
 	home.teams_pressed.connect(open_teams)
 	home.sandbox_pressed.connect(open_sandbox)
+	home.saves_pressed.connect(open_saves)
 	home.pvp_pressed.connect(func(): open_setup("pvp"))
 	home.look_again_pressed.connect(func(): load_export())
 	home.options_pressed.connect(open_options)

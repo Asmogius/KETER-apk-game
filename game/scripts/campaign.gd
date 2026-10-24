@@ -86,13 +86,11 @@ func to_dict() -> Dictionary:
 
 
 func save() -> bool:
-	var f := FileAccess.open(path, FileAccess.WRITE)
-	if f == null:
+	# (0.32) written beside the last save and only then put in its place: a phone that dies part-way loses nothing
+	if not SafeFile.write(path, JSON.stringify(to_dict(), "\t")):
 		# said on the map and at the dock: progress that isn't kept must not come as a surprise
 		error = "Your progress couldn't be saved: the device wouldn't write the file. It is tried again at every step."
 		return false
-	f.store_string(JSON.stringify(to_dict(), "\t"))
-	f.close()
 	error = ""
 	return true
 
@@ -102,13 +100,15 @@ func save() -> bool:
 ## with what it carries.
 func load_saved() -> void:
 	note = ""
-	if not FileAccess.file_exists(path):
+	if not SafeFile.exists(path):
 		return
-	var json := JSON.new()
-	var d = json.data if json.parse(FileAccess.get_file_as_string(path)) == OK else null
+	var used := []
+	var d = SafeFile.read_json(path, used)
 	if not (d is Dictionary) or d.get("kind") != "campaign":
 		note = "Your saved progress couldn't be read, so this starts afresh."
 		return
+	if used == ["bak"]:
+		note = "The last save couldn't be read, so the one before it was used: the last step or fight may need doing again."
 	d = Rules.ints(d)
 	progress.state = Progress.tidy(d.get("progress"))
 	deploy.stock = Loot.norm(d.get("stock"))
@@ -132,9 +132,9 @@ func load_saved() -> void:
 		world.state = World.blank_state()
 		world.state["completed"] = done
 		if world.exists():
-			note = "This export has a different World Map, so exploration starts again. Your stockpile and what you have found are kept." + (" The Strike Team that was out has been brought home with its haul." if was_out else "")
+			note = (note + " " if note != "" else "") + "This export has a different World Map, so exploration starts again. Your stockpile and what you have found are kept." + (" The Strike Team that was out has been brought home with its haul." if was_out else "")
 		elif was_out:
-			note = "This export has no World Map, so the Strike Team that was out has been brought home with its haul."
+			note = (note + " " if note != "" else "") + "This export has no World Map, so the Strike Team that was out has been brought home with its haul."
 		save()
 	elif deploy.active():
 		_mend()
@@ -167,8 +167,7 @@ func reset() -> void:
 	workshop.designs = {}
 	dock.reset()
 	designs_changed()
-	if FileAccess.file_exists(path):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	SafeFile.remove(path)
 
 
 # ---------------------------------------------------------------- in words

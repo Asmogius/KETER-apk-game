@@ -8,6 +8,8 @@
 ## (0.26) Sandbox, beside Strike Teams, opens the game's own tools for making
 ## content: the Card Forge first. Pass and play sets up a match between two
 ## players on one phone.
+## (0.32) The save file being played is named in the top left corner; a tap
+## opens the three save files.
 class_name HomeScreen
 extends Control
 
@@ -19,6 +21,7 @@ signal look_again_pressed
 signal options_pressed
 signal sandbox_pressed
 signal pvp_pressed
+signal saves_pressed
 
 var title: Label               # (0.15) the sign in the picture is the game's name: this stays hidden
 var note: Label
@@ -34,6 +37,7 @@ var sandbox_btn: Button
 var pvp_btn: Button
 var again_btn: Button
 var options_btn: Button
+var save_btn: Button           # (0.32) the save file being played: a tap opens the three
 var version := ""
 
 
@@ -120,6 +124,21 @@ func _init(ver: String) -> void:
 	options_btn.offset_bottom = 82
 	options_btn.pressed.connect(func(): options_pressed.emit())
 	add_child(options_btn)
+	# (0.32) the save file, in the other corner
+	save_btn = Button.new()
+	save_btn.text = "Save 1"
+	save_btn.tooltip_text = "Save files"
+	save_btn.add_theme_font_override("font", Look.font())
+	save_btn.add_theme_font_size_override("font_size", Look.SMALL + 3)
+	save_btn.custom_minimum_size = Vector2(200, 64)
+	save_btn.position = Vector2(20, 18)
+	save_btn.pressed.connect(func(): saves_pressed.emit())
+	add_child(save_btn)
+
+
+## (0.32) Which save file is played.
+func show_save(name: String) -> void:
+	save_btn.text = name + "  (switch)"
 
 
 func _steel(text: String, fn: Callable) -> Button:

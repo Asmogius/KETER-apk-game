@@ -392,10 +392,9 @@ static var error := ""
 
 static func load_all() -> Array:
 	error = ""
-	if not FileAccess.file_exists(path):
+	if not SafeFile.exists(path):
 		return []
-	var json := JSON.new()
-	var data = json.data if json.parse(FileAccess.get_file_as_string(path)) == OK else null
+	var data = SafeFile.read_json(path)
 	if not (data is Dictionary) or not (data.get("teams") is Array):
 		error = "The saved Strike Teams couldn't be read."
 		return []
@@ -407,12 +406,9 @@ static func load_all() -> Array:
 
 
 static func save_all(teams: Array) -> bool:
-	var f := FileAccess.open(path, FileAccess.WRITE)
-	if f == null:
+	if not SafeFile.write(path, JSON.stringify({"game": "KETER", "format": FORMAT, "teams": teams}, "\t")):
 		error = "The Strike Teams couldn't be saved."
 		return false
-	f.store_string(JSON.stringify({"game": "KETER", "format": FORMAT, "teams": teams}, "\t"))
-	f.close()
 	return true
 
 

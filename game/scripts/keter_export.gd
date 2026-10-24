@@ -44,6 +44,7 @@ var _content := {}
 var _textures := {}
 var _names := {}              # every file in the zip, so a missing one is asked for quietly
 var _pictures := {}           # picture id -> manifest entry
+var _card_files := {}         # (0.32) "art|card name" -> manifest entry: built once, not searched for every card
 
 
 ## The newest export in the usual places, or "" if there is none.
@@ -102,6 +103,7 @@ func close() -> void:
 	_textures = {}
 	_names = {}
 	_pictures = {}
+	_card_files = {}
 
 
 func is_open() -> bool:
@@ -181,11 +183,16 @@ func texture(file: String) -> Texture2D:
 
 ## The manifest entry for a card's art or token.
 func card_file(card_name: String, what: String) -> Dictionary:
-	for f in files():
-		var o = f.get("owner", {})
-		if f.get("group") == "cards" and f.get("what") == what and o is Dictionary and o.get("card") == card_name:
-			return f
-	return {}
+	if _card_files.is_empty():
+		for f in files():
+			var o = f.get("owner", {}) if f is Dictionary else null
+			if f is Dictionary and f.get("group") == "cards" and o is Dictionary and o.get("card") != null:
+				var k := str(f.get("what")) + "|" + str(o["card"])
+				if not _card_files.has(k):
+					_card_files[k] = f
+		if _card_files.is_empty():
+			_card_files["|"] = {}         # none: don't look again
+	return _card_files.get(what + "|" + card_name, {})
 
 
 ## The manifest entry for a picture, by the Pixel Studio's id for it.

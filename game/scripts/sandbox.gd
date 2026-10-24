@@ -43,9 +43,9 @@ static func blank() -> Dictionary:
 static func load_saved() -> void:
 	data = blank()
 	error = ""
-	if not FileAccess.file_exists(path):
+	if not SafeFile.exists(path):
 		return
-	var d = JSON.parse_string(FileAccess.get_file_as_string(path))
+	var d = SafeFile.read_json(path)
 	if d is Dictionary and d.get("cards") is Dictionary:
 		data = Rules.ints(d)
 		data["made"] = int(d.get("made", 0))
@@ -57,12 +57,9 @@ static func load_saved() -> void:
 
 
 static func save() -> bool:
-	var f := FileAccess.open(path, FileAccess.WRITE)
-	if f == null:
+	if not SafeFile.write(path, JSON.stringify(data)):
 		error = "The Sandbox couldn't be saved."
 		return false
-	f.store_string(JSON.stringify(data))
-	f.close()
 	error = ""
 	return true
 
@@ -70,8 +67,7 @@ static func save() -> bool:
 ## Forgets everything made and changed here.
 static func clear() -> void:
 	data = blank()
-	if FileAccess.file_exists(path):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	SafeFile.remove(path)
 
 
 # ---------------------------------------------------------------- cards
@@ -143,6 +139,14 @@ static func put(card: Dictionary, key := "") -> String:
 static func delete(key: String) -> void:
 	if is_own(key):
 		data["cards"].erase(key)
+		# (0.32) and the pictures drawn for it, which nothing else can wear
+		var l = data.get("links", {}).get(key)
+		if l is Dictionary:
+			for what in l.keys():
+				var id := str(l[what])
+				if id != "" and data.get("pictures", {}).has(id):
+					delete_picture(id)
+		data.get("links", {}).erase(key)
 	else:
 		data["cards"][key] = {"deleted": true}
 

@@ -209,6 +209,28 @@ func _run() -> void:
 		await _shoot(out)
 		return
 	# (0.26) the Sandbox's Card Forge: screen=sandbox, kind=<type>, forge=<a card's name to open>, scroll=<px>
+	# (0.32) screen=saves: the three save files (two of them used); screen=homesave: Home
+	if o["screen"] == "saves" or o["screen"] == "homesave":
+		SaveSlots.root = "user://shot_saves/"
+		for n in range(1, 4):
+			SaveSlots.delete(n)
+		SaveSlots.use(2)
+		scene.campaign.deploy.stock = Loot.norm({"shards": 3460})
+		scene.campaign.save()
+		StrikeTeams.save_all([Kit.team("Vanguard")])
+		SaveSlots.rename(2, "Hard run")
+		SaveSlots.use(1)
+		scene.campaign.deploy.stock = Loot.norm({"shards": 420})
+		scene.campaign.save()
+		scene.reload_run()
+		if o["screen"] == "saves":
+			scene.open_saves()
+		else:
+			scene.show_home()
+		for i in 8:
+			await process_frame
+		await _shoot(out)
+		return
 	if o["screen"] == "sandbox":
 		scene.open_sandbox()
 		var fs: ForgeScreen = scene.forge_screen

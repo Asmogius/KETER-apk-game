@@ -12,15 +12,13 @@ const SANDBOX := "user://test_sandbox.json"
 ## Points the game's saved teams at the tests' own file, and empties it.
 static func fresh() -> void:
 	StrikeTeams.path = PATH
-	if FileAccess.file_exists(PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(PATH))
+	SafeFile.remove(PATH)
 	# and the Behavior keywords chosen for cards, likewise
 	Behaviors.path = BEHAVIORS
 	Behaviors.forget_all()
 	# and the World Map as it has been explored, the stockpile and what has been found
 	Campaign.path = CAMPAIGN
-	if FileAccess.file_exists(CAMPAIGN):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(CAMPAIGN))
+	SafeFile.remove(CAMPAIGN)
 	# (0.12) and the speed, shake and sound; and nothing moves, as 0.11 played, unless a test says so
 	Motion.path = SETTINGS
 	Motion.reset()
@@ -30,6 +28,8 @@ static func fresh() -> void:
 	# (0.26) and the Sandbox: a file of the tests' own, empty
 	Sandbox.path = SANDBOX
 	Sandbox.clear()
+	# (0.32) and the save files: the game doesn't pick one when it starts
+	SaveSlots.auto = false
 
 
 ## Three Heroes (the third has the Action Slots, and carries an Action card),

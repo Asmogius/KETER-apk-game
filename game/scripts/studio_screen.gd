@@ -452,8 +452,8 @@ func _buttons() -> void:
 	delete_btn.visible = pid != "" or (on_card and (has_export or Sandbox.link_of(target["key"], target["what"]) != null) and Sandbox.link_of(target["key"], target["what"]) != "")
 
 
-func refresh() -> void:
-	var keep := form.scroll
+## The title, the line under it and Undo and Redo, as they now stand.
+func _status() -> void:
 	var what := ""
 	if target.get("kind") == "card":
 		what = "%s · %s" % [str(target["card"].get("name", "")), "Art" if target["what"] == "art" else "Token"]
@@ -463,6 +463,11 @@ func refresh() -> void:
 	hint.text = "%d by %d pixels. %s Two fingers pinch and pan." % [w, h, _tool_hint()]
 	undo_btn.disabled = undo.is_empty()
 	redo_btn.disabled = redo.is_empty()
+
+
+func refresh() -> void:
+	var keep := form.scroll
+	_status()
 	canvas.mirror = mirror
 	canvas.queue_redraw()
 	form.clear()
@@ -638,6 +643,8 @@ func _on_stroke(phase: String, at: Vector2) -> void:
 					for m in PixelModel.mirrored(p, w, h, mirror):
 						n += PixelModel.fill(px, w, h, m.x, m.y, v)
 					_stroke["did"] = n > 0
+					canvas.show_pixels(w, h, px, custom)
+					return
 				"pencil", "eraser":
 					_dab(p)
 				_:
@@ -667,7 +674,10 @@ func _on_stroke(phase: String, at: Vector2) -> void:
 					undo.pop_front()
 				redo = []
 				_stroke = {}
-				_changed()
+				# a stroke changes the picture, not the tools: the panel stays as it is
+				dirty = true
+				canvas.flush()
+				_status()
 			else:
 				_stroke = {}
 				canvas.queue_redraw()
@@ -681,7 +691,8 @@ func _on_stroke(phase: String, at: Vector2) -> void:
 			canvas.preview = []
 			canvas.show_pixels(w, h, px, custom)
 			return
-	canvas.show_pixels(w, h, px, custom)
+	# (only the pixels the stroke set are drawn again, not the whole picture)
+	canvas.flush()
 
 
 ## A tap on a pixel, and a finger drawn over some (for the tests).
@@ -712,6 +723,7 @@ func _put_px(p: Vector2i, v: int) -> void:
 	for m in PixelModel.mirrored(p, w, h, mirror):
 		if _inside(m) and px[m.y * w + m.x] != v:
 			px[m.y * w + m.x] = v
+			canvas.set_px(m.x, m.y, PixelModel.colour(v, custom))
 			_stroke["did"] = true
 
 
