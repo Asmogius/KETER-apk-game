@@ -39,20 +39,20 @@ func _init() -> void:
 	box.add_theme_stylebox_override("panel", UI.box(Color("#171819", 0.98), UI.CYAN, 2, 20, 28))
 	centre.add_child(box)
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 14)
+	col.add_theme_constant_override("separation", 8)
 	box.add_child(col)
 	var t := UI.label("Options", 34, UI.CYAN)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(t)
 	col.add_child(_row("Speed", "How fast fights play. At Instant nothing moves; the rules are the same at every speed.",
 		Motion.SPEEDS.map(func(s): return [s, Motion.SPEED_NAMES[s]]), speed_btns, func(k): Motion.set_speed(k)))
-	col.add_child(_row("Atmosphere", "Glows on hazards and pads, the lights flickering, embers, ash and dust drifting over a fight. Off, a touch of it, or all of it.",
+	col.add_child(_row("Atmosphere", "Glows on hazards and pads, flickering lights, and embers, ash and dust over a fight.",
 		Atmos.LEVELS.map(func(s): return [s, Atmos.LEVEL_NAMES[s]]), atmos_btns, func(k): Motion.set_atmos(k)))
 	col.add_child(_row("Screen shake", "A small shake on a heavy blow, or a Unit brought down.",
 		[[true, "On"], [false, "Off"]], shake_btns, func(k): Motion.set_shake(k)))
-	col.add_child(_row("Vibration", "On a phone: a short buzz when one of your Units is hit, a longer one when it is brought down, and a tap when your attack lands a heavy blow.",
+	col.add_child(_row("Vibration", "On a phone: a buzz when one of yours is hit, or lands a heavy blow.",
 		[[true, "On"], [false, "Off"]], buzz_btns, func(k): Motion.set_buzz(k)))
-	col.add_child(_row("Sound", "Retro blips for shots, hits, cards and buttons. A .wav of yours in the game's sounds folder plays instead of the game's (the README names them).",
+	col.add_child(_row("Sound", "Retro blips for shots, hits, cards and buttons (yours, if the README's .wavs are there).",
 		[[true, "On"], [false, "Off"]], sound_btns, func(k): Motion.set_sound(k)))
 	about = Look.read("", UI.DIM, true)
 	about.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

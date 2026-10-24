@@ -3925,7 +3925,7 @@ func _eight_scene() -> void:
 	ck("0.15 home: the sign is the game's name (no title over it), Look again only with no export", not scene.home.title.visible and not scene.home.again_btn.visible and not scene.home.source.visible)
 	scene.home.options_btn.pressed.emit()
 	await _frames(2)
-	ck("home: Options (the gear) says its version, 0.24, and the export the content came from", scene.VERSION == "0.24" and scene.options != null and scene.options.about.visible and "version 0.24" in scene.options.about.text and "export.zip" in scene.options.about.text
+	ck("home: Options (the gear) says its version (0.33: the project's own), and the export the content came from", scene.VERSION == str(ProjectSettings.get_setting("application/config/version")) and scene.VERSION != "" and scene.options != null and scene.options.about.visible and ("version " + scene.VERSION) in scene.options.about.text and "export.zip" in scene.options.about.text
 		and scene.options.again_btn.visible and scene.home.options_btn.icon == Art.icon("gear"), scene.options.about.text if scene.options != null else "")
 	scene.close_options()
 	await _frames(2)

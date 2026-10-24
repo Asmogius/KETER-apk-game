@@ -55,7 +55,8 @@
 ## as you end your next turn, before the Enemies act.
 extends Node2D
 
-const VERSION := "0.24"
+## (0.33) the project's own version: it was written out by hand here, and fell behind
+var VERSION: String = str(ProjectSettings.get_setting("application/config/version", ""))
 const TAP_MOVE := 14.0        # a touch that moves further than this is a drag
 const TAP_TIME := 450         # ms; longer is a press, not a tap
 const ZOOM_MIN := 0.25
