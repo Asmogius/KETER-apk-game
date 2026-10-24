@@ -116,7 +116,7 @@ static func rename(n: int, nm: String) -> bool:
 ## deployments, out (the team that is out, or ""), heroes recruited, designs,
 ## teams, saved (when, as text)}.
 static func summary(n: int) -> Dictionary:
-	var out := {"used": used(n), "shards": 0, "deployments": 0, "out": "", "heroes": 0, "designs": 0, "teams": 0, "saved": ""}
+	var out := {"used": used(n), "shards": 0, "deployments": 0, "out": "", "steps": 0, "fights": 0, "explored": 0, "heroes": 0, "designs": 0, "teams": 0, "team_names": [], "saved": ""}
 	if SafeFile.exists(campaign_file(n)):
 		var d = SafeFile.read_json(campaign_file(n))
 		if d is Dictionary:
@@ -124,9 +124,13 @@ static func summary(n: int) -> Dictionary:
 			out["shards"] = int(Rules.num(stock.get("shards"), 0)) if stock is Dictionary else 0
 			var w = d.get("world")
 			out["deployments"] = int(Rules.num(w.get("completed"), 0)) if w is Dictionary else 0
+			out["explored"] = (w["known"] as Dictionary).size() if w is Dictionary and w.get("known") is Dictionary else 0
 			var dp = d.get("deployment")
-			if dp is Dictionary and dp.get("team") is Dictionary:
+			# (0.33) only one still out: a deployment that has ended stays in the file, not active
+			if dp is Dictionary and Rules.truthy(dp.get("active")) and dp.get("team") is Dictionary:
 				out["out"] = str(dp["team"].get("name", "A Strike Team"))
+				out["steps"] = int(Rules.num(dp.get("steps"), 0))
+				out["fights"] = int(Rules.num(dp.get("fights"), 0))
 			var dk = d.get("dock")
 			out["heroes"] = (dk["heroes"] as Dictionary).size() if dk is Dictionary and dk.get("heroes") is Dictionary else 0
 			out["designs"] = (d["designs"] as Dictionary).size() if d.get("designs") is Dictionary else 0
@@ -136,6 +140,8 @@ static func summary(n: int) -> Dictionary:
 	if SafeFile.exists(teams_file(n)):
 		var td = SafeFile.read_json(teams_file(n))
 		out["teams"] = (td["teams"] as Array).size() if td is Dictionary and td.get("teams") is Array else 0
+		if td is Dictionary and td.get("teams") is Array:
+			out["team_names"] = (td["teams"] as Array).filter(func(t): return t is Dictionary).map(func(t): return str(t.get("name", "")))
 	return out
 
 
@@ -144,15 +150,30 @@ static func line_of(n: int) -> String:
 	var s := summary(n)
 	if not s["used"]:
 		return "Empty: a new run starts here."
-	var bits := ["%s shards" % grouped(int(s["shards"])), "%d deployment%s" % [s["deployments"], "" if s["deployments"] == 1 else "s"]]
+	var bits := ["%s shards" % grouped(int(s["shards"])), "%d deployment%s" % [s["deployments"], "" if s["deployments"] == 1 else "s"],
+		"%d tile%s explored" % [s["explored"], "" if s["explored"] == 1 else "s"]]
 	if s["heroes"] > 0:
 		bits.append("%d Hero%s recruited" % [s["heroes"], "" if s["heroes"] == 1 else "es"])
-	bits.append("%d Strike Team%s" % [s["teams"], "" if s["teams"] == 1 else "s"])
-	if s["out"] != "":
-		bits.append("%s is out" % s["out"])
 	if s["saved"] != "":
 		bits.append("saved " + str(s["saved"]).substr(0, 16).replace("T", " "))
 	return " · ".join(bits)
+
+
+## (0.33) The second line: the team out (how far it has got), and the Strike Teams by name.
+static func teams_line(n: int) -> String:
+	var s := summary(n)
+	if not s["used"]:
+		return ""
+	var bits := []
+	if s["out"] != "":
+		bits.append("Out now: %s, %d step%s and %d fight%s in" % [s["out"], s["steps"], "" if s["steps"] == 1 else "s", s["fights"], "" if s["fights"] == 1 else "s"])
+	var names: Array = s["team_names"]
+	if names.is_empty():
+		bits.append("No Strike Teams yet")
+	else:
+		var shown := names.slice(0, 4)
+		bits.append("Strike Teams: " + ", ".join(shown) + (" and %d more" % (names.size() - 4) if names.size() > 4 else ""))
+	return ". ".join(bits) + "."
 
 
 ## 1240 as "1,240".

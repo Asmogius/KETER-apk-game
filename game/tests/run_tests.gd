@@ -24,6 +24,14 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	if OS.get_cmdline_user_args().has("thirtythree"):
+		_thirtythree()
+		await _thirtythree_scene()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("thirtytwo"):
 		_thirtytwo()
 		await _thirtytwo_scene()
@@ -274,6 +282,7 @@ func _run() -> void:
 	_thirty()
 	_thirtyone()
 	_thirtytwo()
+	_thirtythree()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -304,6 +313,7 @@ func _run() -> void:
 	await _twentynine_scene()
 	await _thirty_scene()
 	await _thirtytwo_scene()
+	await _thirtythree_scene()
 	Kit.fresh()
 	print("\nGAME PASS %d  FAIL %d" % [ok, bad])
 	Rules.hooks = {}              # the rules let go of the last battle
@@ -9329,3 +9339,122 @@ func _thirtytwo_scene() -> void:
 	scene.queue_free()
 	await _frames(2)
 	_saves_done()
+
+
+# ---------------------------------------------------------------- 0.33: the proposals taken up
+func _thirtythree() -> void:
+	Kit.fresh()
+	# the save files, said more fully
+	_saves_fresh()
+	SaveSlots.use(1)
+	StrikeTeams.save_all([Kit.team("Vanguard"), Kit.team("Rearguard")])
+	var run := {"kind": "campaign", "stock": {"shards": 10}, "world": {"completed": 2, "known": {"0,0": 1, "0,1": 1, "1,0": 1}}, "dock": {"heroes": {}},
+		"deployment": {"active": true, "n": 3, "team": {"name": "Vanguard"}, "steps": 7, "fights": 2}}
+	SafeFile.write(Campaign.path, JSON.stringify(run))
+	ck("0.33 saves: a slot says how much has been explored, the team out and how far it has got, and the Strike Teams by name", "3 tiles explored" in SaveSlots.line_of(1)
+		and SaveSlots.teams_line(1) == "Out now: Vanguard, 7 steps and 2 fights in. Strike Teams: Vanguard, Rearguard.", [SaveSlots.line_of(1), SaveSlots.teams_line(1)])
+	run["deployment"]["active"] = false
+	SafeFile.write(Campaign.path, JSON.stringify(run))
+	ck("0.33 saves: a deployment that has ended isn't said to be out", not ("Out now" in SaveSlots.teams_line(1)) and SaveSlots.summary(1)["out"] == "")
+	_saves_done()
+	# the match, in numbers
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var r := Roster.new(x)
+	var f: FloorData = _floor_named(x, "TEST · Waves")
+	var ss := _pvp_setups(r, f)
+	var b := Battle.begin_pvp(f, r, ss[0], ss[1], 5)
+	b._hook()
+	var foes: Array = b.side_units("enemy")
+	Rules.hit(foes[0], 5, true)
+	Rules.hit(foes[1], 999, true)
+	var mine: Dictionary = b.side_units("ally")[0]
+	Rules.hit(mine, 3, true)                       # a hazard under one's own: nobody's doing
+	b.pvp_end_turn()
+	ck("0.33 match: what Player 1's turn did to Player 2's Units is Player 1's: damage and Units brought down; their own hurt isn't counted", b.pvp_stats[1]["damage"] >= 5 and b.pvp_stats[1]["downs"] == 1 and b.pvp_stats[2]["damage"] == 0, b.pvp_stats)
+	b.pvp_hand_over()
+	b._hook()
+	var d0: int = b.pvp_stats[1]["damage"]
+	Rules.hit(b.side_units("enemy").filter(func(u): return not Rules.truthy(u.get("down")))[0], 4, true)
+	b.pvp_tally()
+	ck("0.33 match: and Player 2's turn is Player 2's", b.pvp_stats[2]["damage"] == 4 and b.pvp_stats[1]["damage"] == d0, b.pvp_stats)
+	b.pvp_tally()
+	ck("0.33 match: counting twice counts nothing twice", b.pvp_stats[2]["damage"] == 4)
+	Kit.fresh()
+
+
+func _thirtythree_scene() -> void:
+	Kit.fresh()
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	await _frames(2)
+	# the Sandbox opens where you were
+	scene.open_sandbox()
+	await _frames(1)
+	scene.forge_screen.tools["poi"].pressed.emit()
+	await _frames(1)
+	scene.poi_screen.view = "mine"
+	scene.poi_screen.show_list()
+	scene.poi_screen.back_btn.pressed.emit()
+	await _frames(1)
+	Sandbox.data = Sandbox.blank()
+	Sandbox.load_saved()
+	scene._sandbox_recalled = false
+	scene.poi_screen.view = "all"
+	scene.open_sandbox()
+	await _frames(1)
+	ck("0.33 sandbox: it opens on the tool used last, its list as it was left (kept in the Sandbox's file)", scene.poi_screen.visible and not scene.forge_screen.visible and scene.poi_screen.view == "mine")
+	# a draft kept when the game goes to the background
+	scene.poi_screen.view = "all"
+	scene.poi_screen.show_list()
+	scene.poi_screen.new_btn.pressed.emit()
+	await _frames(1)
+	scene.poi_screen.st["name"] = "Half-drawn"
+	PoiModel.fill_all(scene.poi_screen.st)
+	scene.poi_screen.dirty = true
+	scene._notification(Node.NOTIFICATION_APPLICATION_PAUSED)
+	ck("0.33 draft: the game going to the background keeps what was unsaved as a draft", Sandbox.draft().get("tool") == "poi" and Sandbox.draft()["level"]["hexes"].size() == 217)
+	scene.show_home()
+	await _frames(1)
+	scene.poi_screen.mode = "list"
+	scene.open_sandbox()
+	await _frames(1)
+	ck("0.33 draft: the Sandbox asks to pick it up", scene.dialog is Dialog and scene.dialog.title_label.text == "Pick up where you left off?" and scene.poi_screen.visible)
+	if scene.dialog is Dialog:
+		scene.dialog.chosen.emit(1)
+	await _frames(1)
+	ck("0.33 draft: picked up, it is as it was, unsaved", scene.poi_screen.mode == "edit" and scene.poi_screen.st["name"] == "Half-drawn" and scene.poi_screen.st["hexes"].size() == 217 and scene.poi_screen.dirty and scene.poi_screen.key == "")
+	scene.poi_screen.save_floor()
+	ck("0.33 draft: saved, there is no draft left", Sandbox.draft().is_empty())
+	scene.forge_screen.edit(scene.roster.card_named("Dock Hand"))
+	scene.open_sandbox_tool("forge")
+	scene.forge_screen.edit(scene.roster.card_named("Dock Hand"))
+	scene.forge_screen.card["name"] = "Dock Boss"
+	scene.forge_screen.dirty = true
+	scene._notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+	ck("0.33 draft: a card being edited, too", Sandbox.draft().get("tool") == "forge" and Sandbox.draft()["card"]["name"] == "Dock Boss")
+	scene.show_home()
+	await _frames(1)
+	scene.forge_screen.mode = "list"
+	scene.open_sandbox()
+	await _frames(1)
+	if scene.dialog is Dialog:
+		scene.dialog.chosen.emit(0)
+	await _frames(1)
+	ck("0.33 draft: discarded, it is gone, and nothing was saved from it", Sandbox.draft().is_empty() and scene.roster.card_named("Dock Boss") == null)
+	# vibration: an Option, kept
+	Motion.set_buzz(false)
+	Motion._read = false
+	Motion.settings()
+	ck("0.33 options: Vibration is an Option, kept with the others", Motion.buzz == false)
+	Motion.set_buzz(true)
+	scene.open_options()
+	await _frames(1)
+	ck("0.33 options: and it has its row in Options", scene.options != null and scene.options.buzz_btns.size() == 2)
+	scene.close_options()
+	scene.queue_free()
+	await _frames(2)
+	Sandbox.clear()
+	Kit.fresh()

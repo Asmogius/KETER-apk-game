@@ -25,6 +25,7 @@ static var path := FILE
 static var speed := "normal"
 static var shake := true
 static var sound := true
+static var buzz := true          # (0.33) the phone vibrates on a hit to one of yours
 ## (0.18) How much atmosphere a fight has: off, subtle or full (Atmos).
 static var atmos := "subtle"
 ## The tests' switch: nothing moves and every pause is as 0.11 had it, so what
@@ -49,6 +50,7 @@ static func settings() -> void:
 		speed = str(d.get("speed", "normal")) if SPEEDS.has(d.get("speed")) else "normal"
 		shake = d.get("shake", true) != false
 		sound = d.get("sound", true) != false
+		buzz = d.get("buzz", true) != false
 		atmos = str(d.get("atmos", "subtle")) if ["off", "subtle", "full"].has(d.get("atmos")) else "subtle"
 
 
@@ -56,7 +58,7 @@ static func save() -> bool:
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f == null:
 		return false
-	f.store_string(JSON.stringify({"game": "KETER", "kind": "settings", "speed": speed, "shake": shake, "sound": sound, "atmos": atmos}, "\t"))
+	f.store_string(JSON.stringify({"game": "KETER", "kind": "settings", "speed": speed, "shake": shake, "sound": sound, "buzz": buzz, "atmos": atmos}, "\t"))
 	f.close()
 	return true
 
@@ -66,6 +68,7 @@ static func reset() -> void:
 	speed = "normal"
 	shake = true
 	sound = true
+	buzz = true
 	atmos = "subtle"
 	_read = true
 	if FileAccess.file_exists(path):
@@ -87,6 +90,17 @@ static func next_speed() -> String:
 static func set_shake(on: bool) -> void:
 	shake = on
 	save()
+
+
+static func set_buzz(on: bool) -> void:
+	buzz = on
+	save()
+
+
+## (0.33) A short vibration, if the phone has one and Vibration is on.
+static func vibrate(ms: int) -> void:
+	if buzz and not still and OS.has_feature("mobile"):
+		Input.vibrate_handheld(ms)
 
 
 static func set_sound(on: bool) -> void:

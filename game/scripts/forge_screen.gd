@@ -131,6 +131,36 @@ func open(r: Roster) -> void:
 	open_tool("forge")
 
 
+## (0.33) The list as it was left, and keeping it.
+func remember() -> Dictionary:
+	return {"type": type_filter, "view": view, "search": search}
+
+
+func recall(u: Dictionary) -> void:
+	type_filter = str(u.get("type", type_filter))
+	view = str(u.get("view", view))
+	search = str(u.get("search", search))
+
+
+## (0.33) What is being edited and not yet saved, to keep as a draft; {} for nothing.
+func draft() -> Dictionary:
+	if mode != "edit" or not dirty:
+		return {}
+	return {"tool": "forge", "key": key, "card": card.duplicate(true), "was_name": was_name, "what": str(card.get("name", "a card"))}
+
+
+func restore(d: Dictionary) -> void:
+	var c: Dictionary = (d.get("card", {}) as Dictionary).duplicate(true)
+	var k := str(d.get("key", ""))
+	if k != "":
+		c["_key"] = k
+	edit(c, k == "")
+	was_name = str(d.get("was_name", ""))
+	dirty = true
+	refresh()
+	say("Your draft, as it was when the game closed: save it to keep it.")
+
+
 func open_tool(k: String) -> void:
 	for t in tools:
 		tools[t].set_pressed_no_signal(t == k)
@@ -187,6 +217,7 @@ func listed() -> Array:
 
 
 func show_list() -> void:
+	Sandbox.drop_draft()          # (0.33) nothing left unsaved: no draft to keep
 	mode = "list"
 	card = {}
 	key = ""
@@ -769,6 +800,7 @@ func export_all() -> void:
 
 ## Saves the Sandbox and has the game read its cards again.
 func _commit(msg: String) -> void:
+	Sandbox.data.erase("draft")
 	if Sandbox.save():
 		say(msg)
 	else:

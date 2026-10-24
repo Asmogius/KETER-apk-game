@@ -338,6 +338,7 @@ apk_expansion/enable=false
 permissions/custom_permissions=PackedStringArray()
 permissions/manage_external_storage=true
 permissions/read_external_storage=true
+permissions/vibrate=true
 """
 
 

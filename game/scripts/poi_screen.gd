@@ -152,6 +152,32 @@ func open(r: Roster) -> void:
 	show_list()
 
 
+func remember() -> Dictionary:
+	return {"view": view, "tab": tab}
+
+
+func recall(u: Dictionary) -> void:
+	view = str(u.get("view", view))
+	tab = str(u.get("tab", tab))
+
+
+func draft() -> Dictionary:
+	if mode != "edit" or not dirty:
+		return {}
+	return {"tool": "poi", "key": key, "level": PoiModel.to_level(st), "what": str(st.get("name", "a floor"))}
+
+
+func restore(d: Dictionary) -> void:
+	var lv: Dictionary = (d.get("level", {}) as Dictionary).duplicate(true)
+	var k := str(d.get("key", ""))
+	if k != "":
+		lv["_key"] = k
+	edit(lv, k == "")
+	dirty = true
+	refresh()
+	say("Your draft, as it was when the game closed: save it to keep it.")
+
+
 func _tool(k: String) -> void:
 	for t in tools:
 		tools[t].set_pressed_no_signal(t == "poi")
@@ -216,6 +242,7 @@ func other_names() -> Array:
 
 
 func show_list() -> void:
+	Sandbox.drop_draft()          # (0.33) nothing left unsaved: no draft to keep
 	mode = "list"
 	st = {}
 	key = ""
@@ -1038,6 +1065,7 @@ func export_all() -> void:
 
 
 func _commit(msg: String) -> void:
+	Sandbox.data.erase("draft")
 	if Sandbox.save():
 		say(msg)
 	else:

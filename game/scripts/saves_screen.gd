@@ -77,6 +77,9 @@ func _slot_row(n: int) -> Control:
 	if here:
 		head.add_child(UI.tag("Playing", UI.CYAN))
 	v.add_child(UI.label(SaveSlots.line_of(n), 16, UI.DIM, true))
+	var tl := SaveSlots.teams_line(n)
+	if tl != "":
+		v.add_child(UI.label(tl, 16, UI.PALE, true))
 	var flow := HFlowContainer.new()
 	flow.add_theme_constant_override("h_separation", 6)
 	flow.add_theme_constant_override("v_separation", 6)

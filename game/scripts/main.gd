@@ -112,6 +112,7 @@ var chassis_screen: ChassisScreen   # (0.28) the Sandbox: the Chassis builder
 var poi_screen: PoiScreen           # (0.29) the Sandbox: the POI Sandbox
 var studio_screen: StudioScreen     # (0.30) the Sandbox: the Pixel Studio
 var saves_screen: SavesScreen       # (0.32) the three save files
+var _sandbox_recalled := false      # (0.33) each tool's list as it was last left: read once
 var _teams_for_setup := false   # (0.26) Strike Teams was opened from a match's setup: back there after
 var map_view: MapView
 var map_screen: MapScreen
@@ -208,6 +209,35 @@ func _ready() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		go_back()
+	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_keep_sandbox()
+
+
+## (0.33) The game going to the background or closing: what the Sandbox has
+## open and unsaved is kept as a draft, and where you were in it.
+func _keep_sandbox() -> void:
+	for pair in _sandbox_tools():
+		var s = pair[1]
+		if s != null and s.visible:
+			Sandbox.ui()["tool"] = pair[0]
+			var d: Dictionary = s.draft()
+			if not d.is_empty():
+				Sandbox.keep_draft(d)
+	_remember_sandbox()
+
+
+func _sandbox_tools() -> Array:
+	return [["forge", forge_screen], ["chassis", chassis_screen], ["poi", poi_screen], ["studio", studio_screen]]
+
+
+## Each tool's list as it was left, kept for next time.
+func _remember_sandbox() -> void:
+	if forge_screen == null:
+		return
+	var u := Sandbox.ui()
+	for pair in _sandbox_tools():
+		u[pair[0]] = pair[1].remember()
+	Sandbox.save()
 
 
 func go_back() -> void:
@@ -482,7 +512,26 @@ func open_sandbox() -> void:
 	home.visible = false
 	setup.visible = false
 	teams_screen.visible = false
-	open_sandbox_tool("forge")
+	# (0.33) where you were: the tool used last, each list as it was left; and a draft the game closed on
+	if not _sandbox_recalled:
+		_sandbox_recalled = true
+		var u := Sandbox.ui()
+		for pair in _sandbox_tools():
+			if u.get(pair[0]) is Dictionary:
+				pair[1].recall(u[pair[0]])
+	var d := Sandbox.draft()
+	var k: String = str(d.get("tool", Sandbox.ui().get("tool", "forge")))
+	if not ["forge", "chassis", "poi", "studio"].has(k):
+		k = "forge"
+	open_sandbox_tool(k)
+	if not d.is_empty():
+		var s = _sandbox_tools().filter(func(p): return p[0] == k)[0][1]
+		_open_dialog(Dialog.new("Pick up where you left off?", "You were working on %s when the game closed, and hadn't saved it." % str(d.get("what", "something")), ["Discard it", "Pick it up"], Color("#73efe8")), func(i):
+			_close_dialog()
+			if i == 1:
+				s.restore(d)
+			else:
+				Sandbox.drop_draft())
 
 
 ## (0.32) The three save files, from Home.
@@ -507,6 +556,7 @@ func reload_run() -> void:
 
 ## (0.28) One of the Sandbox's tools: the Card Forge, the Chassis builder, (0.29) the POI Sandbox.
 func open_sandbox_tool(k: String) -> void:
+	Sandbox.ui()["tool"] = k
 	forge_screen.visible = not ["chassis", "poi", "studio"].has(k)
 	chassis_screen.visible = k == "chassis"
 	poi_screen.visible = k == "poi"
@@ -545,6 +595,8 @@ func reload_cards() -> void:
 
 
 func show_home() -> void:
+	if forge_screen != null and _sandbox_tools().any(func(p): return p[1].visible):
+		_remember_sandbox()
 	_turn()
 	_leave_battle()
 	_hide_world()
@@ -1645,6 +1697,11 @@ func _strike(u, a: Dictionary, t, res: Dictionary) -> void:
 		Sound.play("hit")
 		if dmg >= 6 or down:
 			_shake(1.0 if down else 0.6)
+		# (0.33) and the phone buzzes: one of yours hit (longer if brought down), or a heavy blow of yours
+		if str(t.get("side", "")) == "ally":
+			Motion.vibrate(160 if down else 45)
+		elif str(u.get("side", "")) == "ally" and (dmg >= 6 or down):
+			Motion.vibrate(25)
 	elif Rules.truthy(res.get("healed")) or Rules.truthy(res.get("gained")):
 		fxl.play("heal", to + Motion.FEET)
 		Sound.play("heal")
@@ -2182,12 +2239,18 @@ func _neon_first() -> bool:
 ## (0.26) A match is over: who won, by name, and how it stood; Rematch plays
 ## the same two teams again.
 func show_pvp_result() -> void:
+	battle.pvp_tally()
 	var champ := battle.pvp_winner()
 	var title := ("%s wins" % champ) if champ != "" else "A draw"
 	var standing := func(side: String) -> String:
 		var us: Array = battle.side_units(side)
 		return "%s: %d of %d Units standing" % [battle.pvp_name_of(side), us.filter(func(u): return not Rules.truthy(u.get("down"))).size(), us.size()]
 	var text := "Every Hero of %s's is down.\n\n%s\n%s" % [battle.pvp_name_of("enemy" if battle.winner == "ally" else "ally"), standing.call("ally"), standing.call("enemy")] if champ != "" else "Nobody is left standing."
+	# (0.33) the match in numbers, player by player
+	text += "\n\nIn %d round%s:" % [battle.round, "" if battle.round == 1 else "s"]
+	for p in [1, 2]:
+		var st: Dictionary = battle.pvp_stats[p]
+		text += "\n%s dealt %d damage, brought down %d Unit%s and played %d card%s." % [battle.pvp_names[p], st["damage"], st["downs"], "" if st["downs"] == 1 else "s", st["cards"], "" if st["cards"] == 1 else "s"]
 	var d := Dialog.new(title, text, ["Rematch", "New match", "Home", "See the board"], Color("#d6a851"))
 	d.add_strip([["Round %d" % battle.round, "#d6a851"]])
 	_open_dialog(d, func(i):

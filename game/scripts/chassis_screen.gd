@@ -139,6 +139,31 @@ func open(r: Roster) -> void:
 	show_list()
 
 
+func remember() -> Dictionary:
+	return {"view": view}
+
+
+func recall(u: Dictionary) -> void:
+	view = str(u.get("view", view))
+
+
+func draft() -> Dictionary:
+	if mode != "edit" or not dirty:
+		return {}
+	return {"tool": "chassis", "id": id, "item": ch.duplicate(true), "what": str(ch.get("name", "a chassis"))}
+
+
+func restore(d: Dictionary) -> void:
+	var c: Dictionary = (d.get("item", {}) as Dictionary).duplicate(true)
+	var i := str(d.get("id", ""))
+	if i != "":
+		c["id"] = i
+	edit(c, i == "")
+	dirty = true
+	refresh()
+	say("Your draft, as it was when the game closed: save it to keep it.")
+
+
 func _tool(k: String) -> void:
 	for t in tools:
 		tools[t].set_pressed_no_signal(t == "chassis")
@@ -196,6 +221,7 @@ func listed() -> Array:
 
 
 func show_list() -> void:
+	Sandbox.drop_draft()          # (0.33) nothing left unsaved: no draft to keep
 	mode = "list"
 	ch = {}
 	id = ""
@@ -656,6 +682,7 @@ func export_all() -> void:
 
 
 func _commit(msg: String) -> void:
+	Sandbox.data.erase("draft")
 	if Sandbox.save():
 		say(msg)
 	else:

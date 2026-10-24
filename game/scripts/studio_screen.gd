@@ -168,6 +168,47 @@ func open(r: Roster) -> void:
 	show_list()
 
 
+func remember() -> Dictionary:
+	return {"view": view, "query": query}
+
+
+func recall(u: Dictionary) -> void:
+	view = str(u.get("view", view))
+	query = str(u.get("query", query))
+	search.text = query
+
+
+func draft() -> Dictionary:
+	if mode != "edit" or not dirty:
+		return {}
+	var t := {"kind": str(target.get("kind", "canvas"))}
+	if t["kind"] == "card":
+		t["key"] = target["key"]
+		t["what"] = target["what"]
+	var cu := {}
+	for k in custom:
+		cu[str(k)] = "#" + (custom[k] as Color).to_html(false)
+	return {"tool": "studio", "target": t, "pid": pid, "w": w, "h": h, "px": PixelModel.encode(px), "custom": cu, "name": pic_name, "what": pic_name if pic_name != "" else "a picture"}
+
+
+func restore(d: Dictionary) -> void:
+	var t: Dictionary = d.get("target", {"kind": "canvas"})
+	var tt := {"kind": "canvas"}
+	if str(t.get("kind", "")) == "card" and roster != null:
+		var cs: Array = roster.cards.filter(func(c): return Sandbox.key_of(c) == str(t["key"]))
+		if not cs.is_empty():
+			tt = {"kind": "card", "key": str(t["key"]), "what": str(t["what"]), "card": cs[0]}
+	var cu := {}
+	for k in (d.get("custom", {}) as Dictionary):
+		cu[int(k)] = Color(str(d["custom"][k]))
+	var pw := int(d.get("w", 48))
+	var ph := int(d.get("h", 48))
+	_open(tt, str(d.get("pid", "")), pw, ph, PixelModel.decode(str(d.get("px", "")), pw * ph), cu, str(d.get("name", "")))
+	dirty = true
+	refresh()
+	say("Your draft, as it was when the game closed: save it to keep it.")
+
+
 func _tool(k: String) -> void:
 	for t in tools:
 		tools[t].set_pressed_no_signal(t == "studio")
@@ -233,6 +274,7 @@ func export_file(card: Dictionary, what: String) -> Dictionary:
 
 
 func show_list() -> void:
+	Sandbox.drop_draft()          # (0.33) nothing left unsaved: no draft to keep
 	mode = "list"
 	target = {}
 	pid = ""
@@ -833,6 +875,7 @@ func export_all() -> void:
 
 
 func _commit(msg: String) -> void:
+	Sandbox.data.erase("draft")
 	if Sandbox.save():
 		say(msg)
 	else:

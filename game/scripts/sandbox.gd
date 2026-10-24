@@ -471,3 +471,30 @@ static func picture_texture(id: String) -> Texture2D:
 	var t := ImageTexture.create_from_image(PixelModel.image_of(p))
 	_tex[id] = [p.get("saved"), t]
 	return t
+
+
+# ---------------------------------------------------------------- (0.33) where you were, and a draft
+## The tool last used, and each tool's list as you left it: {tool, forge: {...}, ...}.
+static func ui() -> Dictionary:
+	if not (data.get("ui") is Dictionary):
+		data["ui"] = {}
+	return data["ui"]
+
+
+## What was being edited, unsaved, when the game went to the background or
+## closed: {tool, ...what that tool needs to open it again}, or {}.
+static func draft() -> Dictionary:
+	return data["draft"] if data.get("draft") is Dictionary else {}
+
+
+static func keep_draft(d: Dictionary) -> void:
+	if d.is_empty():
+		return
+	data["draft"] = d
+	save()
+
+
+static func drop_draft() -> void:
+	if data.has("draft"):
+		data.erase("draft")
+		save()

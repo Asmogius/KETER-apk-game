@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.32 adds three
-save files; v0.31 made the free Heroes Neutral.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.33 adds a match
+summary and vibration; v0.32 brought three save files.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,23 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.33 (Companion 14.18):
+
+- **Save files say more**: the tiles explored, the Strike Team that is out
+  and how far it has got (steps and fights), and the Strike Teams by name.
+- **Pass and play's result** says, for each player, the damage they dealt,
+  the Units they brought down and the cards they played, and in how many
+  rounds. What a player's turn does to the other player's Units is theirs;
+  a hazard under one's own Units is nobody's.
+- **Vibration** (Options, on by default): on a phone, a short buzz when one
+  of your Units is hit, a longer one when it is brought down, and a tap
+  when your attack lands a heavy blow.
+- **The Sandbox opens where you were**: the tool used last, each list with
+  its filters and search as you left them.
+- **Nothing unsaved is lost**: if the game goes to the background or closes
+  while a card, chassis, floor or picture is open and unsaved, it is kept
+  as a draft, and the Sandbox asks to pick it up next time.
 
 New in 0.32 (Companion 14.18): **three save files**, and a sweep for bugs
 and rough edges.
@@ -613,7 +630,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-32_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-33_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -624,7 +641,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-32_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-33_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the

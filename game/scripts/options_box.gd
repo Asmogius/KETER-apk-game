@@ -13,6 +13,7 @@ signal look_again_requested           # (0.15) read the export again
 var speed_btns := {}           # speed -> Button
 var atmos_btns := {}           # (0.18) level -> Button
 var shake_btns := {}           # true/false -> Button
+var buzz_btns := {}            # (0.33) true/false -> Button
 var sound_btns := {}
 var close_btn: Button
 var look_btn: Button
@@ -49,6 +50,8 @@ func _init() -> void:
 		Atmos.LEVELS.map(func(s): return [s, Atmos.LEVEL_NAMES[s]]), atmos_btns, func(k): Motion.set_atmos(k)))
 	col.add_child(_row("Screen shake", "A small shake on a heavy blow, or a Unit brought down.",
 		[[true, "On"], [false, "Off"]], shake_btns, func(k): Motion.set_shake(k)))
+	col.add_child(_row("Vibration", "On a phone: a short buzz when one of your Units is hit, a longer one when it is brought down, and a tap when your attack lands a heavy blow.",
+		[[true, "On"], [false, "Off"]], buzz_btns, func(k): Motion.set_buzz(k)))
 	col.add_child(_row("Sound", "Retro blips for shots, hits, cards and buttons. A .wav of yours in the game's sounds folder plays instead of the game's (the README names them).",
 		[[true, "On"], [false, "Off"]], sound_btns, func(k): Motion.set_sound(k)))
 	about = Look.read("", UI.DIM, true)
@@ -113,6 +116,8 @@ func _show() -> void:
 		shake_btns[k].set_pressed_no_signal(k == Motion.shake)
 	for k in sound_btns:
 		sound_btns[k].set_pressed_no_signal(k == Motion.sound)
+	for k in buzz_btns:
+		buzz_btns[k].set_pressed_no_signal(k == Motion.buzz)
 
 
 func _ready() -> void:

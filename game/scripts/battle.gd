@@ -1454,6 +1454,7 @@ func play_troop(i: int, tile = null, x = null) -> Variant:
 	looks[u["id"]] = roster.token_for(lib) if (roster != null and lib != null) else {}
 	say(str(card["name"]) + " deployed" + x_note(card))
 	fx.run_trigger(u, "deployed")
+	_pvp_count("cards")
 	return u
 
 
@@ -1491,6 +1492,7 @@ func play_equipment(i: int, unit: Dictionary, x = null) -> bool:
 		if Rules.truthy(e.get("text")) and not Effects._passive_tag(e.get("kind") if Rules.truthy(e.get("kind")) else ""):
 			fx.run_text(e["text"], {"actor": unit, "holder": unit, "target": unit, "sourceCard": card["name"]})
 	fx.apply_continuous()
+	_pvp_count("cards")
 	return true
 
 
@@ -1539,6 +1541,7 @@ func play_card(i: int, target = null, tile = null, recover = null, x = null) -> 
 	else:
 		say("Played " + str(card["name"]) + x_note(card) + ((" on " + str(target["name"])) if target != null else ""))
 		_carry_out(card.get("effects"), str(card["name"]), target, null, recover, cx)
+	_pvp_count("cards")
 	return true
 
 
@@ -2694,6 +2697,7 @@ static func begin_pvp(f: FloorData, r: Roster, s1: Dictionary, s2: Dictionary, s
 	b.phase_chips()
 	b.phase_draw(true)
 	b.phase = "turn"
+	b.pvp_snap()
 	b.say("Round 1 · %s's turn" % b.pvp_names[1], "note")
 	b.floats.clear()
 	return b
@@ -2775,6 +2779,7 @@ func pvp_end_turn() -> void:
 	_hook()
 	if pvp == 0 or phase != "turn" or over:
 		return
+	pvp_tally()
 	undo.clear()
 	phase = "handoff"
 	for u in units:
@@ -2854,6 +2859,46 @@ func pvp_hand_over() -> void:
 		say("Recharge: %d Chip%s turned face-up" % [n, "" if n == 1 else "s"])
 	phase = "turn"
 	settle()
+	pvp_snap()
+
+
+# ---------------------------------------------------------------- (0.33) the match, in numbers
+## Each player's damage dealt, Units brought down and cards played. What the
+## other player's Units lose in a player's turn is that player's doing (a
+## hazard under one's own Units is nobody's); a Unit brought down then, theirs.
+var pvp_stats := {1: {"damage": 0, "downs": 0, "cards": 0}, 2: {"damage": 0, "downs": 0, "cards": 0}}
+var _pvp_seen := {}            # the other player's Units, as the turn began: id -> [hp, down]
+
+
+func _pvp_count(k: String, n := 1) -> void:
+	if pvp > 0 and pvp_stats.has(pvp):
+		pvp_stats[pvp][k] += n
+
+
+## The other side's Units as they stand: what the player whose turn it is does to them is counted from here.
+func pvp_snap() -> void:
+	_pvp_seen = {}
+	if pvp == 0:
+		return
+	for u in units:
+		if u["side"] == "enemy":
+			_pvp_seen[str(u["id"])] = [int(Rules.num(u.get("hp"), 0)), Rules.truthy(u.get("down"))]
+
+
+## Counts what this turn has done so far (and starts counting again from here).
+func pvp_tally() -> void:
+	if pvp == 0:
+		return
+	for u in units:
+		var was = _pvp_seen.get(str(u["id"]))
+		if u["side"] != "enemy" or was == null:
+			continue
+		var hp := int(Rules.num(u.get("hp"), 0))
+		if hp < int(was[0]):
+			_pvp_count("damage", int(was[0]) - hp)
+		if Rules.truthy(u.get("down")) and not was[1]:
+			_pvp_count("downs")
+	pvp_snap()
 
 
 ## Who won a match, by name: "" while it goes on, or for a draw.
