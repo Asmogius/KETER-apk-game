@@ -106,6 +106,32 @@ func _scan() -> int:
 ## {ok, fits, afford, reasons, heroes, lines, parts, other, busy}. The reasons
 ## are deploy.js's own words; reasons_against says them as the dock does.
 ## lines: a line for each design, {id, name, copies, free, each, cost, starter}.
+## (0.34) The cards a team takes that must be held or crafted: {name: copies}
+## (its Deck's Equipment, Command and Aether cards, its Heroes' Action cards, its Pouch's Chips).
+func need_of(team: Dictionary) -> Dictionary:
+	var need := {}
+	if dock == null or roster == null:
+		return need
+	var add := func(r, n: int):
+		var c = roster.card_named(Roster.ref_name(str(r)))
+		if c == null or not Dock.is_limited(c) or n <= 0:
+			return
+		need[str(c["name"])] = int(need.get(str(c["name"]), 0)) + n
+	var deck: Dictionary = team["deck"] if team.get("deck") is Dictionary else {}
+	for n in deck:
+		add.call(n, StrikeTeams.copies(team, str(n)))
+	var acts: Dictionary = team["actions"] if team.get("actions") is Dictionary else {}
+	for h in acts:
+		for r in (acts[h] if acts[h] is Array else []):
+			add.call(r, 1)
+	var pouch: Dictionary = team["pouch"] if team.get("pouch") is Dictionary else {}
+	for k in pouch:
+		if str(k).begins_with("basic|"):
+			continue
+		add.call(k, Dock._pi(pouch[k]))
+	return need
+
+
 func plan(team: Dictionary, pack = null) -> Dictionary:
 	var reasons := []
 	var heroes := []
@@ -180,6 +206,33 @@ func plan(team: Dictionary, pack = null) -> Dictionary:
 	for r in 6:
 		if have[r] < parts[r]:
 			afford = false
+	# (0.34) the cards it takes must be held, or are crafted as it leaves
+	var need := need_of(team)
+	var craft := []
+	var craft_shards = 0
+	var craft_parts := {"equipment": [0, 0, 0, 0, 0, 0], "aether": [0, 0, 0, 0, 0, 0]}
+	var names: Array = need.keys()
+	names.sort()
+	for nm in names:
+		var held := dock.owned(nm)
+		var short: int = maxi(0, int(need[nm]) - held)
+		if short == 0:
+			continue
+		var cc = dock.craft_cost(nm)
+		if cc == null:
+			reasons.append("%s can't be crafted" % nm)
+			continue
+		craft.append({"name": nm, "n": short, "have": held, "shards": Dock._whole(float(cc["shards"]) * short), "type": cc["type"], "rarity": cc["rarity"], "parts": int(cc["n"]) * short})
+		craft_shards = Dock._whole(float(craft_shards) + float(cc["shards"]) * short)
+		if cc["type"] != "":
+			craft_parts[cc["type"]][cc["rarity"]] += int(cc["n"]) * short
+	var st0 := Loot.norm(stock)
+	if st0["shards"] < float(craft_shards):
+		afford = false
+	for ty in ["equipment", "aether"]:
+		for r in 6:
+			if st0["parts"][ty][r] < craft_parts[ty][r]:
+				afford = false
 	# 0.10: pre-built copies bought at the dock go too; packed Consumables and Prototypes must be owned
 	var pre := []
 	var packed := []
@@ -200,7 +253,8 @@ func plan(team: Dictionary, pack = null) -> Dictionary:
 			else:
 				packed.append({"name": str(nm), "n": n, "kind": dock.item_kind(str(nm))})
 	return {"ok": reasons.is_empty() and afford and not active(), "fits": reasons.is_empty(), "afford": afford, "reasons": reasons, "heroes": heroes,
-		"lines": lines, "parts": parts, "other": other, "busy": active(), "pre": pre, "packed": packed}
+		"lines": lines, "parts": parts, "other": other, "busy": active(), "pre": pre, "packed": packed,
+		"need": need, "craft": craft, "craftShards": craft_shards, "craftParts": craft_parts}
 
 
 ## What a team packs to begin with (0.10): what its own Consumables and
@@ -279,7 +333,12 @@ func start(team: Dictionary, pack = null) -> Dictionary:
 	var bag := Loot.norm(stock)
 	for r in 6:
 		bag["parts"]["troop"][r] -= int(p["parts"][r])
-	stock = bag
+	# (0.34) and what it lacks is crafted
+	bag["shards"] = float(bag["shards"]) - float(p["craftShards"])
+	for ty in ["equipment", "aether"]:
+		for r in 6:
+			bag["parts"][ty][r] -= int(p["craftParts"][ty][r])
+	stock = Loot.norm(bag)
 	var copies := {}
 	for l in p["lines"]:
 		copies[l["id"]] = l["copies"]
@@ -291,6 +350,11 @@ func start(team: Dictionary, pack = null) -> Dictionary:
 		for x in p.get("pre", []):
 			pre[x["id"]] = x["copies"]
 		dock.inv["pre"] = {}
+		# (0.34) the cards it takes go with it: what was held, and what was crafted for it
+		for nm in p["need"]:
+			dock.inv["cards"][nm] = maxi(0, dock.owned(nm) - int(p["need"][nm]))
+			if int(dock.inv["cards"][nm]) == 0:
+				dock.inv["cards"].erase(nm)
 		protos = {}
 		for x in p.get("packed", []):
 			dock.add_card(x["name"], -int(x["n"]))
@@ -306,8 +370,11 @@ func start(team: Dictionary, pack = null) -> Dictionary:
 	s = {"active": true, "n": int(world.state["completed"]) + 1, "started": _now(), "team": t, "heroesOut": [], "lost": {},
 		"pack": {"cons": packed, "protos": protos}, "pos": world.dock(), "haul": Loot.bag(), "items": [],
 		"activity": null, "log": [], "steps": 0, "fights": 0, "known0": world.known_count(), "maxSkull": 0, "kills": [],
-		"copies": copies, "lines": p["lines"], "paid": p["parts"], "pre": pre, "preLines": p.get("pre", [])}
+		"copies": copies, "lines": p["lines"], "paid": p["parts"], "pre": pre, "preLines": p.get("pre", []),
+		"cards": p["need"].duplicate(), "crafted": p["craft"].map(func(cr): return {"name": cr["name"], "n": cr["n"]})}
 	note("Left the dock with %s." % str(t.get("name", "a Strike Team")))
+	if not p["craft"].is_empty():
+		note("Crafted for it: %s." % ", ".join(p["craft"].map(func(cr): return (("%d × " % int(cr["n"])) if int(cr["n"]) > 1 else "") + str(cr["name"]))))
 	world.stand(s["pos"], _scan())
 	return {"ok": true, "state": s}
 
@@ -694,6 +761,11 @@ func _bank(c: Dictionary, result: String, said: String) -> Dictionary:
 			if m is Dictionary:
 				for nm in m:
 					dock.add_card(str(nm), int(m[nm]))
+		# (0.34) and the cards it took
+		var cs = c.get("cards")
+		if cs is Dictionary:
+			for nm in cs:
+				dock.add_card(str(nm), int(cs[nm]))
 	var explored: bool = world.known_count() > int(c.get("known0", 0))
 	# in level order, so a level 1 and its level 2 found on one trip are both kept
 	var parsed: Array = c["items"].map(func(it): return Progress.parse_item(it)).filter(func(o): return o != null)
@@ -736,7 +808,7 @@ func wipe() -> Dictionary:
 	note("Wiped out. The haul is lost.")
 	# packed Consumables and Prototypes are lost with it; insurance may keep some of the haul
 	var dk := dock.deployment_ended({"result": "wipe", "haul": haul, "explored": explored, "heroes": c["team"].get("heroes", []).map(func(h): return str(h))}) if dock != null else {}
-	return {"ok": true, "lostHaul": haul, "lostItems": items, "n": c["n"], "dock": dk, "lostPack": c["pack"].duplicate(true)}
+	return {"ok": true, "lostHaul": haul, "lostItems": items, "n": c["n"], "dock": dk, "lostPack": c["pack"].duplicate(true), "lostCards": (c["cards"] as Dictionary).duplicate() if c.get("cards") is Dictionary else {}}
 
 
 ## The map under the team is gone (a new export with another map): it is

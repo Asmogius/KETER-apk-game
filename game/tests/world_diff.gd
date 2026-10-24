@@ -156,7 +156,7 @@ func _snap(dep: Deployment) -> Dictionary:
 	if kst is Dictionary:
 		kst.erase("made")
 	return {"dep": d,
-		"out": {"copies": named.call(s.get("copies", {})), "lost": s["lost"], "paid": s.get("paid"), "pre": named.call(s.get("pre", {})), "pack": s.get("pack")} if s is Dictionary else null,
+		"out": {"copies": named.call(s.get("copies", {})), "lost": s["lost"], "paid": s.get("paid"), "pre": named.call(s.get("pre", {})), "pack": s.get("pack"), "cards": s.get("cards", {})} if s is Dictionary else null,
 		"dock": {"reach": k["reach"], "restocks": k["restocks"], "stock": kst, "bounties": k["bounties"], "log": k["log"].map(func(l): return l["text"]), "heroes": k["heroes"]},
 		"inv": dep.dock.inv if dep.dock != null else {"cards": {}, "pre": {}},
 		"world": {"known": w.state["known"].size(), "knownHash": _keys_hash(w.state["known"]), "stood": _keys_hash(w.state["stood"]), "cleared": w.state["cleared"], "completed": w.state["completed"]},
@@ -225,7 +225,7 @@ func _case(c: Dictionary) -> void:
 		"deployment":
 			_deployment(A, want)
 		"plan":
-			var dep := _dep(Loot.new(loot_tables, 1), A[1], A[0], A[2], A[4] if A.size() > 4 else null, null, [])
+			var dep := _dep(Loot.new(loot_tables, 1), A[1], A[0], A[2], A[4] if A.size() > 4 else null, A[5] if A.size() > 5 else null, [])
 			_check(fn, _plan(dep, _team(A[3])), want)
 		_:
 			_tally("unknown:" + fn, false, null, null)
@@ -283,6 +283,8 @@ func _team(o: Dictionary) -> Dictionary:
 	t["heroes"] = o["heroes"].duplicate()
 	t["consumables"] = o["consumables"].duplicate()
 	t["deck"] = o.get("deck", {}).duplicate()
+	t["actions"] = (o["actions"] as Dictionary).duplicate(true) if o.get("actions") is Dictionary else {}
+	t["pouch"] = (o["pouch"] as Dictionary).duplicate() if o.get("pouch") is Dictionary else {}
 	return t
 
 
@@ -290,7 +292,7 @@ func _plan(dep: Deployment, t: Dictionary, pack = null) -> Dictionary:
 	var p := dep.plan(t, pack)
 	return {"ok": p["ok"], "fits": p["fits"], "afford": p["afford"], "reasons": p["reasons"], "heroes": p["heroes"],
 		"lines": p["lines"].map(func(l): return {"name": l["name"], "copies": l["copies"], "free": l["free"], "each": l["each"], "cost": l["cost"], "starter": l["starter"]}),
-		"parts": p["parts"], "other": p["other"], "busy": p["busy"]}
+		"parts": p["parts"], "other": p["other"], "busy": p["busy"], "need": p["need"], "craft": p["craft"], "craftShards": p["craftShards"], "craftParts": p["craftParts"]}
 
 
 func _deployment(A: Array, want: Array) -> void:
@@ -339,7 +341,7 @@ func _deployment(A: Array, want: Array) -> void:
 				out = {"ok": h["ok"], "why": h.get("why"), "haul": Loot.norm(h["haul"]) if h.get("haul") != null else null, "items": h.get("items"), "n": h.get("n"), "dock": _dock_out(h.get("dock"))}
 			"wipe":
 				var wi := dep.wipe()
-				out = {"ok": wi["ok"], "lostHaul": Loot.norm(wi["lostHaul"]), "lostItems": wi["lostItems"], "n": wi["n"], "dock": _dock_out(wi.get("dock")), "lostPack": wi.get("lostPack")}
+				out = {"ok": wi["ok"], "lostHaul": Loot.norm(wi["lostHaul"]), "lostItems": wi["lostItems"], "n": wi["n"], "dock": _dock_out(wi.get("dock")), "lostPack": wi.get("lostPack"), "lostCards": wi.get("lostCards", {})}
 		got.append({"out": out, "snap": _snap(dep)}.duplicate(true))      # as things stood then, not as they end
 	# told step by step, so a difference is found where it starts
 	var good := got.size() == want.size()

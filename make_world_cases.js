@@ -178,7 +178,7 @@ function snap(){
       heroesOut: names(s.heroesOut), cons: s.pack.cons, kills: s.kills, log: (s.log || []).map(l => l.text), result: s.result || null } : null,
     world: { known: Object.keys(ws.known).length, knownHash: W.hashStr(Object.keys(ws.known).sort().join(";")), stood: W.hashStr(Object.keys(ws.stood).sort().join(";")), cleared: ws.cleared, completed: ws.completed },
     prog: progNow(), stock: L.stock(),
-    out: s ? { copies: byName(s.copies), lost: byName(s.lost), paid: s.paid || null, pre: byName(s.pre), pack: s.pack || null } : null,
+    out: s ? { copies: byName(s.copies), lost: byName(s.lost), paid: s.paid || null, pre: byName(s.pre), pack: s.pack || null, cards: s.cards || {} } : null,
     dock: (function(){ const k = DK.state(), st = k.stock ? Object.assign({}, k.stock) : null; if(st) delete st.made;
       return { reach: k.reach, restocks: k.restocks, stock: st, bounties: k.bounties, log: k.log.map(l => l.text), heroes: k.heroes }; })(), inv: DK.inv(),
     history: hist.map(h => ({ n: h.n, result: h.result, team: h.team, steps: h.steps, fights: h.fights, haul: L.norm(h.haul), items: h.items, out: h.out }))
@@ -203,10 +203,13 @@ function someDesigns(){
 function loadout(team){
   const ref = n => { if(WS.cards().some(c => c.name === n)) return "design|" + n; const c = baseCards.filter(x => x.name === n)[0]; return (c ? (c._src || "master") : "master") + "|" + n; };
   const deck = []; Object.keys(team.deck).forEach(n => { for(let i = 0; i < team.deck[n]; i++) deck.push(ref(n)); });
-  return { name: team.name, level: team.level, created: null, heroes: team.heroes.map(ref), deck, actions: {}, pouch: {} };
+  /* (v14.19) the Action cards Heroes carry and the Pouch's Chips: what the stash must hold */
+  const actions = {}; Object.keys(team.actions || {}).forEach(h => { actions[ref(h)] = team.actions[h].map(ref); });
+  const pouch = {}; Object.keys(team.pouch || {}).forEach(k => { pouch[k.indexOf("basic|") === 0 ? k : ref(k)] = team.pouch[k]; });
+  return { name: team.name, level: team.level, created: null, heroes: team.heroes.map(ref), deck, actions, pouch };
 }
 const planOut = p => ({ ok: !!p.ok, fits: !!p.fits, afford: !!p.afford, reasons: p.reasons, heroes: p.heroes || [], lines: (p.lines || []).map(l => ({ name: l.name, copies: l.copies, free: l.free, each: l.each, cost: l.cost, starter: !!l.starter })),
-  parts: p.parts, other: p.other || 0, busy: !!p.busy });
+  parts: p.parts, other: p.other || 0, busy: !!p.busy, need: p.need || {}, craft: p.craft || [], craftShards: p.craftShards || 0, craftParts: p.craftParts || null });
 /* leaving the dock: deploy.js's own start(), with what is packed */
 function leave(team, pack){
   store[D.LOAD_KEY || "keter-app-loadouts"] = JSON.stringify([loadout(team)]);
@@ -240,7 +243,10 @@ const count = (k, n) => { tally[k] = (tally[k] || 0) + (n === undefined ? 1 : n)
 
 const forgeTroops = baseCards.filter(c => c.cardType === "troop").map(c => c.name);
 const deckOthers = baseCards.filter(c => /^(equipment|command|aether)$/.test(c.cardType)).map(c => c.name);
-function someStock(){ const b = L.bag(); for(let r = 0; r < 6; r++) b.parts.troop[r] = chance(0.75) ? pick([0, 4, 12, 40, 120]) : 0; b.shards = ri(0, 30); return b; }
+/* (v14.19) Action cards and Chips, which the stash must hold too */
+const actionNames = baseCards.filter(c => c.cardType === "action").map(c => c.name), chipNames = baseCards.filter(c => c.cardType === "sphere").map(c => c.name);
+function someStock(){ const b = L.bag(); for(let r = 0; r < 6; r++) b.parts.troop[r] = chance(0.75) ? pick([0, 4, 12, 40, 120]) : 0; b.shards = chance(0.5) ? ri(0, 30) : pick([200, 900, 3000, 20000]);
+  ["equipment", "aether"].forEach(ty => { for(let r = 0; r < 6; r++) b.parts[ty][r] = chance(0.4) ? pick([0, 2, 5, 20]) : 0; }); return b; }
 function someTeam(trip){
   const team = { name: pick(["Vanguard", "Second Wave", "Night Shift"]) + " " + (trip + 1), level: ri(1, 3), heroes: [], consumables: {}, deck: {} };
   for(let n = ri(1, 3); n > 0; n--){ const h = pick(heroNames); if(team.heroes.indexOf(h) < 0) team.heroes.push(h); }
@@ -248,6 +254,8 @@ function someTeam(trip){
   const mine = WS.list().map(d => d.name);
   for(let n = ri(0, 3); n > 0; n--){ const d = pick(mine); team.deck[d] = ri(1, 5); }
   for(let n = ri(0, 4); n > 0; n--) team.deck[pick(deckOthers)] = ri(1, 2);
+  team.actions = {}; team.heroes.forEach(h => { if(chance(0.4)){ team.actions[h] = []; for(let n = ri(1, 2); n > 0; n--) team.actions[h].push(pick(actionNames)); } });
+  team.pouch = {}; if(chance(0.5)) team.pouch["basic|3"] = ri(1, 4); for(let n = ri(0, 2); n > 0; n--) team.pouch[pick(chipNames)] = ri(1, 3);
   if(chance(0.1)) team.deck[pick(forgeTroops)] = ri(1, 2);
   if(chance(0.04)) team.deck["No Such Card"] = 1;
   if(chance(0.04)) team.heroes = [];
@@ -263,13 +271,19 @@ for(let i = 0; i < 300; i++){
     team.deck["Frame Trooper"] = ri(5, 9);
     if(!team.heroes.length) team.heroes = [pick(heroNames)];
   }
+  /* (v14.19) the stash: most teams that fit hold the cards they take; the rest must craft them */
+  const inv0 = { cards: {}, pre: {} };
+  if(i % 4 === 0 && chance(0.5)) for(let r = 0; r < 6; r++) stock0.parts.troop[r] += 200;
+  if(i % 4 === 0 && chance(0.8)){ const lo = loadout(team), need = D.needOf(lo, baseCards.concat(WS.cards())); Object.keys(need).forEach(n => { inv0.cards[n] = need[n] + (chance(0.3) ? 1 : 0); }); }
+  else for(let n = ri(0, 3); n > 0; n--) inv0.cards[pick(deckOthers.concat(actionNames, chipNames))] = ri(1, 2);
   setProg(prog0); L.setStock(stock0);
   /* (v14.14) the Heroes recruited: most of them, now and then not one of the team's */
   const dock0 = { heroes: {} }; heroNames.forEach(n => { if(chance(0.92)) dock0.heroes[n] = 1; });
   store[DK.KEY] = JSON.stringify(dock0);
+  store[DK.INV_KEY] = JSON.stringify(inv0);
   store["keter-app-loadouts"] = JSON.stringify([loadout(team)]);
   const p = D.plan(0);
-  add("plan", [DESIGNS, prog0, stock0, team, dock0], planOut(p)); count(p.ok ? "plans that can go" : p.fits ? "plans short of parts" : "plans refused");
+  add("plan", [DESIGNS, prog0, stock0, team, dock0, inv0], planOut(p)); count(p.ok ? "plans that can go" : p.fits ? "plans short of parts" : "plans refused");
 }
 const itemNames = baseCards.filter(c => c.cardType === "consumable" || c.cardType === "prototype").map(c => c.name);
 function somePre(){
@@ -292,6 +306,7 @@ function someDock(){
 function someInv(pre){
   const v = { cards: {}, pre: {} };
   for(let n = ri(0, 5); n > 0; n--) v.cards[pick(chance(0.7) ? consNames : itemNames)] = ri(1, 3);
+  for(let n = ri(0, 6); n > 0; n--) v.cards[pick(deckOthers.concat(actionNames, chipNames))] = ri(1, 3);
   Object.keys(pre).forEach(id => { if(chance(0.6)) v.pre[id] = ri(1, 3); });
   return v;
 }
@@ -308,6 +323,8 @@ for(let ci = 0; ci < 150; ci++){
   const PRE = somePre();
   DESIGNS = Object.assign(someDesigns(), PRE); store["keter-app-designs"] = JSON.stringify(DESIGNS);
   const sd = ri(1, 1e9), prog0 = chance(0.5) ? randomProg() : { bp: {}, ch: {}, named: {} }, stock0 = someStock();
+  /* (v14.19) most whole deployments can pay to craft what their teams lack; now and then one can't */
+  if(chance(0.85)){ stock0.shards += 30000; ["equipment", "aether"].forEach(ty => { for(let r = 0; r < 6; r++) stock0.parts[ty][r] += 60; }); }
   prog0.all = chance(0.4);
   prog0.seen = { enemy: {}, district: {}, comp: {} };
   ["1", "2", "3", "4", "5", "6"].forEach(d => { if(chance(0.5)) prog0.seen.district[d] = 1; });
@@ -339,6 +356,9 @@ for(let ci = 0; ci < 150; ci++){
       Object.keys(field.deck).forEach(n => { if(n === "No Such Card" || forgeTroops.indexOf(n) >= 0 || WS.list().some(d => d.name === n)) delete field.deck[n]; });
       field.deck["Frame Trooper"] = ri(1, 4);
       if(!field.heroes.length) field.heroes = [pick(heroNames)];
+      /* (v14.19) and without the cards it would have to craft */
+      Object.keys(field.deck).forEach(n => { if(deckOthers.indexOf(n) >= 0) delete field.deck[n]; });
+      field.actions = {}; Object.keys(field.pouch || {}).forEach(k => { if(k.indexOf("basic|") !== 0) delete field.pouch[k]; });
       const fpack = packFor(field);
       left = leave(field, fpack); run(["start", field, fpack], left);
       if(!left.ok){ count("field copies that couldn't leave either"); continue; }
@@ -388,7 +408,7 @@ for(let ci = 0; ci < 150; ci++){
     const s2 = D.cur();
     if(s2){
       /* still out: give up, or stay out and end the case here */
-      if(chance(0.5) && !s2.activity){ const w = D.wipe(); run(["wipe"], { ok: w.ok, lostHaul: L.norm(w.lostHaul), lostItems: w.lostItems, n: w.n, dock: dockOut(w.dock), lostPack: w.lostPack || null }); count("given up"); }
+      if(chance(0.5) && !s2.activity){ const w = D.wipe(); run(["wipe"], { ok: w.ok, lostHaul: L.norm(w.lostHaul), lostItems: w.lostItems, n: w.n, dock: dockOut(w.dock), lostPack: w.lostPack || null, lostCards: w.lostCards || {} }); count("given up"); }
       else break;
     }
   }

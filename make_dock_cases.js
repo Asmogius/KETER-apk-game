@@ -65,6 +65,8 @@ const count = (k, n) => { tally[k] = (tally[k] || 0) + (n === undefined ? 1 : n)
 
 /* ---- the dock's tables, from what Dev Mode may have saved ---- */
 const itemNames = baseCards.filter(c => c.cardType === "consumable" || c.cardType === "prototype").map(c => c.name);
+/* (v14.19) the cards a deployment must hold or craft */
+const limitedNames = baseCards.filter(c => DK.isLimited(c)).map(c => c.name);
 const heroNames = baseCards.filter(c => c.cardType === "hero").map(c => c.name);
 const weird = [null, "", "abc", "12", -3, 0, 2.5, 7, "1e1", true, [], {}];
 function someTables(){
@@ -80,6 +82,10 @@ function someTables(){
   if(chance(0.2)) m.heroPrice = chance(0.8) ? [ri(10, 50), ri(50, 100), ri(100, 200), 300, ri(400, 700), 1200] : [40, "x", null, -5, 600];
   if(chance(0.2)) m.heroOnOffer = chance(0.8) ? pick([0, 1, 2, 3, 5, 9]) : pick(weird);
   if(chance(0.2)) m.free = chance(0.8) ? heroNames.filter(() => chance(0.4)) : pick([[], ["Nobody", 3, null, ""], "Dock Hand"]);
+  /* (v14.19) crafting and the starter stash */
+  if(chance(0.25)) m.craft = chance(0.8) ? { shards: chance(0.7) ? [ri(5, 30), ri(30, 60), 100, 250, 500, ri(900, 1500)] : [5, "x", null, -3, 2.5, 7], parts: chance(0.6) ? [1, 2, 2, 3, 3, 4] : [1, "2", 2.7, null, -1, 3], noParts: pick([1, 1.5, 2, 3, "2", "x", 0, null]) } : pick([null, "x", [], {}]);
+  if(chance(0.2)) { m.starterStash = {}; for(let n = ri(0, 5); n > 0; n--) m.starterStash[chance(0.9) ? pick(limitedNames) : "Nobody"] = pick([1, 2, 3, "2", 0, -1, "x", null]); if(chance(0.1)) m.starterStash = pick([[], "x", null]); }
+  if(chance(0.2)) m.rareOffer = pick([0, 1, 2, 3, 5, "3", "x", -2, 2.6, null]);
   if(chance(0.6)){ m.items = []; for(let n = ri(0, 6); n > 0; n--) m.items.push(chance(0.9) ? { name: pick(itemNames), price: chance(0.8) ? ri(5, 60) : pick(weird) } : pick([null, {}, { price: 3 }])); }
   if(chance(0.25)) m.effect = { starter: [5, 7, 12], scanner: chance(0.5) ? [2, 2, 5] : [1, "x"], insurance: [15, 25, "40"] };
   if(chance(0.25)) m.cost = { exchange: [[100, "troop", 0, 5], [300, "nope", 1, 2], "bad"], scanner: [[50, "aether", "2", "3"], [60, "aether", 9, -1], [70, "equipment", 2, 1]] };
@@ -124,11 +130,14 @@ function someDock(){
   /* (v14.14) Heroes recruited, or a dock from before recruiting */
   if(chance(0.8)){ s.heroes = {}; heroNames.forEach(n => { if(chance(0.25)) s.heroes[n] = 1; }); }
   if(chance(0.04)) s.heroes = pick([[], "x", null]);
+  /* (v14.19) a stash begun already, now and then with rare cards still on offer */
+  if(chance(0.3)) s.stash = { v: 1, offer: chance(0.5) ? DK.rares().filter(() => chance(0.2)).slice(0, 3) : [], picked: null, old: false };
   return s;
 }
 function someInv(pre){
   const v = { cards: {}, pre: {} };
   for(let n = ri(0, 4); n > 0; n--) v.cards[pick(itemNames)] = ri(1, 4);
+  for(let n = ri(0, 3); n > 0; n--) v.cards[pick(limitedNames)] = ri(1, 3);
   Object.keys(pre).forEach(id => { if(chance(0.3)) v.pre[id] = ri(1, 3); });
   return v;
 }
@@ -136,7 +145,7 @@ function someInv(pre){
 function snap(){
   const s = DK.state(), st = s.stock ? Object.assign({}, s.stock) : null;
   if(st) delete st.made;
-  return { dock: { reach: s.reach, upgrades: s.upgrades, stock: st, bounties: s.bounties, rot: s.rot, restocks: s.restocks, log: s.log.map(l => l.text), heroes: s.heroes },
+  return { dock: { reach: s.reach, upgrades: s.upgrades, stock: st, bounties: s.bounties, rot: s.rot, restocks: s.restocks, log: s.log.map(l => l.text), heroes: s.heroes, stash: s.stash || null },
     inv: DK.inv(), stock: L.stock(), prog: (function(){ const p = P.state(); return { bp: p.bp, ch: p.ch, named: p.named }; })() };
 }
 const types = L.TYPES.map(t => t.id);
@@ -147,6 +156,10 @@ function someOp(){
   if(r < 0.07) return ["restock"];
   if(rnd() < 0.12) return ["recruit", chance(0.8) && (st.heroes || []).length ? pick(st.heroes) : pick(heroNames.concat(["Nobody"]))];
   if(rnd() < 0.02) return ["oldStock"];
+  /* (v14.19) crafting, the stash beginning, a rare picked */
+  if(rnd() < 0.10) return ["craft", chance(0.85) ? pick(limitedNames) : pick(itemNames.concat(heroNames, ["Nobody"])), pick([1, 1, 2, 3, "2", 0, -1, "x"])];
+  if(rnd() < 0.04){ const needs = []; for(let n = ri(0, 3); n > 0; n--){ const nd = {}; for(let k = ri(0, 4); k > 0; k--) nd[pick(limitedNames)] = pick([1, 2, 3, "2", 0]); needs.push(nd); } return ["beginStash", chance(0.5), needs]; }
+  if(rnd() < 0.05){ const s = DK.state(); const off = (s.stash && s.stash.offer) || []; return ["pickRare", chance(0.8) && off.length ? pick(off) : pick(limitedNames.concat(["Nobody"]))]; }
   if(r < 0.10) return ["stock"];
   if(r < 0.12) return ["seeStock"];
   if(r < 0.24){ const common = chance(0.4) || !lotsNow.length; if(common) return ["buyParts", pick(types), 0, pick([1, 1, 2, 5, 40, "3", 0])];
@@ -185,6 +198,9 @@ function doOp(op){
     case "upgrade": return DK.upgrade(op[1]);
     case "ended": return DK.deploymentEnded(op[1]);
     case "recruit": return DK.recruit(op[1]);
+    case "craft": return DK.craft(op[1], op[2]);
+    case "beginStash": return DK.beginStash(op[1], op[2]);
+    case "pickRare": return DK.pickRare(op[1]);
     /* a stock laid out before recruiting: its Heroes come the next time it is looked at */
     case "oldStock": { const s = DK.state(); if(s.stock){ delete s.stock.heroes; delete s.stock.hired; DK._save(s); } return null; }
     case "claim": return DK.claim(op[1]);
@@ -196,6 +212,7 @@ function doOp(op){
         preCosts: WS.prebuilts().map(d => DK.preCost(d)), itemPrices: itemNames.map(n => DK.itemPrice(n)),
         heroPrices: heroNames.concat(["Nobody"]).map(n => DK.heroPrice(n)), owns: heroNames.map(n => DK.owns(n)),
         unowned: DK.unowned(heroNames.concat(["Nobody"])), recruitable: DK.recruitable().map(c => c.name), owned: DK.ownedHeroes(),
+        craftCosts: limitedNames.concat(itemNames.slice(0, 3), ["Nobody"]).map(n => DK.craftCost(n)), rares: DK.rares(),
         bountyPay: ["enemy", "elite", "miniboss", "boss", "nope"].map(k => { const sk = pick([0, 1, 3, 6, 7, "2", null]); return { kind: k, skull: sk, pay: DK.bountyPay(k, sk) }; }), closed: DK.closed() };
     }
   }

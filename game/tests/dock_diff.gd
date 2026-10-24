@@ -129,7 +129,7 @@ static func _undated(v) -> Variant:
 func _snap(dk: Dock, dep: Deployment, p: Progress) -> Dictionary:
 	var s: Dictionary = dk.state
 	return {"dock": {"reach": s["reach"], "upgrades": s["upgrades"], "stock": _undated(s["stock"]), "bounties": s["bounties"], "rot": s["rot"], "restocks": s["restocks"],
-		"log": s["log"].map(func(l): return l["text"]), "heroes": s["heroes"]}, "inv": dk.inv, "stock": Loot.norm(dep.stock), "prog": {"bp": p.state["bp"], "ch": p.state["ch"], "named": p.state["named"]}}
+		"log": s["log"].map(func(l): return l["text"]), "heroes": s["heroes"], "stash": s.get("stash")}, "inv": dk.inv, "stock": Loot.norm(dep.stock), "prog": {"bp": p.state["bp"], "ch": p.state["ch"], "named": p.state["named"]}}
 
 
 func _effects(dk: Dock, ws: Workshop) -> Dictionary:
@@ -147,7 +147,17 @@ func _effects(dk: Dock, ws: Workshop) -> Dictionary:
 		"preCosts": ws.prebuilts().map(func(d): return dk.pre_cost(d)), "itemPrices": _item_names().map(func(n): return dk.item_price(n)),
 		"closed": dk.closed(),
 		"heroPrices": (_hero_names() + ["Nobody"]).map(func(n): return dk.hero_price(n)), "owns": _hero_names().map(func(n): return dk.owns(n)),
-		"unowned": dk.unowned(_hero_names() + ["Nobody"]), "recruitable": dk.recruitable().map(func(h): return h["name"]), "owned": dk.owned_heroes()}
+		"unowned": dk.unowned(_hero_names() + ["Nobody"]), "recruitable": dk.recruitable().map(func(h): return h["name"]), "owned": dk.owned_heroes(),
+		"craftCosts": (_limited_names() + _item_names().slice(0, 3) + ["Nobody"]).map(func(n): return dk.craft_cost(n)), "rares": dk.rares()}
+
+
+var _limited_cache := []
+func _limited_names() -> Array:
+	if _limited_cache.is_empty():
+		for c in roster.from_export:
+			if c.get("_src") != "design" and c.get("_src") != "prebuilt" and Dock.is_limited(c):
+				_limited_cache.append(str(c["name"]))
+	return _limited_cache
 
 
 var _heroes_cache := []
@@ -216,6 +226,9 @@ func _dock(c: Dictionary) -> void:
 			"upgrade": out = dk.upgrade(op[1])
 			"ended": out = dk.deployment_ended(op[1])
 			"recruit": out = dk.recruit(op[1])
+			"craft": out = dk.craft(str(op[1]), op[2])
+			"beginStash": out = dk.begin_stash(bool(op[1]), op[2])
+			"pickRare": out = dk.pick_rare(str(op[1]))
 			"oldStock":
 				if dk.state["stock"] is Dictionary:
 					dk.state["stock"].erase("heroes")

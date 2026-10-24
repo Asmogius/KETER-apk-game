@@ -27,6 +27,16 @@
    Mode lists them) are always yours and never lost, so a team can always
    leave; a Hero whose name starts "Test " is never on offer.
 
+   The stash (v14.19): the Equipment, Command and Aether cards in a Deck, the
+   Action cards Heroes carry and the Chips in a Pouch must be held at the dock
+   (the inventory), or crafted. Crafting costs shards and parts of the card's
+   own rarity: Equipment parts for Equipment, Aether parts for Aether cards and
+   Chips, and twice the shards for Command and Action cards, which have no
+   part type. A deployment crafts what its team lacks as it leaves; the cards
+   go out with it, come home with it, and are lost if it is wiped out. A new
+   run begins with a starter stash and the pick of one of three rare cards; a
+   run from before the stash is given its Strike Teams' cards instead.
+
    The dock is closed while a Strike Team is out.
    =========================================================================== */
 (function(){
@@ -40,6 +50,9 @@
     {id:"insurance", name:"Salvage insurance", what:"Keep a share of the haul's shards and parts after a wipe."},
     {id:"scanner", name:"Long-range scanner", what:"See what tiles hold further from where the Strike Team stands."}];
   var KIND_LABEL={enemy:"Enemy", elite:"Elite", miniboss:"Mini-Boss", boss:"Boss"};
+  /* (v14.19) the kinds of card a deployment must hold or craft, and the parts each is crafted from */
+  var LIMITED=["equipment","command","aether","action","sphere"];
+  var CRAFT_PART={equipment:"equipment", aether:"aether", sphere:"aether", command:"", action:""};
   var DEFAULTS={v:1,
     price:[6,15,40,100,250,600], sell:0.5,
     bpFirst:150, bpLater:1.25, chassis:300, preMult:1.5,
@@ -49,6 +62,10 @@
     items:[],   /* Consumables and Prototypes the Exchange carries: {name, price} */
     heroPrice:[40,80,150,300,600,1200], heroOnOffer:3,
     free:["Dock Hand","Hangar Rifleman","Field Medic"],   /* (v14.14) Heroes always yours */
+    /* (v14.19) crafting, by rarity: shards and parts; noParts multiplies the shards of a card with no part type */
+    craft:{shards:[20,50,120,280,600,1300], parts:[2,2,3,3,4,5], noParts:2},
+    starterStash:{"Datamine":2, "Static Veil":2, "Recall":2, "Tighten Ranks":2, "Flank Them":2, "Ballast Plate":2, "Field Weld":2, "Subdermal Armor Plating 2":2, "Ballast Chip":4},
+    rareOffer:3,
     effect:{exchange:[1,2,3], starter:[6,8,10], insurance:[10,20,30], scanner:[2,3,4]},
     cost:{exchange:[[150,"equipment",0,10],[400,"equipment",1,6],[900,"equipment",2,3]],
           starter:[[150,"troop",0,10],[400,"troop",1,6],[900,"troop",2,3]],
@@ -69,6 +86,16 @@
       if(Array.isArray(m.price)&&m.price.length===6) t.price=m.price.map(function(v,i){ return Math.max(0,num(v,DEFAULTS.price[i])); });
       if(Array.isArray(m.heroPrice)&&m.heroPrice.length===6) t.heroPrice=m.heroPrice.map(function(v,i){ return Math.max(0,num(v,DEFAULTS.heroPrice[i])); });
       if(Array.isArray(m.free)) t.free=m.free.filter(function(x){ return typeof x==="string" && x; });
+      /* (v14.19) crafting and the starter stash */
+      if(m.craft && typeof m.craft==="object"){
+        if(Array.isArray(m.craft.shards)&&m.craft.shards.length===6) t.craft.shards=m.craft.shards.map(function(v,i){ return Math.max(0,num(v,DEFAULTS.craft.shards[i])); });
+        if(Array.isArray(m.craft.parts)&&m.craft.parts.length===6) t.craft.parts=m.craft.parts.map(function(v,i){ return Math.max(0,Math.floor(num(v,DEFAULTS.craft.parts[i]))); });
+        if(m.craft.noParts!=null&&isFinite(+m.craft.noParts)) t.craft.noParts=Math.max(1,+m.craft.noParts);
+      }
+      if(m.starterStash && typeof m.starterStash==="object" && !Array.isArray(m.starterStash)){
+        t.starterStash={}; Object.keys(m.starterStash).forEach(function(k){ var n=parseInt(m.starterStash[k],10); if(k && n>0) t.starterStash[k]=n; });
+      }
+      if(m.rareOffer!=null&&isFinite(+m.rareOffer)) t.rareOffer=Math.max(0,Math.floor(+m.rareOffer));
       ["sell","bpFirst","bpLater","chassis","preMult","lots","lotMax","bpOffers","chOffers","itemsOnOffer","preOnOffer","reclaimUp","reclaimSwap","heroOnOffer"].forEach(function(k){ if(m[k]!=null&&isFinite(+m[k])) t[k]=Math.max(0,+m[k]); });
       if(m.bounty) ["shards","n"].forEach(function(s){ if(m.bounty[s]) Object.keys(KIND_LABEL).forEach(function(k){ if(isFinite(+m.bounty[s][k])) t.bounty[s][k]=Math.max(0,+m.bounty[s][k]); }); });
       if(Array.isArray(m.items)) t.items=m.items.filter(function(x){ return x&&x.name; }).map(function(x){ return {name:String(x.name), price:Math.max(0,num(x.price,20))}; });
@@ -84,6 +111,9 @@
     if(JSON.stringify(t.price.map(Number))!==JSON.stringify(D0.price)) d.price=t.price.map(Number);
     if(JSON.stringify(t.heroPrice.map(Number))!==JSON.stringify(D0.heroPrice)) d.heroPrice=t.heroPrice.map(Number);
     if(JSON.stringify(t.free)!==JSON.stringify(D0.free)) d.free=t.free.slice();
+    if(JSON.stringify(t.craft)!==JSON.stringify(D0.craft)) d.craft=clone(t.craft);
+    if(JSON.stringify(t.starterStash)!==JSON.stringify(D0.starterStash)) d.starterStash=clone(t.starterStash);
+    if(+t.rareOffer!==D0.rareOffer) d.rareOffer=+t.rareOffer;
     ["sell","bpFirst","bpLater","chassis","preMult","lots","lotMax","bpOffers","chOffers","itemsOnOffer","preOnOffer","reclaimUp","reclaimSwap","heroOnOffer"].forEach(function(k){ if(+t[k]!==D0[k]) d[k]=+t[k]; });
     ["shards","n"].forEach(function(s){ Object.keys(KIND_LABEL).forEach(function(k){ if(+t.bounty[s][k]!==D0.bounty[s][k]){ d.bounty=d.bounty||{}; d.bounty[s]=d.bounty[s]||{}; d.bounty[s][k]=+t.bounty[s][k]; } }); });
     if(t.items.length) d.items=t.items;
@@ -237,6 +267,53 @@
   function owns(name){ return isFree(name) || !!state().heroes[name]; }
   function ownedHeroes(){ return Object.keys(state().heroes); }
   function heroRarity(c){ var r=String(c&&c.rarity||"").toLowerCase(), i=L().RARITIES.map(function(x){ return x.id; }).indexOf(r); return i<0?0:i; }
+
+  /* ---- (v14.19) the stash: crafting, and how a run begins ---- */
+  function isLimited(c){ return !!c && LIMITED.indexOf(String(c.cardType||""))>=0; }
+  /* what one copy of a card costs to craft: {name, rarity, type, n (parts), shards}; null for a card that isn't crafted */
+  function craftCost(name, t){
+    t=t||tables(); var c=cardOf(name); if(!isLimited(c)) return null;
+    var r=heroRarity(c), type=CRAFT_PART[c.cardType]||"";
+    return {name:c.name, rarity:r, type:type, n:type?t.craft.parts[r]:0, shards:type?t.craft.shards[r]:Math.round(t.craft.shards[r]*t.craft.noParts)};
+  }
+  /* "120 shards and 3 Rare equipment parts" */
+  function craftText(shards, type, rarity, n){ return shards+" shards"+(type&&n?" and "+n+" "+L().RARITIES[rarity].label+" "+type+" part"+(n===1?"":"s"):""); }
+  function craft(name, n){
+    n=Math.max(1,parseInt(n,10)||1);
+    if(closed()) return {ok:false, why:CLOSED};
+    var cc=craftCost(name); if(!cc) return {ok:false, why:"Only Equipment, Command, Aether and Action cards and Chips are crafted"};
+    var st=L().stock(), sh=cc.shards*n, np=cc.n*n;
+    if(st.shards<sh || (cc.type && st.parts[cc.type][cc.rarity]<np)) return {ok:false, why:"Needs "+craftText(sh, cc.type, cc.rarity, np)};
+    st.shards-=sh; if(cc.type) st.parts[cc.type][cc.rarity]-=np; L().setStock(st);
+    addCard(cc.name, n);
+    var s=state(); note(s, "Crafted "+(n>1?n+" × ":"")+cc.name+"."); save(s);
+    return {ok:true, name:cc.name, n:n, shards:sh, parts:np};
+  }
+  /* the rare cards a new run may pick from */
+  function rares(){ var seen={}; return cards().filter(function(c){ if(!isLimited(c) || c._src==="design" || c._src==="prebuilt" || /^Test /.test(String(c.name||"")) || seen[c.name]) return false;
+    if(String(c.rarity||"").toLowerCase()!=="rare") return false; seen[c.name]=1; return true; }).map(function(c){ return c.name; }); }
+  /* A run's stash begins, once: a new run's with the starter stash and an offer of rare cards to
+     pick one from; one from before the stash (old) with what its Strike Teams need (needs: a list
+     of {name: copies}). Returns what it did, or null if it had begun already. */
+  function beginStash(old, needs){
+    var s=state(); if(s.stash) return null;
+    var t=tables(), v=inv(), out={old:!!old, given:{}, offer:[]};
+    if(old){
+      (needs||[]).forEach(function(nd){ Object.keys(nd||{}).forEach(function(nm){ var k=parseInt(nd[nm],10)||0, h=v.cards[nm]||0; if(k>h){ out.given[nm]=(out.given[nm]||0)+k-h; v.cards[nm]=k; } }); });
+    } else {
+      Object.keys(t.starterStash).forEach(function(nm){ if(!cardOf(nm)) return; v.cards[nm]=(v.cards[nm]||0)+t.starterStash[nm]; out.given[nm]=t.starterStash[nm]; });
+      var pool=rares(); while(out.offer.length<t.rareOffer && pool.length) out.offer.push(pool.splice(Math.floor(rnd()*pool.length),1)[0]);
+    }
+    saveInv(v);
+    s=state(); s.stash={v:1, offer:out.offer.slice(), picked:null, old:!!old};
+    note(s, old?"The stash holds what your Strike Teams need.":(out.offer.length?"A starter stash; pick a rare card to begin with.":"A starter stash.")); save(s);
+    return out;
+  }
+  function pickRare(name){
+    var s=state(); if(!s.stash || s.stash.picked || (s.stash.offer||[]).indexOf(name)<0) return {ok:false, why:"Not on offer"};
+    addCard(name, 1); s=state(); s.stash.picked=name; s.stash.offer=[]; note(s, "Picked "+name+" to begin with."); save(s);
+    return {ok:true, name:name};
+  }
   function heroPrice(name, t){ t=t||tables(); var c=cardOf(name); return c?t.heroPrice[heroRarity(c)]:0; }
   function recruitable(s){
     s=s||state(); var t=tables(), fought=districtsFought();
@@ -349,5 +426,6 @@
     combine:combine, swap:swap, bounties:bounties, bountyPay:bountyPay, claim:claim, postBounties:postBounties,
     level:level, effect:effect, nextCost:nextCost, upgrade:upgrade, starterFree:starterFree, scanRange:scanRange, insurance:insurance,
     deploymentEnded:deploymentEnded, _save:save, _saveInv:saveInv,
+    LIMITED:LIMITED, isLimited:isLimited, craftCost:craftCost, craftText:craftText, craft:craft, rares:rares, beginStash:beginStash, pickRare:pickRare,
     heroCards:heroCards, isFree:isFree, owns:owns, ownedHeroes:ownedHeroes, heroRarity:heroRarity, heroPrice:heroPrice, recruitable:recruitable, recruit:recruit, unowned:unowned, heroDistrict:heroDistrict};
 })();

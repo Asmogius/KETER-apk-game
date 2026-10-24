@@ -46,6 +46,15 @@
     return all.filter(function(c){ return c.name===name && (c._src||"master")===src; })[0] || all.filter(function(c){ return c.name===name; })[0] || null;
   }
 
+  /* (v14.19) the cards a team takes that must be held or crafted: {name: copies} */
+  function needOf(lo, all){
+    var need={}, add=function(r, n){ var c=resolve(r,all); if(!c || !K() || !K().isLimited || !K().isLimited(c) || !(n>0)) return; need[c.name]=(need[c.name]||0)+n; };
+    (lo.deck||[]).forEach(function(r){ add(r,1); });
+    Object.keys(lo.actions||{}).forEach(function(h){ (lo.actions[h]||[]).forEach(function(r){ add(r,1); }); });
+    Object.keys(lo.pouch||{}).forEach(function(k){ if(String(k).indexOf("basic|")===0) return; add(k, parseInt(lo.pouch[k],10)||0); });
+    return need;
+  }
+
   /* ---- what leaving costs ---- */
   function plan(index, pack){
     var lo=loadouts().filter(function(l){ return l.index===+index; })[0];
@@ -75,6 +84,16 @@
       lines.push({id:id, name:ln.name, copies:ln.copies, free:free, each:each, cost:cost, starter:!!d.starter});
     });
     var st=L().stock(), afford=parts.every(function(n,r){ return st.parts.troop[r]>=n; });
+    /* (v14.19) the cards it takes must be held, or are crafted as it leaves */
+    var need=needOf(lo,all), craft=[], craftShards=0, craftParts={equipment:[0,0,0,0,0,0], aether:[0,0,0,0,0,0]};
+    Object.keys(need).sort().forEach(function(nm){
+      var have=K()?K().owned(nm):0, short=Math.max(0,need[nm]-have); if(!short) return;
+      var cc=K().craftCost(nm); if(!cc){ reasons.push(nm+" can't be crafted"); return; }
+      craft.push({name:nm, n:short, have:have, shards:cc.shards*short, type:cc.type, rarity:cc.rarity, parts:cc.n*short});
+      craftShards+=cc.shards*short; if(cc.type) craftParts[cc.type][cc.rarity]+=cc.n*short;
+    });
+    if(st.shards<craftShards) afford=false;
+    ["equipment","aether"].forEach(function(ty){ craftParts[ty].forEach(function(n,r){ if(st.parts[ty][r]<n) afford=false; }); });
     /* v12.9: pre-built copies bought at the dock go too; packed Consumables and Prototypes must be owned */
     var pre=[], wait=K()?K().waiting():{};
     Object.keys(wait).forEach(function(id){ var d=WS().get(id); if(d && wait[id]>0) pre.push({id:id, name:d.name, copies:wait[id]}); });
@@ -82,7 +101,7 @@
     Object.keys(pack).forEach(function(nm){ var n=parseInt(pack[nm],10)||0; if(!n) return;
       var have=K()?K().owned(nm):0; if(n>have) reasons.push("only "+have+" "+nm+" to pack"); else packed.push({name:nm, n:n, kind:K()?K().itemKind(nm):""}); });
     return {ok:!reasons.length && afford && !active(), fits:!reasons.length, afford:afford, reasons:reasons, heroes:heroes, lines:lines,
-      parts:parts, other:other, loadout:lo, busy:active(), pre:pre, packed:packed};
+      parts:parts, other:other, loadout:lo, busy:active(), pre:pre, packed:packed, need:need, craft:craft, craftShards:craftShards, craftParts:craftParts};
   }
 
   /* ---- the deployment in progress ---- */
@@ -95,7 +114,10 @@
 
   function start(index, pack){
     var p=plan(index, pack); if(!p.ok) return p;
-    var st=L().stock(); p.parts.forEach(function(n,r){ st.parts.troop[r]-=n; }); L().setStock(st);
+    var st=L().stock(); p.parts.forEach(function(n,r){ st.parts.troop[r]-=n; });
+    /* (v14.19) and what it lacks is crafted */
+    st.shards-=p.craftShards; ["equipment","aether"].forEach(function(ty){ p.craftParts[ty].forEach(function(n,r){ st.parts[ty][r]-=n; }); });
+    L().setStock(st);
     var n=W().state().completed+1, lo=p.loadout;
     if(p.parts.some(function(x){ return x; })){
       try{ var h=JSON.parse(localStorage.getItem("keter-app-stockpile-log")||"[]"); var b=L().bag(); p.parts.forEach(function(x,r){ b.parts.troop[r]=-x; });
@@ -104,12 +126,16 @@
     var copies={}; p.lines.forEach(function(l){ copies[l.id]=l.copies; });
     /* pre-built copies leave the dock with the team; packed items ride with it */
     var pre={}; p.pre.forEach(function(x){ pre[x.id]=x.copies; });
-    if(K()){ var v=K().inv(); v.pre={}; p.packed.forEach(function(x){ v.cards[x.name]=(v.cards[x.name]||0)-x.n; if(v.cards[x.name]<=0) delete v.cards[x.name]; }); K()._saveInv(v); }
+    if(K()){ var v=K().inv(); v.pre={}; p.packed.forEach(function(x){ v.cards[x.name]=(v.cards[x.name]||0)-x.n; if(v.cards[x.name]<=0) delete v.cards[x.name]; });
+      /* (v14.19) the cards it takes go with it: what was held, and what was crafted for it */
+      Object.keys(p.need).forEach(function(nm){ v.cards[nm]=Math.max(0,(v.cards[nm]||0)-p.need[nm]); if(!v.cards[nm]) delete v.cards[nm]; });
+      K()._saveInv(v); }
     var packC={}, packP={}; p.packed.forEach(function(x){ if(x.kind==="prototype") packP[x.name]=x.n; else packC[x.name]=x.n; });
     var s={active:true, n:n, started:new Date().toISOString(), lo:lo, heroesOut:[], lost:{}, copies:copies, pre:pre, pack:{cons:packC, protos:packP},
       pos:W().map().dock, haul:L().bag(), items:[], activity:null, log:[], steps:0, fights:0, paid:p.parts, lines:p.lines,
-      preLines:p.pre, known0:W().knownCount?W().knownCount():0, maxSkull:0, kills:[]};
+      preLines:p.pre, known0:W().knownCount?W().knownCount():0, maxSkull:0, kills:[], cards:clone(p.need), crafted:p.craft.map(function(c){ return {name:c.name, n:c.n}; })};
     note(s, "Left the dock with "+lo.name+".");
+    if(p.craft.length) note(s, "Crafted for it: "+p.craft.map(function(c){ return (c.n>1?c.n+" × ":"")+c.name; }).join(", ")+".");
     save(s); W().stand(s.pos);
     return {ok:true, state:s};
   }
@@ -282,7 +308,8 @@
       .forEach(function(o){ var id=P().itemId(o); if(P().grant(id)) granted.push(id); });
     X.TYPES.forEach(function(ty){ haul.parts[ty.id].forEach(function(n,r){ if(n) P().see("comp", ty.id+":"+r); }); });
     /* what was packed and not used goes back to the dock */
-    if(K()){ var v=K().inv(); var back=function(m){ Object.keys(m||{}).forEach(function(nm){ v.cards[nm]=(v.cards[nm]||0)+m[nm]; }); }; back((s.pack||{}).cons); back((s.pack||{}).protos); K()._saveInv(v); }
+    if(K()){ var v=K().inv(); var back=function(m){ Object.keys(m||{}).forEach(function(nm){ v.cards[nm]=(v.cards[nm]||0)+m[nm]; }); }; back((s.pack||{}).cons); back((s.pack||{}).protos);
+      back(s.cards); K()._saveInv(v); }   /* (v14.19) and the cards it took */
     var explored=W().knownCount?W().knownCount()>(s.known0||0):true;
     W().endDeployment();
     pushHistory({n:s.n, result:"home", ended:new Date().toISOString(), team:s.lo.name, steps:s.steps, fights:s.fights, haul:haul, items:granted, lost:s.lost, out:s.heroesOut.length});
@@ -299,13 +326,13 @@
     s.active=false; s.ended=new Date().toISOString(); s.result="wipe"; s.activity=null; note(s,"Wiped out. The haul is lost."); save(s);
     /* packed Consumables and Prototypes are lost with it; insurance may keep some of the haul */
     var dock=K()?K().deploymentEnded({result:"wipe", haul:haul, explored:explored, heroes:heroNames(s, s.lo.heroes)}):{};
-    return {ok:true, lostHaul:haul, lostItems:items, n:s.n, dock:dock, lostPack:s.pack||{}};
+    return {ok:true, lostHaul:haul, lostItems:items, n:s.n, dock:dock, lostPack:s.pack||{}, lostCards:clone(s.cards||{})};
   }
   /* Dev Mode: end it on the spot, nothing banked */
   function abandon(){ var s=cur(); if(!s) return false; s.active=false; s.result="abandoned"; save(s); W().endDeployment(); if(K()) K().deploymentEnded({result:"abandoned", explored:false}); return true; }
   function last(){ var s=read(KEY,null); return s&&!s.active?s:null; }
 
-  window.KETER_DEPLOY={KEY:KEY, HIST_KEY:HIST_KEY, loadouts:loadouts, resolve:resolve, plan:plan, start:start, cur:cur, active:active,
+  window.KETER_DEPLOY={KEY:KEY, HIST_KEY:HIST_KEY, loadouts:loadouts, resolve:resolve, needOf:needOf, plan:plan, start:start, cur:cur, active:active,
     lockedDesign:lockedDesign, lockedLoadout:lockedLoadout, heroRefs:heroRefs, deckRefs:deckRefs, team:team, copiesLeft:copiesLeft,
     stepTo:stepTo, enterPOI:enterPOI, ambush:ambush, spec:spec, fightOver:fightOver, retryable:retryable,
     openCache:openCache, eventAt:eventAt, choose:choose, home:home, wipe:wipe, abandon:abandon, history:history, last:last,

@@ -41,6 +41,9 @@ const UPGRADES := [
 	{"id": "insurance", "name": "Salvage insurance", "what": "Keep a share of the haul's shards and parts after a wipe."},
 	{"id": "scanner", "name": "Long-range scanner", "what": "See what tiles hold further from where the Strike Team stands."}]
 const KIND_LABEL := {"enemy": "Enemy", "elite": "Elite", "miniboss": "Mini-Boss", "boss": "Boss"}
+## (0.34) The kinds of card a deployment must hold or craft, and the parts each is crafted from.
+const LIMITED := ["equipment", "command", "aether", "action", "sphere"]
+const CRAFT_PART := {"equipment": "equipment", "aether": "aether", "sphere": "aether", "command": "", "action": ""}
 const DEFAULTS := {"v": 1,
 	"price": [6, 15, 40, 100, 250, 600], "sell": 0.5,
 	"bpFirst": 150, "bpLater": 1.25, "chassis": 300, "preMult": 1.5,
@@ -50,6 +53,9 @@ const DEFAULTS := {"v": 1,
 	"items": [],
 	"heroPrice": [40, 80, 150, 300, 600, 1200], "heroOnOffer": 3,
 	"free": ["Dock Hand", "Hangar Rifleman", "Field Medic"],
+	"craft": {"shards": [20, 50, 120, 280, 600, 1300], "parts": [2, 2, 3, 3, 4, 5], "noParts": 2},
+	"starterStash": {"Datamine": 2, "Static Veil": 2, "Recall": 2, "Tighten Ranks": 2, "Flank Them": 2, "Ballast Plate": 2, "Field Weld": 2, "Subdermal Armor Plating 2": 2, "Ballast Chip": 4},
+	"rareOffer": 3,
 	"effect": {"exchange": [1, 2, 3], "starter": [6, 8, 10], "insurance": [10, 20, 30], "scanner": [2, 3, 4]},
 	"cost": {"exchange": [[150, "equipment", 0, 10], [400, "equipment", 1, 6], [900, "equipment", 2, 3]],
 		"starter": [[150, "troop", 0, 10], [400, "troop", 1, 6], [900, "troop", 2, 3]],
@@ -160,6 +166,30 @@ static func read_tables(m) -> Dictionary:
 			t["heroPrice"] = hp
 		if m.get("free") is Array:
 			t["free"] = m["free"].filter(func(x): return x is String and x != "")
+		# (0.34) crafting and the starter stash
+		if m.get("craft") is Dictionary:
+			var cr: Dictionary = m["craft"]
+			if cr.get("shards") is Array and cr["shards"].size() == 6:
+				var sh := []
+				for i in 6:
+					sh.append(_whole(maxf(0.0, float(num(cr["shards"][i], DEFAULTS["craft"]["shards"][i])))))
+				t["craft"]["shards"] = sh
+			if cr.get("parts") is Array and cr["parts"].size() == 6:
+				var pa := []
+				for i in 6:
+					pa.append(_whole(maxf(0.0, floorf(float(num(cr["parts"][i], DEFAULTS["craft"]["parts"][i]))))))
+				t["craft"]["parts"] = pa
+			if cr.get("noParts") != null and _finite(cr, "noParts"):
+				t["craft"]["noParts"] = _whole(maxf(1.0, jsplus(cr["noParts"])))
+		if m.get("starterStash") is Dictionary:
+			var ss := {}
+			for k in m["starterStash"]:
+				var n = parse_int(m["starterStash"][k])
+				if str(k) != "" and n != null and int(n) > 0:
+					ss[str(k)] = int(n)
+			t["starterStash"] = ss
+		if m.get("rareOffer") != null and _finite(m, "rareOffer"):
+			t["rareOffer"] = _whole(maxf(0.0, floorf(jsplus(m["rareOffer"]))))
 		for k in SCALARS:
 			if m.get(k) != null and _finite(m, k):
 				t[k] = _whole(maxf(0.0, jsplus(m[k])))
@@ -639,6 +669,112 @@ static func hero_rarity(c) -> int:
 		if Loot.RARITIES[i]["id"] == r:
 			return i
 	return 0
+
+
+# ---------------------------------------------------------------- (0.34) the stash: crafting, and how a run begins
+static func is_limited(c) -> bool:
+	return c is Dictionary and LIMITED.has(str(c.get("cardType", "") if c.get("cardType") != null else ""))
+
+
+## What one copy of a card costs to craft: {name, rarity, type, n (parts), shards}; null for one that isn't crafted.
+func craft_cost(name: String, t = null) -> Variant:
+	var tb: Dictionary = t if t is Dictionary else tables
+	var c = card_of(name)
+	if not is_limited(c):
+		return null
+	var r := hero_rarity(c)
+	var type: String = CRAFT_PART.get(str(c["cardType"]), "")
+	return {"name": str(c["name"]), "rarity": r, "type": type, "n": int(tb["craft"]["parts"][r]) if type != "" else 0,
+		"shards": tb["craft"]["shards"][r] if type != "" else _whole(Rules.js_round(float(tb["craft"]["shards"][r]) * float(tb["craft"]["noParts"])))}
+
+
+## "120 shards and 3 Rare equipment parts"
+static func craft_text(shards, type: String, rarity: int, n: int) -> String:
+	return Scoring.text(shards) + " shards" + ((" and %d %s %s part%s" % [n, Loot.RARITIES[rarity]["label"], type, "" if n == 1 else "s"]) if type != "" and n > 0 else "")
+
+
+func craft(name: String, n = 1) -> Dictionary:
+	var k := maxi(1, _pi(n)) if _pi(n) > 0 else 1
+	if closed():
+		return {"ok": false, "why": CLOSED}
+	var cc = craft_cost(name)
+	if cc == null:
+		return {"ok": false, "why": "Only Equipment, Command, Aether and Action cards and Chips are crafted"}
+	var st := stockpile()
+	var sh = _whole(float(cc["shards"]) * k)
+	var np: int = int(cc["n"]) * k
+	if st["shards"] < float(sh) or (cc["type"] != "" and st["parts"][cc["type"]][cc["rarity"]] < np):
+		return {"ok": false, "why": "Needs " + craft_text(sh, cc["type"], cc["rarity"], np)}
+	st["shards"] = float(st["shards"]) - float(sh)
+	if cc["type"] != "":
+		st["parts"][cc["type"]][cc["rarity"]] -= np
+	set_stockpile(st)
+	add_card(cc["name"], k)
+	note("Crafted %s%s." % [("%d × " % k) if k > 1 else "", cc["name"]])
+	return {"ok": true, "name": cc["name"], "n": k, "shards": sh, "parts": np}
+
+
+## The rare cards a new run may pick from.
+func rares() -> Array:
+	var had := {}
+	var out := []
+	for c in (roster.from_export if roster != null else []):
+		if not is_limited(c) or c.get("_src") == "design" or c.get("_src") == "prebuilt" or str(c.get("name", "")).begins_with("Test ") or had.has(c["name"]):
+			continue
+		if str(c.get("rarity", "") if c.get("rarity") != null else "").to_lower() != "rare":
+			continue
+		had[c["name"]] = true
+		out.append(str(c["name"]))
+	return out
+
+
+## A run's stash begins, once: a new run's with the starter stash and an offer
+## of rare cards to pick one from; one from before the stash (old) with what
+## its Strike Teams need (needs: a list of {name: copies}). Returns what it
+## did, or null if it had begun already.
+func begin_stash(old: bool, needs: Array = []) -> Variant:
+	if state.get("stash") is Dictionary:
+		return null
+	var out := {"old": old, "given": {}, "offer": []}
+	if old:
+		for nd in needs:
+			if not (nd is Dictionary):
+				continue
+			for nm in nd:
+				var k := _pi(nd[nm])
+				var h := owned(str(nm))
+				if k > h:
+					out["given"][nm] = int(out["given"].get(nm, 0)) + k - h
+					inv["cards"][str(nm)] = k
+	else:
+		for nm in tables["starterStash"]:
+			if card_of(str(nm)) == null:
+				continue
+			inv["cards"][str(nm)] = owned(str(nm)) + int(tables["starterStash"][nm])
+			out["given"][nm] = tables["starterStash"][nm]
+		var pool := rares()
+		while out["offer"].size() < int(tables["rareOffer"]) and not pool.is_empty():
+			out["offer"].append(pool.pop_at(int(floor(rnd() * pool.size()))))
+	state["stash"] = {"v": 1, "offer": out["offer"].duplicate(), "picked": null, "old": old}
+	note("The stash holds what your Strike Teams need." if old else ("A starter stash; pick a rare card to begin with." if not out["offer"].is_empty() else "A starter stash."))
+	return out
+
+
+## The rare cards on offer to begin with ([] once one is picked, or for a run from before).
+func rare_offer() -> Array:
+	var s = state.get("stash")
+	return s["offer"] if s is Dictionary and s.get("offer") is Array and s.get("picked") == null else []
+
+
+func pick_rare(name: String) -> Dictionary:
+	var s = state.get("stash")
+	if not (s is Dictionary) or s.get("picked") != null or not (s.get("offer") is Array) or not s["offer"].has(name):
+		return {"ok": false, "why": "Not on offer"}
+	add_card(name, 1)
+	s["picked"] = name
+	s["offer"] = []
+	note("Picked %s to begin with." % name)
+	return {"ok": true, "name": name}
 
 
 func hero_price(name: String, t = null):
