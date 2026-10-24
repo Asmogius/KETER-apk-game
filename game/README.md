@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.31 makes the
-free Heroes Neutral; v0.30 brought the Sandbox's Pixel Studio, its fourth tool.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.32 adds three
+save files; v0.31 made the free Heroes Neutral.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,33 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.32 (Companion 14.18): **three save files**, and a sweep for bugs
+and rough edges.
+
+- **Save files**: up to three runs at once, each a whole run (the World Map
+  as explored, the dock and its stockpile, what has been found and
+  recruited, the designs) with its own Strike Teams. Home names the one
+  played in its top left corner; a tap opens all three, to Play one, Start a
+  new run in an empty one, Rename, Copy to another slot, or Delete. The
+  Sandbox, the Behavior keywords and the settings are shared by all three. A
+  run saved before 0.32 becomes Save 1.
+- **Saves that survive**: the run, the teams, the Sandbox and the Behavior
+  keywords are written beside the last save and only then swapped in, the
+  last one kept as a backup. A phone that dies mid-save loses nothing; a
+  save that can't be read is read from its backup, and the game says so.
+- **The Back button** goes back a step (the box on top answered with its
+  Cancel, Keep it, Stay or Close; the screen's own Back or Home; a fight
+  asks before leaving), and on Home asks before leaving KETER. It used to
+  close the game.
+- **A card renamed in the Card Forge** is renamed in every Strike Team and
+  run, in all three save files, and in the Behavior keywords chosen for it;
+  a free Hero renamed stays free.
+- **Faster**: a card's picture is found at once instead of by searching the
+  export; the Pixel Studio redraws only what a stroke changes.
+- **Fixed**: deleting a card you made left its pictures behind; a new-map
+  notice could hide another; the Sandbox's screens faded in without the
+  fade.
 
 New in 0.31 (Companion 14.18): **the free Heroes generate Neutral Aether.**
 Dock Hand, Hangar Rifleman and Field Medic are Neutral at Affinity Level 2:
@@ -586,7 +613,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-31_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-32_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -597,7 +624,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-31_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-32_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the
