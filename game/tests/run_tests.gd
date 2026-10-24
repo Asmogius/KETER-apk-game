@@ -24,6 +24,14 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	if OS.get_cmdline_user_args().has("thirtyfour"):
+		_thirtyfour()
+		await _thirtyfour_scene()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("thirtythree"):
 		_thirtythree()
 		await _thirtythree_scene()
@@ -283,6 +291,7 @@ func _run() -> void:
 	_thirtyone()
 	_thirtytwo()
 	_thirtythree()
+	_thirtyfour()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -314,6 +323,7 @@ func _run() -> void:
 	await _thirty_scene()
 	await _thirtytwo_scene()
 	await _thirtythree_scene()
+	await _thirtyfour_scene()
 	Kit.fresh()
 	print("\nGAME PASS %d  FAIL %d" % [ok, bad])
 	Rules.hooks = {}              # the rules let go of the last battle
@@ -3934,7 +3944,7 @@ func _eight_scene() -> void:
 	await _frames(2)
 	var rows := dk.row_texts()
 	ck("0.8 dock: with nobody out, World Map opens the dock", dk.visible and not scene.home.visible and not ms.visible and dk.title.text == "The dock")
-	ck("0.8 dock: it lists the stockpile, what you have found, and the deployments", rows == ["Stockpile", "0 Aether shards", "Also kept here", "2 × Test Stim", "2 × Test Repair Kit", "2 × Test Sandbags", "1 × Test Aegis Core", "No blueprints or chassis found yet.", "No deployments yet.", "Testing"] and dk.go_btn.text == "Deploy" and not dk.go_btn.disabled and dk.map_btn.visible, rows)
+	ck("0.8 dock: it lists the stockpile, what you have found, and the deployments", rows == ["Stockpile", "0 Aether shards", "Also kept here", "2 × Test Stim", "2 × Test Repair Kit", "2 × Test Sandbags", "1 × Test Aegis Core", "The stash is empty.", "No blueprints or chassis found yet.", "No deployments yet.", "Testing"] and dk.go_btn.text == "Deploy" and not dk.go_btn.disabled and dk.map_btn.visible, rows)
 	var qm_said: String = dk.keeper_line.text
 	ck("0.15 dock: QM-7 keeps it: its portrait, its name and one line of its own for the tab", dk.keeper.visible and dk.portrait.texture == Art.menu_piece("qm7") and qm_said != "" and (QM7.LINES["stockpile"] + QM7.LINES["anytime"]).has(qm_said)
 		and dk.go_btn.theme_type_variation == "MainButton" and not dk.hint.visible, qm_said)
@@ -4945,7 +4955,7 @@ func _ten_scene() -> void:
 	cm.loot.seed_with(31)
 	scene.home.world_btn.pressed.emit()
 	await _frames(2)
-	ck("0.10 dock: six tabs (0.25: Recruit among them), the Stockpile first", dk.visible and dk.tab == "stockpile" and dk.tabs.keys() == ["stockpile", "exchange", "recruit", "reclaim", "bounties", "upgrades"] and dk.tabs["stockpile"].button_pressed and dk.tab_row.visible
+	ck("0.10 dock: seven tabs (0.25: Recruit, 0.34: Craft among them), the Stockpile first", dk.visible and dk.tab == "stockpile" and dk.tabs.keys() == ["stockpile", "exchange", "recruit", "craft", "reclaim", "bounties", "upgrades"] and dk.tabs["stockpile"].button_pressed and dk.tab_row.visible
 		and dk.map_btn.visible and dk.shop_btn.visible and dk.go_btn.text == "Deploy", dk.tabs.keys())
 	ck("0.10 dock: the Stockpile ends with a Testing row: Restock now, Reach +1, Reset the dock", dk.row_texts()[-1] == "Testing" and dk.offers() == [["testing", "restock"], ["testing", "reach"], ["testing", "reset"]], dk.offers())
 	# ---- the Exchange
@@ -9457,4 +9467,113 @@ func _thirtythree_scene() -> void:
 	scene.queue_free()
 	await _frames(2)
 	Sandbox.clear()
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- 0.34: the stash
+func _thirtyfour() -> void:
+	Kit.fresh()
+	Dock.every_card = false
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var r := Roster.new(x)
+	var c := Campaign.new(x, r, x.floors(), 11)
+	var dk := c.dock
+	var t := Kit.field_team("Stash Run")
+	var need := c.deploy.need_of(t)
+	ck("0.34 stash: what a team takes that the stash must hold: its Deck's Equipment, Command and Aether cards, its Heroes' Action cards, its Pouch's Chips; not Troops, Consumables, Prototypes or basic Chips",
+		need == {"Test Plating": 1, "Test Targeting Suite": 1, "Test Mortar Strike": 1, "Test Snare": 1, "Test Rally": 1, "Test Strip": 1, "Test Surge": 2, "Test Piercing Rounds": 1, "Test Spark Chip": 2}, need)
+	ck("0.34 craft: a card's price by its rarity: Equipment from Equipment parts, Aether cards and Chips from Aether parts, Command and Action cards twice the shards",
+		dk.craft_cost("Test Plating") == {"name": "Test Plating", "rarity": 0, "type": "equipment", "n": 2, "shards": 20} and dk.craft_cost("Test Spark Chip")["type"] == "aether"
+		and dk.craft_cost("Test Snare")["shards"] == 40 and dk.craft_cost("Test Snare")["type"] == "" and dk.craft_cost("Test Piercing Rounds")["shards"] == 100 and dk.craft_cost("Test Stim") == null)
+	var p := c.deploy.plan(t)
+	ck("0.34 plan: an empty stash crafts all of it, and a stockpile with nothing can't pay", p["craft"].size() == 9 and p["craftShards"] == 530 and p["craftParts"]["aether"][1] == 8 and p["craftParts"]["equipment"] == [2, 2, 0, 0, 0, 0] and not p["afford"]
+		and c.deploy.reasons_against(t).any(func(w): return "Crafting the cards the stash lacks" in w), c.deploy.reasons_against(t))
+	var rich := Loot.bag()
+	rich["shards"] = 600
+	rich["parts"]["equipment"] = [2, 2, 0, 0, 0, 0]
+	rich["parts"]["aether"] = [0, 8, 0, 0, 0, 0]
+	c.deploy.stock = rich
+	dk.add_card("Test Snare", 3)
+	p = c.deploy.plan(t)
+	ck("0.34 plan: what the stash holds isn't crafted; the rest is, and a stockpile that can pay lets it go", p["afford"] and p["ok"] and p["craftShards"] == 490 and not p["craft"].any(func(cr): return cr["name"] == "Test Snare"), p["craft"])
+	var go := c.deploy.start(t)
+	var st := Loot.norm(c.deploy.stock)
+	ck("0.34 leave: crafting is paid, and the cards go with the team: the stash keeps only what was over", go["ok"] and st["shards"] == 110 and st["parts"]["aether"][1] == 0 and dk.owned("Test Snare") == 2 and dk.owned("Test Plating") == 0
+		and c.deploy.cur()["cards"] == need and c.deploy.cur()["log"].any(func(l): return str(l["text"]).begins_with("Crafted for it:")), [st, dk.inv["cards"]])
+	ck("0.34 craft: the dock is closed to crafting while it is out", not dk.craft("Test Snare")["ok"])
+	c.deploy.cur()["pos"] = c.world.dock()
+	c.deploy.cur()["steps"] = 1
+	c.deploy.home()
+	ck("0.34 home: the cards come home with the team", dk.owned("Test Plating") == 1 and dk.owned("Test Snare") == 3 and dk.owned("Test Surge") == 2 and dk.owned("Test Spark Chip") == 2)
+	var p2 := c.deploy.plan(t)
+	ck("0.34 plan: and the next deployment needs craft nothing", p2["craft"].is_empty() and p2["ok"])
+	c.deploy.start(t)
+	var w := c.deploy.wipe()
+	ck("0.34 wipe: the cards are lost with the team", w["lostCards"] == need and dk.owned("Test Plating") == 0 and dk.owned("Test Snare") == 2)
+	# crafting at the dock
+	var b := Loot.bag()
+	b["shards"] = 100
+	b["parts"]["equipment"] = [3, 0, 0, 0, 0, 0]
+	c.deploy.stock = b
+	var cr := dk.craft("Test Plating")
+	ck("0.34 craft: at the dock, for shards and parts; the card is in the stash", cr["ok"] and dk.owned("Test Plating") == 1 and Loot.norm(c.deploy.stock)["shards"] == 80 and Loot.norm(c.deploy.stock)["parts"]["equipment"][0] == 1)
+	var no := dk.craft("Test Plating")
+	ck("0.34 craft: and refused, saying what it needs, when the stockpile can't pay", not no["ok"] and no["why"] == "Needs 20 shards and 2 Common equipment parts", no)
+	ck("0.34 craft: only the cards the stash holds are crafted", not dk.craft("Test Stim")["ok"] and not dk.craft("Test Drone")["ok"])
+	# how a run's stash begins
+	var c2 := Campaign.new(x, r, x.floors(), 12)
+	var bg = c2.dock.begin_stash(false)
+	ck("0.34 begin: a new run is given the starter stash, and three rare cards to pick one from", bg != null and bg["offer"].size() == 3 and c2.dock.rare_offer() == bg["offer"] and bg["offer"].all(func(n): return str(r.card_named(n).get("rarity")) == "rare" and Dock.is_limited(r.card_named(n)))
+		and c2.dock.owned("Recall") == 2 and c2.dock.owned("Ballast Chip") == 4, bg)
+	var pick: String = bg["offer"][1]
+	ck("0.34 begin: one is picked, and the offer is gone; never twice, and never one not offered", c2.dock.pick_rare(pick)["ok"] and c2.dock.owned(pick) >= 1 and c2.dock.rare_offer().is_empty() and not c2.dock.pick_rare(bg["offer"][0])["ok"] and c2.dock.begin_stash(false) == null)
+	var c3 := Campaign.new(x, r, x.floors(), 13)
+	var old = c3.dock.begin_stash(true, [{"Test Snare": 2, "Recall": 1}, {"Test Snare": 3}])
+	ck("0.34 begin: a run from before the stash is given what its Strike Teams need (the most any one needs), and no rare pick", old["offer"].is_empty() and c3.dock.owned("Test Snare") == 3 and c3.dock.owned("Recall") == 1 and c3.dock.owned("Ballast Chip") == 0)
+	Kit.fresh()
+
+
+func _thirtyfour_scene() -> void:
+	Kit.fresh()
+	Dock.every_card = false
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	await _frames(2)
+	Kit.keep([Kit.field_team("Stash Run")])
+	scene.open_dock()
+	await _frames(2)
+	var dk: DockScreen = scene.dock_screen
+	ck("0.34 dock: a new run's dock opens on the pick of a rare card", dk.dialog is Dialog and dk.dialog.title_label.text == "Pick a rare card" and dk.dialog.buttons.size() == 3)
+	var picked: String = dk.dialog.buttons[0].text
+	dk.dialog.chosen.emit(0)
+	await _frames(1)
+	ck("0.34 dock: picked, it is in the stash, and the Stockpile shows the stash", scene.campaign.dock.owned(picked) >= 1 and dk.dialog == null and dk.row_texts().has("The stash") and dk.row_texts().any(func(t): return t.ends_with("× " + picked)))
+	dk.show_tab("craft")
+	ck("0.34 dock: Craft lists the cards the stash holds, by kind, with their prices", dk.row_texts().has("Craft") and dk.row_texts().has("Equipment") and dk.row_texts().has("Chips") and dk.row_texts().has("Recall"))
+	var b := Loot.bag()
+	b["shards"] = 2000
+	for ty in ["equipment", "aether"]:
+		b["parts"][ty] = [40, 40, 40, 40, 40, 40]
+	scene.campaign.deploy.stock = b
+	dk.show_tab("craft")
+	dk.act(["craft", "Recall"])
+	ck("0.34 dock: Craft makes one for the stash", scene.campaign.dock.owned("Recall") == 3 and "Crafted Recall" in dk.note.text, dk.note.text)
+	# the loadout
+	dk.show_teams()
+	dk.choose_team(0)
+	ck("0.34 deploy: choosing a preset shows its Loadout: what it takes, what the stash holds, what is crafted as it leaves", dk.row_texts().has("Loadout") and dk.row_texts().has("Test Snare") and dk.offers().has(["ld", "Test Snare", 1]) and dk.offers().has(["lp", "Test Spark Chip", -1]) and dk.offers().has(["la", "Test Piercing Rounds"]))
+	dk.act(["ld", "Test Snare", 1])
+	ck("0.34 deploy: adjusting it changes this deployment's loadout, not the preset", dk.loadout["deck"]["Test Snare"] == 2 and dk.teams[0]["deck"]["Test Snare"] == 1 and dk.row_texts().has("Loadout (changed)"))
+	ck("0.34 deploy: the stash's other cards can be added", dk.offers().has(["ld", "Recall", 1]))
+	dk.act(["lsave"])
+	ck("0.34 deploy: Save as preset keeps it as a Strike Team of its own, chosen", StrikeTeams.load_all().size() == 2 and StrikeTeams.load_all()[1]["deck"]["Test Snare"] == 2 and dk.team_i == 1)
+	ck("0.34 deploy: and it can leave, crafting what the stash lacks", not dk.go_btn.disabled and "Crafted as it leaves" in dk.note.text, dk.note.text)
+	dk.leave()
+	await _frames(1)
+	ck("0.34 deploy: gone, its cards with it", scene.campaign.deploy.active() and scene.campaign.deploy.cur()["cards"]["Test Snare"] == 2)
+	scene.queue_free()
+	await _frames(2)
 	Kit.fresh()

@@ -33,7 +33,9 @@ IMG=pathlib.Path("/tmp/serve_skins_img.png"); IMG.write_bytes(png())
 TEAM="""()=>{ var deck=['design|Frame Trooper','design|Frame Trooper','design|Frame Trooper','design|Frame Trooper','test|Test Mortar Strike','test|Test Snare'];
   localStorage.setItem('keter-app-loadouts',JSON.stringify([{v:2,name:'Deploy Team',level:1,created:111,heroes:['test|Test Warden','test|Test Striker'],deck:deck,actions:{},pouch:{'basic|3':6}}]));
   /* (v14.14) the test Heroes lead the team out: Dev Mode makes them free, as the three free Heroes are */
-  localStorage.setItem('keter-app-dock-tables',JSON.stringify({free:['Dock Hand','Hangar Rifleman','Field Medic','Test Warden','Test Striker']})); return true; }"""
+  localStorage.setItem('keter-app-dock-tables',JSON.stringify({free:['Dock Hand','Hangar Rifleman','Field Medic','Test Warden','Test Striker']}));
+  /* (v14.19) and every card it takes counts as held */
+  localStorage.setItem('keter-test-every-card','1'); return true; }"""
 LIB=r"""()=>{
 window.T={ S:KETER_SKINS, A:KETER_ASSETS, P:KETER_PX, WS:KETER_WORKSHOP, D:KETER_DEPLOY, W:KETER_WORLD,
   design:function(name, chassis, role){ var d=KETER_WORKSHOP.blank(chassis||'ch_test_general'); d.name=name; if(role){ d.abilities[0].role=role; } return KETER_WORKSHOP.put(d); },

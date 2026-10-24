@@ -8,6 +8,11 @@
 ## you have); Reclaiming; the Bounty Board; and Upgrades. Everything but looking
 ## waits while a Strike Team is out.
 ##
+## (0.34) Craft: the cards a deployment takes (Equipment, Command and Aether
+## cards, Heroes' Action cards, Chips) must be in the stash, or are crafted;
+## here they are crafted ahead of time. When a run's stash begins, a new run
+## is offered the pick of one of three rare cards.
+##
 ## (0.15) QM-7, the Hangar's logistics robot, keeps the dock: its portrait
 ## blinks at the top, and it says one line at a time to fit what is
 ## happening. What each tab is for is behind the "?" beside it. On the
@@ -28,7 +33,9 @@ signal map_requested                   # look at the map, or go back to the team
 signal deployed                        # a Strike Team has just left
 signal workshop_requested
 
-const TABS := [["stockpile", "Stockpile"], ["exchange", "Exchange"], ["recruit", "Recruit"], ["reclaim", "Reclaim"], ["bounties", "Bounties"], ["upgrades", "Upgrades"]]
+const TABS := [["stockpile", "Stockpile"], ["exchange", "Exchange"], ["recruit", "Recruit"], ["craft", "Craft"], ["reclaim", "Reclaim"], ["bounties", "Bounties"], ["upgrades", "Upgrades"]]
+## (0.34) The kinds of card the stash holds, in the order the Craft tab shows them.
+const STASH_KINDS := [["equipment", "Equipment"], ["command", "Command"], ["aether", "Aether"], ["action", "Action"], ["sphere", "Chips"]]
 
 var campaign: Campaign = null
 var roster: Roster = null
@@ -37,6 +44,7 @@ var choosing := false                  # the list is the Strike Teams, to send o
 var team_i := -1
 var tab := "stockpile"
 var pack := {}                         # what the chosen team packs: name -> how many
+var loadout := {}                      # (0.34) the chosen team as it will leave: a copy of the preset, adjusted
 var dialog: Dialog = null
 
 var title: Label
@@ -76,7 +84,7 @@ func _init() -> void:
 	head.add_child(tab_row)
 	for k in TABS:
 		var key: String = k[0]
-		var b := UI.button(k[1], func(): show_tab(key), 124)
+		var b := UI.button(k[1], func(): show_tab(key), 112)
 		b.toggle_mode = true
 		tab_row.add_child(b)
 		tabs[key] = b
@@ -152,7 +160,57 @@ func open(c: Campaign, r: Roster) -> void:
 	team_i = -1
 	tab = "stockpile"
 	_close_dialog()
+	begin_stash()
 	show_dock()
+	offer_rare()
+
+
+## (0.34) A run's stash begins the first time the dock opens: a new run with
+## the starter stash and an offer of rare cards; a run from before with what
+## its Strike Teams need.
+func begin_stash() -> void:
+	var dk := dock()
+	if dk.state.get("stash") is Dictionary or Dock.every_card:
+		return
+	var old: bool = not campaign.deploy.history.is_empty() or campaign.deploy.active()
+	var needs := []
+	if old:
+		for t in StrikeTeams.load_all():
+			needs.append(campaign.deploy.need_of(t))
+	dk.begin_stash(old, needs)
+	campaign.save()
+
+
+## The pick of a rare card to begin a run with, while one is on offer.
+func offer_rare() -> void:
+	var off: Array = dock().rare_offer()
+	if off.is_empty() or dialog != null:
+		return
+	var lines := []
+	for nm in off:
+		var c = dock().card_of(str(nm))
+		lines.append("%s · %s: %s" % [nm, UI.type_name(c) if c != null else "", _card_line(c)])
+	dialog = Dialog.new("Pick a rare card", "A new run: the stash holds a starter set of cards, and one rare card of your choice besides.\n\n" + "\n".join(lines), off, UI.GOLD)
+	add_child(dialog)
+	dialog.chosen.connect(func(k):
+		_close_dialog()
+		var r := dock().pick_rare(str(off[k]))
+		if r.get("ok"):
+			campaign.save()
+			_say("%s is in the stash." % str(off[k]))
+		show_tab(tab))
+
+
+## What a card does, in a short line.
+static func _card_line(c) -> String:
+	if not (c is Dictionary):
+		return ""
+	var bits := []
+	for e in (c.get("entries", []) if c.get("entries") is Array else []):
+		if e is Dictionary and Rules.truthy(e.get("text")):
+			bits.append(str(e["text"]).replace("[[", "").replace("]]", ""))
+	var t := " ".join(bits)
+	return t if t.length() <= 110 else t.substr(0, 107) + "..."
 
 
 func dock() -> Dock:
@@ -226,6 +284,7 @@ func show_tab(k: String) -> void:
 	match k:
 		"exchange": _exchange_rows()
 		"recruit": _recruit_rows()
+		"craft": _craft_rows()
 		"reclaim": _reclaim_rows()
 		"bounties": _bounty_rows()
 		"upgrades": _upgrade_rows()
@@ -267,7 +326,7 @@ func _on_blink() -> void:
 func show_help() -> void:
 	if dialog != null:
 		return
-	var name: String = "Deploy" if choosing else ({"stockpile": "Stockpile", "exchange": "Exchange", "recruit": "Recruit", "reclaim": "Reclaim", "bounties": "Bounties", "upgrades": "Upgrades"}.get(tab, "The dock"))
+	var name: String = "Deploy" if choosing else ({"stockpile": "Stockpile", "exchange": "Exchange", "recruit": "Recruit", "craft": "Craft", "reclaim": "Reclaim", "bounties": "Bounties", "upgrades": "Upgrades"}.get(tab, "The dock"))
 	dialog = Dialog.new(name, hint.text + ("\n\n" + help_text if help_text != "" else ""), ["Close"], UI.CYAN)
 	add_child(dialog)
 	dialog.chosen.connect(func(_k): _close_dialog())
@@ -287,6 +346,14 @@ func _stockpile_rows() -> void:
 	if not kept.is_empty():
 		_head("Also kept here", "", "Consumables and Prototypes you own, packed for a deployment as it leaves; pre-built copies, which join the next one.")
 		for l in kept:
+			_row(l["text"], l["sub"], UI.TEXT)
+	# (0.34) the stash
+	var held := stash_lines()
+	if held.is_empty():
+		_quiet("The stash is empty.", "The Equipment, Command and Aether cards, Action cards and Chips a deployment takes come from here, or are crafted (the Craft tab, or as the team leaves).", "The stash")
+	else:
+		_head("The stash", "%d card%s." % [held.size(), "" if held.size() == 1 else "s"], "The Equipment, Command and Aether cards, Action cards and Chips a deployment takes come from here, or are crafted as it leaves. They go out with the team and come home with it; a wipe loses them.")
+		for l in held:
 			_row(l["text"], l["sub"], UI.TEXT)
 	var owned := campaign.progress.owned_lines()
 	if owned.is_empty():
@@ -313,11 +380,55 @@ func kept_lines() -> Array:
 	var dk := dock()
 	for n in Dock.js_keys(dk.inv["cards"]):
 		var kind := dk.item_kind(n)
+		if kind != "prototype" and kind != "consumable":
+			continue                     # (0.34) the stash's cards have a section of their own
 		out.append({"text": "%d × %s" % [dk.owned(n), n], "sub": ("Prototype" if kind == "prototype" else "Consumable") + " · owned"})
 	for id in dk.waiting():
 		var d = campaign.workshop.get_design(id)
 		out.append({"text": "%d × %s" % [int(dk.waiting()[id]), str(d["name"]) if d != null else str(id)], "sub": "Pre-built copies · they join the next deployment"})
 	return out
+
+
+## (0.34) The stash, as lines: "2 × Recall", "Command · Common".
+func stash_lines() -> Array:
+	var out := []
+	var dk := dock()
+	for n in Dock.js_keys(dk.inv["cards"]):
+		var c = dk.card_of(str(n))
+		if not Dock.is_limited(c):
+			continue
+		out.append({"text": "%d × %s" % [dk.owned(n), n], "sub": "%s · %s" % [UI.type_name(c), Loot.RARITIES[Dock.hero_rarity(c)]["label"]]})
+	return out
+
+
+## (0.34) Craft: every card the stash can hold, by kind, with what is held and its price.
+func _craft_rows() -> void:
+	var dk := dock()
+	var out := campaign.deploy.active()
+	hint.text = "Crafting makes a card for the stash, from shards and parts of its own rarity (Command and Action cards, which have no part type, cost twice the shards). A deployment crafts what its team lacks as it leaves, too." + _closed_note()
+	help_text = "Equipment is crafted from Equipment parts; Aether cards and Chips from Aether parts. The stash's cards go out with a Strike Team and come home with it; a wipe loses them."
+	var st := dk.stockpile()
+	_head("Craft", "%s shards to spend." % Scoring.text(st["shards"]))
+	for kind in STASH_KINDS:
+		var cs: Array = (roster.from_export if roster != null else []).filter(func(c): return str(c.get("cardType", "")) == kind[0] and c.get("_src") != "design" and c.get("_src") != "prebuilt" and (not str(c.get("name", "")).begins_with("Test ") or dk.owned(str(c["name"])) > 0))
+		var seen := {}
+		cs = cs.filter(func(c):
+			if seen.has(c["name"]):
+				return false
+			seen[c["name"]] = true
+			return true)
+		cs.sort_custom(func(a, b): return Dock.hero_rarity(a) < Dock.hero_rarity(b) or (Dock.hero_rarity(a) == Dock.hero_rarity(b) and str(a["name"]) < str(b["name"])))
+		if cs.is_empty():
+			continue
+		_head(str(kind[1]), "")
+		for c in cs:
+			var nm := str(c["name"])
+			var cc = dk.craft_cost(nm)
+			if cc == null:
+				continue
+			var can: bool = not out and st["shards"] >= float(cc["shards"]) and (cc["type"] == "" or st["parts"][cc["type"]][cc["rarity"]] >= int(cc["n"]))
+			_chips_row(nm, "%s · held %d · %s" % [Loot.RARITIES[int(cc["rarity"])]["label"], dk.owned(nm), Dock.craft_text(cc["shards"], cc["type"], cc["rarity"], cc["n"])],
+				[["Craft", ["craft", nm] if can else null, UI.GOLD if can else UI.DIM]])
 
 
 # ---------------------------------------------------------------- the Exchange
@@ -405,7 +516,7 @@ func _exchange_rows() -> void:
 				"picture": Art.body_token(str(ch.get("bodyPlan", ""))) if ch != null else null, "price": str(dk.pre_cost(d)), "chips": [["Buy a copy", ["buy_pre", id, 1], UI.CYAN]]})
 		_tiles(pre)
 	# selling what you own
-	var mine := Dock.js_keys(dk.inv["cards"])
+	var mine := Dock.js_keys(dk.inv["cards"]).filter(func(nm): return dk.item_kind(str(nm)) == "consumable" or dk.item_kind(str(nm)) == "prototype")
 	if not mine.is_empty():
 		_head("Sell", "", "The Exchange buys Consumables and Prototypes back at half its price.")
 		for nm in mine:
@@ -785,6 +896,7 @@ func act(what: Array) -> void:
 		"sell_card": r = dk.sell_card(what[1], what[2])
 		"buy_pre": r = dk.buy_pre(what[1], what[2])
 		"recruit": r = dk.recruit(what[1])
+		"craft": r = dk.craft(str(what[1]), 1)
 		"combine": r = dk.combine(what[1], what[2], 1)
 		"swap": r = dk.swap(what[1], what[2], what[3], 1)
 		"upgrade": r = dk.upgrade(what[1])
@@ -794,11 +906,14 @@ func act(what: Array) -> void:
 		"pack":
 			set_pack(str(what[1]), int(what[2]))
 			return
+		"ld", "lp", "la", "lsave", "lreset":
+			loadout_act(what)
+			return
 	if r.get("ok"):
 		campaign.save()
 		_say(_done_text(what, r))
 		moment = {"buy_parts": "bought", "buy_item": "bought", "buy_card": "bought", "buy_pre": "bought", "recruit": "recruited", "sell_parts": "sold", "sell_card": "sold",
-			"combine": "made", "swap": "made", "upgrade": "upgraded"}.get(what[0], "")
+			"combine": "made", "swap": "made", "craft": "made", "upgrade": "upgraded"}.get(what[0], "")
 	else:
 		_say(str(r.get("why", "That can't be done")) + ".", true)
 		moment = "refused"
@@ -814,6 +929,7 @@ func _done_text(what: Array, r: Dictionary) -> String:
 		"sell_card": return "Sold %s for %d shards." % [what[1], r["gain"]]
 		"buy_pre": return "Bought a copy for %d shards: it joins the next deployment." % r["price"]
 		"recruit": return "%s recruited for %s shards: they can lead a Strike Team now." % [what[1], Scoring.text(r["price"])]
+		"craft": return "Crafted %s for %s shards%s: it's in the stash." % [what[1], Scoring.text(r["shards"]), (" and %d parts" % int(r["parts"])) if int(r["parts"]) > 0 else ""]
 		"combine": return "Combined: 1 %s made." % Loot.RARITIES[int(what[2]) + 1]["label"]
 		"swap": return "Swapped: 1 %s part made." % str(what[2])
 		"upgrade": return "Upgraded to level %d." % r["level"]
@@ -875,22 +991,131 @@ func show_teams() -> void:
 		var hs: Array = t["heroes"]
 		var why := campaign.deploy.reasons_against(t)
 		var tag := "Ready"
+		if why.is_empty() and not campaign.deploy.plan(t).get("craft", []).is_empty():
+			tag = "Ready, crafting"
 		if not why.is_empty():
 			tag = "Field copy needed" if campaign.deploy.needs_field_copy(t) else "Can't go"
 		var sub := "%s · Deck %d · Pouch %d · Level %d%s" % [(", ".join(hs)) if not hs.is_empty() else "No Hero", StrikeTeams.deck_count(t), StrikeTeams.pouch_count(t, roster), int(t["level"]),
 			(" · %d Consumable%s" % [StrikeTeams.consumable_count(t, roster), "" if StrikeTeams.consumable_count(t, roster) == 1 else "s"]) if StrikeTeams.consumable_count(t, roster) > 0 else ""]
 		_row(str(t["name"]), sub, UI.TEXT, {"team": i}, i == team_i, tag)
 	if team_i >= 0:
+		_loadout_rows()
 		_pack_rows()
 	list.settle()
 	_refresh_go()
 
 
+## (0.34) The Loadout: the cards the chosen team takes that the stash must
+## hold (or crafts as it leaves), to adjust before it goes; and the stash's
+## cards it could take besides. Save as preset keeps it as a Strike Team.
+func _loadout_rows() -> void:
+	var dk := dock()
+	var p := campaign.deploy.plan(loadout, pack)
+	var need: Dictionary = p.get("need", {})
+	var crafts := {}
+	for cr in p.get("craft", []):
+		crafts[cr["name"]] = cr
+	var changed: bool = loadout != teams[team_i]
+	_head("Loadout" + (" (changed)" if changed else ""), "",
+		"What %s takes. Cards the stash holds go with it; what it lacks is crafted as it leaves, from the stockpile. They come home with it; a wipe loses them. Changes here are for this deployment only, unless you save it as a preset." % str(loadout["name"]))
+	var names: Array = need.keys()
+	names.sort()
+	if names.is_empty():
+		_quiet("It takes no Equipment, Command or Aether cards, Action cards or Chips.")
+	for nm in names:
+		var c = dk.card_of(nm)
+		var where := _loadout_where(nm)
+		var sub := "%s · takes %d · held %d" % [UI.type_name(c) if c != null else "", int(need[nm]), dk.owned(nm)]
+		if crafts.has(nm):
+			var cr: Dictionary = crafts[nm]
+			sub += " · %d crafted as it leaves: %s" % [int(cr["n"]), Dock.craft_text(cr["shards"], cr["type"], cr["rarity"], cr["parts"])]
+		var chips := []
+		if where["deck"] > 0:
+			chips.append(["−", ["ld", nm, -1], UI.TEXT])
+			chips.append(["+", ["ld", nm, 1], UI.TEXT])
+		if where["pouch"] > 0:
+			chips.append(["− Pouch", ["lp", nm, -1], UI.TEXT])
+			chips.append(["+ Pouch", ["lp", nm, 1], UI.TEXT])
+		if where["hand"] > 0:
+			chips.append(["− carried", ["la", nm], UI.TEXT])
+		_chips_row(nm, sub, chips)
+	# the stash's cards it doesn't take yet
+	var more := Dock.js_keys(dk.inv["cards"]).filter(func(nm):
+		var c = dk.card_of(str(nm))
+		return Dock.is_limited(c) and not need.has(str(nm)) and str(c.get("cardType", "")) != "action")
+	if not more.is_empty():
+		_head("From the stash", "", "Cards the stash holds that this loadout doesn't take. Action cards are carried by a Hero: give them one in Strike Teams.")
+		for nm in more:
+			var c = dk.card_of(str(nm))
+			var chip: bool = str(c.get("cardType", "")) == "sphere"
+			_chips_row(str(nm), "%s · held %d" % [UI.type_name(c), dk.owned(str(nm))], [["+ Pouch" if chip else "+ Deck", ["lp" if chip else "ld", str(nm), 1], UI.CYAN]])
+	var acts := [["Save as preset", ["lsave"], UI.GOLD]]
+	if changed:
+		acts.append(["Back to the preset", ["lreset"], UI.PALE])
+	_chips_row("This loadout", "Save it as a Strike Team of its own, to choose again another time." if changed else "As the preset has it.", acts)
+
+
+## Where a loadout takes a card: {deck, pouch, hand} copies.
+func _loadout_where(nm: String) -> Dictionary:
+	var out := {"deck": 0, "pouch": 0, "hand": 0}
+	for k in loadout.get("deck", {}):
+		if Roster.ref_name(str(k)) == nm:
+			out["deck"] += StrikeTeams.copies(loadout, str(k))
+	for k in loadout.get("pouch", {}):
+		if Roster.ref_name(str(k)) == nm:
+			out["pouch"] += Dock._pi(loadout["pouch"][k])
+	for h in loadout.get("actions", {}):
+		for r in loadout["actions"][h]:
+			if Roster.ref_name(str(r)) == nm:
+				out["hand"] += 1
+	return out
+
+
+## A card's count in the loadout's Deck or Pouch, by one.
+func _loadout_step(part: String, nm: String, by: int) -> void:
+	var d: Dictionary = loadout[part]
+	var key := nm
+	for k in d:
+		if Roster.ref_name(str(k)) == nm:
+			key = str(k)
+	var n: int = maxi(0, Dock._pi(d.get(key, 0)) + by)
+	if n == 0:
+		d.erase(key)
+	else:
+		d[key] = n
+
+
+func loadout_act(what: Array) -> void:
+	match what[0]:
+		"ld":
+			_loadout_step("deck", str(what[1]), int(what[2]))
+		"lp":
+			_loadout_step("pouch", str(what[1]), int(what[2]))
+		"la":
+			for h in loadout.get("actions", {}):
+				var i := (loadout["actions"][h] as Array).map(func(r): return Roster.ref_name(str(r))).find(str(what[1]))
+				if i >= 0:
+					loadout["actions"][h].remove_at(i)
+					break
+		"lreset":
+			loadout = teams[team_i].duplicate(true)
+		"lsave":
+			var copy := StrikeTeams.copy_of(loadout, StrikeTeams.free_name(teams, str(teams[team_i]["name"]) + " · loadout"))
+			teams.append(copy)
+			StrikeTeams.save_all(teams)
+			team_i = teams.size() - 1
+			loadout = copy.duplicate(true)
+			_say("Saved as %s, a Strike Team of its own." % str(copy["name"]))
+	var keep := list.scroll
+	show_teams()
+	list.scroll_by(keep)
+
+
 ## The Pack: what the chosen team takes of what the dock keeps.
 func _pack_rows() -> void:
 	var dk := dock()
-	var owned := Dock.js_keys(dk.inv["cards"])
-	var t: Dictionary = teams[team_i]
+	var owned := Dock.js_keys(dk.inv["cards"]).filter(func(nm): return dk.item_kind(str(nm)) == "consumable" or dk.item_kind(str(nm)) == "prototype")
+	var t: Dictionary = loadout
 	_head("Pack", ("What %s takes of what the dock keeps. Every packed Prototype joins each fight, and so does every packed Consumable; one used is gone. The rest comes home, unless the team is wiped out." % str(t["name"])) if not owned.is_empty()
 		else "Nothing kept at the dock to pack. Consumables and Prototypes are bought at the Exchange.")
 	for nm in owned:
@@ -920,11 +1145,18 @@ func plan_text(p: Dictionary) -> String:
 		bits.append("%d × %s%s" % [l["copies"], l["name"], (", free" if paid == 0 else (": %s%s" % [Workshop.cost_text(l["cost"]), (" (%d free)" % l["free"]) if l["free"] > 0 else ""]))])
 	for l in p.get("pre", []):
 		bits.append("%d × %s, pre-built" % [l["copies"], l["name"]])
-	return " · ".join(bits) if not bits.is_empty() else "no Troops"
+	var said := " · ".join(bits) if not bits.is_empty() else "no Troops"
+	# (0.34) and the cards the stash lacks, crafted as it leaves
+	if not p.get("craft", []).is_empty():
+		var k := 0
+		for cr in p["craft"]:
+			k += int(cr["n"])
+		said += ". Crafted as it leaves: %d card%s (see the Loadout), for %s" % [k, "" if k == 1 else "s", Deployment.craft_bill_text(p)]
+	return said
 
 
 func _refresh_go() -> void:
-	var t = teams[team_i] if team_i >= 0 and team_i < teams.size() else null
+	var t = loadout if team_i >= 0 and team_i < teams.size() and not loadout.is_empty() else null
 	var why: Array = campaign.deploy.reasons_against(t, pack) if t != null else ["Choose a Strike Team."]
 	go_btn.disabled = not why.is_empty()
 	field_btn.visible = t != null and campaign.deploy.needs_field_copy(t)
@@ -956,6 +1188,7 @@ func _not_designs(t: Dictionary) -> Array:
 func choose_team(i: int) -> void:
 	if i != team_i and i >= 0 and i < teams.size():
 		pack = campaign.deploy.default_pack(teams[i])
+		loadout = teams[i].duplicate(true)
 	team_i = i
 	var keep := list.scroll
 	show_teams()
@@ -973,6 +1206,7 @@ func field_copy() -> void:
 	StrikeTeams.save_all(teams)
 	team_i = teams.size() - 1
 	pack = campaign.deploy.default_pack(copy)
+	loadout = copy.duplicate(true)
 	show_teams()
 	list.scroll_by(1.0e6)
 
@@ -981,7 +1215,7 @@ func field_copy() -> void:
 func leave() -> void:
 	if team_i < 0 or team_i >= teams.size():
 		return
-	var r := campaign.deploy.start(teams[team_i], pack)
+	var r := campaign.deploy.start(loadout, pack)
 	if not r["ok"]:
 		_say(" ".join(r.get("reasons", [])), true)
 		return

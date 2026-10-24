@@ -395,6 +395,8 @@ if not SCREENS_ONLY:
     cds = (GAME / "tests" / "fixtures" / "world_cases.json").read_text().count('"cd:')
     ck("0.22: and cards are among the items found on the World Map, which the game finds the same", cds >= 30, cds)
 
+    wcr = (GAME / "tests" / "fixtures" / "world_cases.json").read_text().count('"craftShards":') 
+    ck("0.34: and the stash in them: plans that craft what the stash lacks, the cards out with a team and back", wcr >= 300, wcr)
     ck("0.9: and leaving with designs: teams that can go and pay, teams short of parts, and teams refused, told why word for word", dp.get("plans that can go", 0) >= 20 and dp.get("plans short of parts", 0) >= 20 and dp.get("plans refused", 0) >= 20, {k: v for k, v in dp.items() if k.startswith("plans")})
     ck("0.10: and the dock in them: teams leaving with packs and pre-built copies, deployments ending with bounties paid, insurance kept, the Exchange restocked and the reach extended",
        dp.get("packed", 0) >= 30 and dp.get("pre-built copies out", 0) >= 100 and dp.get("bounties paid", 0) >= 5 and dp.get("insured", 0) >= 30 and dp.get("restocked", 0) >= 100 and dp.get("reach extended", 0) >= 20,
@@ -434,6 +436,8 @@ if not SCREENS_ONLY:
        and all(dks.get("refused: " + k, 0) >= 20 for k in ["buyParts", "sellParts", "buyItem", "buyCard", "sellCard", "buyPre", "combine", "swap", "upgrade"]), dks)
     ck("0.25: and recruiting: Heroes recruited and refused, stocks from before recruiting given their Heroes, and recruited Heroes lost with a wipe",
        dks.get("recruit", 0) >= 40 and dks.get("refused: recruit", 0) >= 40 and dks.get("oldStock", 0) >= 20 and dks.get("Heroes lost", 0) >= 20, dks)
+    ck("0.34: and the stash: cards crafted and refused, stashes begun (new runs and old), and rare cards picked and refused",
+       dks.get("craft", 0) >= 40 and dks.get("refused: craft", 0) >= 100 and dks.get("beginStash", 0) >= 60 and dks.get("pickRare", 0) >= 10 and dks.get("refused: pickRare", 0) >= 40, dks)
 
 # 3. the screens, drawn
 def shot(path, *args):
@@ -1096,7 +1100,7 @@ ck("0.20: and the chunks': chunk_gen.gd and chunk_diff.gd", "KETER/scripts/chunk
 ck("0.18: and the atmosphere: atmos.gd", "KETER/scripts/atmos.gd" in names, [n for n in names if "/scripts/a" in n])
 ck("0.17: and card art: cardart.png, and the script that draws it", "KETER/art/cardart.png" in names and "KETER/tools/art/cardart.py" in names, [n for n in names if "/art/" in n][:30])
 readme = gz.read("KETER/README.md").decode()
-ck("the README is this version's, and names the Companion it reads", ("**v%s adds a match\nsummary and vibration" % make_game.game_version()) in readme and "Companion 13.5" in readme and "Companion 13.9" in readme and "Companion 14.0" in readme and "Companion 14.1" in readme and "Companion 14.2" in readme and "Companion\n14.3" in readme and "Companion 14.4" in readme and "Companion 14.5" in readme and "Companion 14.6" in readme and "Companion 14.7" in readme and "Companion 14.8" in readme and "Companion 14.9" in readme and "Companion 14.10" in readme and "Companion 14.11" in readme and "Companion 14.12" in readme and "Companion 14.13" in readme and "Companion 14.14" in readme and "Companion 14.15" in readme and "Companion 14.16" in readme and "Companion 14.17" in readme and "Companion 14.18" in readme
+ck("the README is this version's, and names the Companion it reads", ("**v%s adds the stash:\na deployment's cards are held or crafted" % make_game.game_version()) in readme and "Companion 13.5" in readme and "Companion 13.9" in readme and "Companion 14.0" in readme and "Companion 14.1" in readme and "Companion 14.2" in readme and "Companion\n14.3" in readme and "Companion 14.4" in readme and "Companion 14.5" in readme and "Companion 14.6" in readme and "Companion 14.7" in readme and "Companion 14.8" in readme and "Companion 14.9" in readme and "Companion 14.10" in readme and "Companion 14.11" in readme and "Companion 14.12" in readme and "Companion 14.13" in readme and "Companion 14.14" in readme and "Companion 14.15" in readme and "Companion 14.16" in readme and "Companion 14.17" in readme and "Companion 14.18" in readme and "Companion 14.19" in readme
    and ("v0-%s_KETER_game.zip" % make_game.game_version().split(".")[1]) in readme, readme[:200])
 
 print(f"\nGAME PASS {len(ok)}  FAIL {len(bad)}")

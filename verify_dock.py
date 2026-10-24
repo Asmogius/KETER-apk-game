@@ -26,7 +26,9 @@ def ck(n,c,d=""):
     print(("PASS " if c else "FAIL ")+n+("" if c else "  — "+str(d)[:260]))
 
 TEAM="""()=>{ var deck=['design|Frame Trooper','design|Frame Trooper','design|Frame Trooper','design|Frame Trooper','test|Test Mortar Strike','test|Test Snare','test|Test Rally','test|Test Plating','test|Test Surge','test|Test Strip'];
-  localStorage.setItem('keter-app-loadouts',JSON.stringify([{v:2,name:'Deploy Team',level:1,created:111,heroes:['test|Test Warden','test|Test Striker'],deck:deck,actions:{},pouch:{'basic|3':6}}])); return true; }"""
+  localStorage.setItem('keter-app-loadouts',JSON.stringify([{v:2,name:'Deploy Team',level:1,created:111,heroes:['test|Test Warden','test|Test Striker'],deck:deck,actions:{},pouch:{'basic|3':6}}]));
+  /* (v14.19) every card it takes counts as held: the stash has checks of its own (verify_stash.py) */
+  localStorage.setItem('keter-test-every-card','1'); return true; }"""
 LIB=r"""()=>{
 window.T={
   K:KETER_DOCK, D:KETER_DEPLOY, W:KETER_WORLD, L:KETER_LOOT, P:KETER_PROG, WS:KETER_WORKSHOP,

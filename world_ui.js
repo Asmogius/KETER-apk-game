@@ -89,18 +89,27 @@
           '<tr class="wstot"><td>In all</td><td>'+cost(p.parts)+'</td></tr></table>':'<p class="wldnote">No Troops in its Deck.</p>')+
         '<p class="wldnote">'+plural(p.other,"other card")+' come along free. You have '+cost(st.parts.troop)+' in Troop parts. Copies are spent whatever happens.</p>'+
         (p.pre&&p.pre.length?'<p class="pxsub">Pre-built copies</p><p>'+p.pre.map(function(x){ return esc(x.name)+' ×'+x.copies; }).join(" · ")+'</p><p class="wldnote">Bought at the dock. They go on top of the Deck and are gone when this deployment ends.</p>':'')+
-        packHTML()+
+        stashHTML(p)+packHTML()+
         (p.reasons.length?'<ul class="wldwhy">'+p.reasons.map(function(r){ return '<li>'+esc(r)+'</li>'; }).join("")+'</ul>':'')+
-        (!p.afford&&p.fits?'<p class="wldbad">Not enough Troop parts for these copies.</p>':'')+
+        (!p.afford&&p.fits?'<p class="wldbad">'+(p.craft&&p.craft.length&&st.shards<p.craftShards?'Not enough shards to craft the cards the stash lacks.':'Not enough Troop parts for these copies, or parts to craft its cards.')+'</p>':'')+
         '<div class="pxrow"><button class="ghost primary" id="wlGo"'+(p.ok?'':' disabled')+'>Pay and deploy</button></div>';
     }
     return h+'<div class="pxrow"><button class="ghost" id="wlDepBack">Back</button></div></div>';
   }
 
+  /* (v14.19) the cards it takes from the stash, and what is crafted for it as it leaves */
+  function stashHTML(p){
+    var need=p.need||{}, names=Object.keys(need).sort(); if(!names.length || !K()) return '';
+    var cr={}; (p.craft||[]).forEach(function(c){ cr[c.name]=c; });
+    return '<p class="pxsub">From the stash</p><p class="wldnote">These go out with the team and come home with it; a wipe loses them. What the stash lacks is crafted as it leaves.</p><div class="wldpack">'+names.map(function(n){
+      var c=cr[n];
+      return '<div class="dkrow"><span><b>'+esc(n)+' ×'+need[n]+'</b><i>held '+K().owned(n)+(c?' · '+c.n+' crafted: '+esc(K().craftText(c.shards, c.type, c.rarity, c.parts)):'')+'</i></span></div>';
+    }).join("")+'</div>'+(p.craft&&p.craft.length?'<p class="wldnote">Crafting costs '+p.craftShards+' shards in all.</p>':'');
+  }
   /* what to take along: Consumables and Prototypes kept at the dock */
   function packHTML(){
     if(!K()) return '';
-    var v=K().inv().cards, names=Object.keys(v).filter(function(n){ return v[n]>0; }).sort();
+    var v=K().inv().cards, names=Object.keys(v).filter(function(n){ var k=K().itemKind(n); return v[n]>0 && (k==="consumable" || k==="prototype"); }).sort();
     Object.keys(PACK).forEach(function(n){ if(!(v[n]>0)) delete PACK[n]; else if(PACK[n]>v[n]) PACK[n]=v[n]; });
     var h='<p class="pxsub">Pack</p>';
     if(!names.length) return h+'<p class="wldnote">Nothing kept at the dock to pack. Consumables and Prototypes are bought at the Exchange.</p>';

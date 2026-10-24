@@ -86,6 +86,8 @@ var world: World = null
 var fallback_items := true
 ## For the tests made before recruiting (0.25): every Hero counts as yours.
 static var every_hero := false
+## (0.34) For the tests: every card a team takes counts as held (its stash is no limit).
+static var every_card := false
 
 
 func _init(dep: Deployment = null, tables_content = null) -> void:

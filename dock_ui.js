@@ -3,6 +3,9 @@
    dock's upgrades, and the stockpile; and (v14.14) Recruit, the Heroes on
    offer, the free ones and the ones you have. Dev Mode adds the dock's tables, the
    Consumables and Prototypes the Exchange carries, and a restock button.
+   (v14.19) Craft: the stash (the cards a deployment takes, held at the dock)
+   and crafting for it; a new run's pick of a rare card, the first time the
+   dock is opened.
    =========================================================================== */
 (function(){
   "use strict";
@@ -20,8 +23,41 @@
   function cardText(c){ var raw=(c&&c._raw)||{}; return plain((raw.abilities||c&&c.entries||c&&c.abilities||[]).map(function(a){ return a.text; }).filter(Boolean).join(" ")); }
 
   function render(host){ HOST=host||HOST||$("v-dock"); if(!HOST) return; draw(); }
+  /* (v14.19) a run's stash begins the first time the dock is opened: a new run with the starter
+     stash and a rare card to pick; a run with deployments behind it with what its Strike Teams need */
+  function beginStash(){
+    var X=K(); if(!X.beginStash || X.state().stash) return;
+    var old=!!(D() && (D().history().length || D().active())), all=window.KETER_ALLCARDS?window.KETER_ALLCARDS():[];
+    X.beginStash(old, old&&D()?D().loadouts().map(function(l){ return D().needOf(l, all); }):[]);
+  }
+  function rareHTML(){
+    var X=K(), s=X.state(), off=(s.stash&&!s.stash.picked&&s.stash.offer)||[]; if(!off.length) return '';
+    return '<div class="wldbox"><p><b>Pick a rare card</b></p><p class="pxnote">A new run: the stash holds a starter set of cards, and one rare card of your choice besides.</p><div class="dklist">'+off.map(function(nm){
+      var c=X.cardOf(nm)||{};
+      return '<div class="dkrow"><span><b>'+esc(nm)+'</b><i>'+esc(c.cardType||"")+' · '+esc(cardText(c).slice(0,140))+'</i></span>'+btn('data-dkrare="'+esc(nm)+'"',"Pick",false,true)+'</div>';
+    }).join("")+'</div></div>';
+  }
+  var CRAFT_KINDS=[["equipment","Equipment"],["command","Command"],["aether","Aether"],["action","Action"],["sphere","Chips"]];
+  function craftHTML(){
+    var X=K(), t=X.tables(), st=L().stock(), closed=X.closed(), v=X.inv().cards, all=window.KETER_ALLCARDS?window.KETER_ALLCARDS():[];
+    var held=Object.keys(v).filter(function(n){ return v[n]>0 && X.isLimited(X.cardOf(n)); }).sort();
+    var h='<p class="pxsub">The stash</p><p class="pxnote">The Equipment, Command and Aether cards, Action cards and Chips a deployment takes come from here, or are crafted as it leaves. They go out with the team and come home with it; a wipe loses them.</p>'+
+      (held.length?'<p>'+held.map(function(n){ return esc(n)+' ×'+v[n]; }).join(" · ")+'</p>':'<p class="pxnote">The stash is empty.</p>')+
+      '<p class="pxsub">Craft</p><p class="pxnote">From shards and parts of the card’s rarity: Equipment from Equipment parts, Aether cards and Chips from Aether parts; Command and Action cards, which have no part type, cost '+t.craft.noParts+'× the shards.</p>';
+    CRAFT_KINDS.forEach(function(k){
+      var seen={}, cs=all.filter(function(c){ if(c.cardType!==k[0] || c._src==="design" || c._src==="prebuilt" || seen[c.name] || (/^Test /.test(c.name) && !(v[c.name]>0))) return false; seen[c.name]=1; return true; })
+        .sort(function(a,b){ return X.heroRarity(a)-X.heroRarity(b) || (a.name<b.name?-1:a.name>b.name?1:0); });
+      if(!cs.length) return;
+      h+='<p class="pxsub">'+k[1]+'</p><div class="dklist">'+cs.map(function(c){
+        var cc=X.craftCost(c.name), can=!closed && st.shards>=cc.shards && (!cc.type || st.parts[cc.type][cc.rarity]>=cc.n);
+        return '<div class="dkrow"><span><b>'+esc(c.name)+'</b><i>'+rar(cc.rarity)+' · held '+(v[c.name]||0)+' · '+esc(X.craftText(cc.shards, cc.type, cc.rarity, cc.n))+'</i></span>'+btn('data-dkcraft="'+esc(c.name)+'"',"Craft",!can)+'</div>';
+      }).join("")+'</div>';
+    });
+    return h;
+  }
   function draw(){
     var tab=function(k,l){ return '<button class="'+(TAB===k?"on":"")+'" data-dktab="'+k+'">'+l+'</button>'; };
+    beginStash();
     var X=K(), s=X.state(), st=L().stock(), closed=X.closed(), reachR=X.reachRarity(s);
     HOST.innerHTML='<div class="lts dks">'+
       '<h2 class="pxh">Dock</h2>'+
@@ -29,9 +65,9 @@
       (closed?'<p class="wslockbar">The dock is closed while a Strike Team is out. You can look, but trading, reclaiming, upgrades and research wait until it’s home.</p>':'')+
       '<div class="dkstat"><b>'+fmt(st.shards)+'</b> shards · '+fmt(L().count(st))+' components · reach: '+(s.reach?'Skull '+s.reach+' ('+rar(reachR)+' at most)':'none yet — Commons only')+'</div>'+
       '<div class="pxrow"><button class="ghost" data-page="world">World Map</button><button class="ghost" data-page="workshop">Workshop</button><button class="ghost" data-page="loot">Stockpile</button></div>'+
-      (MSG?'<p class="wsmsg">'+MSG+'</p>':'')+
-      '<div class="seg pxseg">'+tab("exchange","Exchange")+tab("recruit","Recruit")+tab("reclaim","Reclaim")+tab("bounties","Bounties")+tab("upgrades","Upgrades")+'</div>'+
-      '<div id="dkBody">'+(TAB==="exchange"?exchangeHTML():TAB==="recruit"?recruitHTML():TAB==="reclaim"?reclaimHTML():TAB==="bounties"?bountyHTML():upgradesHTML())+'</div>'+
+      (MSG?'<p class="wsmsg">'+MSG+'</p>':'')+rareHTML()+
+      '<div class="seg pxseg">'+tab("exchange","Exchange")+tab("recruit","Recruit")+tab("craft","Craft")+tab("reclaim","Reclaim")+tab("bounties","Bounties")+tab("upgrades","Upgrades")+'</div>'+
+      '<div id="dkBody">'+(TAB==="exchange"?exchangeHTML():TAB==="recruit"?recruitHTML():TAB==="craft"?craftHTML():TAB==="reclaim"?reclaimHTML():TAB==="bounties"?bountyHTML():upgradesHTML())+'</div>'+
       (dev()?devHTML():'')+'</div>';
   }
   function btn(attr, label, disabled, primary){ return '<button class="ghost'+(primary&&!disabled?" primary":"")+'" '+attr+(disabled?" disabled":"")+'>'+label+'</button>'; }
@@ -72,7 +108,7 @@
       }).join("")+'</div>':'<p class="pxnote">None on offer yet.</p>');
     /* selling */
     var mine=[]; L().TYPES.forEach(function(ty){ st.parts[ty.id].forEach(function(n,r){ if(n>0) mine.push({ty:ty.id, r:r, n:n}); }); });
-    var cardsOwned=Object.keys(X.inv().cards).filter(function(n){ return X.inv().cards[n]>0; });
+    var cardsOwned=Object.keys(X.inv().cards).filter(function(n){ var k=X.itemKind(n); return X.inv().cards[n]>0 && (k==="consumable" || k==="prototype"); });
     h+='<p class="pxsub">Sell</p><p class="pxnote">The Exchange pays half its price. Blueprints and chassis aren’t bought back.</p>'+
       (mine.length||cardsOwned.length?'<div class="dklist">'+mine.map(function(m){
         return '<div class="dkrow"><span><b>'+esc(pname(m.ty,m.r))+' ×'+m.n+'</b><i>'+rar(m.r)+' '+esc(tyShort(m.ty))+' · '+Math.floor(t.price[m.r]*t.sell)+' shards each</i></span>'+qty("s:"+m.ty+":"+m.r)+btn('data-dksell="'+m.ty+':'+m.r+'"',"Sell",closed)+'</div>';
@@ -168,6 +204,9 @@
         '<div class="chgrid">'+L().RARITIES.map(function(r,i){ return '<label class="chf"><span>'+r.label+' Hero</span>'+n("heroPrice."+i,t.heroPrice[i])+'</label>'; }).join("")+
         '<label class="chf"><span>Heroes on offer</span>'+n("heroOnOffer",t.heroOnOffer)+'</label></div>'+
         '<div class="pxrow"><button class="ghost" id="dkHeroesAll">Recruit every Hero</button><button class="ghost" id="dkHeroesNone">Lose every recruited Hero</button></div></details>'+
+      '<details class="wldsec"><summary>Crafting and the stash</summary><p class="wldnote">What crafting a card costs, by its rarity: shards, and parts of its kind (Equipment for Equipment cards, Aether for Aether cards and Chips). A Command or Action card costs the shards times the multiplier instead. A new run is offered this many rare cards to pick one from.</p><div class="chgrid">'+
+        L().RARITIES.map(function(r,i){ return '<label class="chf"><span>'+r.label+': shards</span>'+n("craft.shards."+i,t.craft.shards[i])+'</label><label class="chf"><span>'+r.label+': parts</span>'+n("craft.parts."+i,t.craft.parts[i])+'</label>'; }).join("")+
+        '<label class="chf"><span>No part type: shards ×</span>'+n("craft.noParts",t.craft.noParts,"0.5")+'</label><label class="chf"><span>Rare cards offered</span>'+n("rareOffer",t.rareOffer)+'</label></div></details>'+
       '<details class="wldsec"><summary>Bounties</summary><div class="chgrid">'+Object.keys(X.KIND_LABEL).map(function(k){
         return '<label class="chf"><span>'+X.KIND_LABEL[k]+': shards per Skull</span>'+n("bounty.shards."+k,t.bounty.shards[k])+'</label><label class="chf"><span>'+X.KIND_LABEL[k]+': components</span>'+n("bounty.n."+k,t.bounty.n[k])+'</label>'; }).join("")+'</div></details>'+
       '<details class="wldsec"><summary>Upgrades</summary>'+X.UPGRADES.map(function(u){
@@ -195,6 +234,8 @@
     if((a=t.getAttribute("data-dksellcard"))){ var n5=q("sc:"+a); said(X.sellCard(a,n5), function(r){ return "Sold for "+r.gain+" shards."; }); return; }
     if((a=t.getAttribute("data-dkup"))){ var p2=a.split(":"), n6=q("u:"+a); said(X.combine(p2[0],+p2[1],n6), function(r){ return "Made "+r.made+" × "+esc(pname(p2[0],+p2[1]+1))+"."; }); return; }
     if(id==="dkSwap"){ var f=$("dkFrom").value, to=$("dkTo").value, rr=+$("dkRar").value, n7=q("w"); said(X.swap(f,to,rr,n7), function(r){ return "Made "+r.made+" × "+esc(pname(to,rr))+"."; }); return; }
+    if((a=t.getAttribute("data-dkcraft"))){ said(X.craft(a,1), function(r){ return "Crafted "+esc(a)+" for "+r.shards+" shards"+(r.parts?" and "+r.parts+" parts":"")+": it’s in the stash."; }); return; }
+    if((a=t.getAttribute("data-dkrare"))){ said(X.pickRare(a), function(){ return esc(a)+" is in the stash."; }); return; }
     if((a=t.getAttribute("data-dkhire"))){ said(X.recruit(a), function(r){ return esc(a)+" recruited for "+r.price+" shards."; }); return; }
     if(id==="dkHeroesAll"){ var s2=X.state(); X.heroCards().forEach(function(c){ if(!X.isFree(c.name)) s2.heroes[c.name]=1; }); X._save(s2); MSG="Every Hero is yours."; draw(); return; }
     if(id==="dkHeroesNone"){ var s3=X.state(); s3.heroes={}; X._save(s3); MSG="No recruited Heroes."; draw(); return; }
@@ -218,6 +259,7 @@
       else if(p[0]==="bounty") t3.bounty[p[1]][p[2]]=v;
       else if(p[0]==="effect") t3.effect[p[1]][+p[2]]=v;
       else if(p[0]==="cost") t3.cost[p[1]][+p[2]][+p[3]]=(+p[3]===2?Math.min(5,Math.round(v)):v);
+      else if(p[0]==="craft"){ if(p[1]==="noParts") t3.craft.noParts=Math.max(1,v); else t3.craft[p[1]][+p[2]]=(p[1]==="parts"?Math.floor(v):v); }
       else t3[p[0]]=v;
       X.saveTables(t3); return;
     }

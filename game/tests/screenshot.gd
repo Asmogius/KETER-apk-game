@@ -679,6 +679,17 @@ func _dock(scene: Node2D, o: Dictionary) -> void:
 						cm.progress.see("enemy", c["name"])
 			"restock": cm.dock.restock()
 			"strict": Dock.every_hero = false
+			# (0.34) the stash as a new run has it (and its rare pick offered); rich: a stockpile that can craft
+			"stash":
+				Dock.every_card = false
+				dk.begin_stash()
+				dk.offer_rare()
+			"rich":
+				var rb := Loot.bag()
+				rb["shards"] = 1500
+				for ty in ["troop", "equipment", "aether"]:
+					rb["parts"][ty] = [20, 12, 6, 3, 1, 0]
+				cm.deploy.stock = rb
 			"hire": cm.dock.state["heroes"][bits[1]] = 1
 			"scroll":
 				await process_frame

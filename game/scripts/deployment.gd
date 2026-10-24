@@ -106,11 +106,22 @@ func _scan() -> int:
 ## {ok, fits, afford, reasons, heroes, lines, parts, other, busy}. The reasons
 ## are deploy.js's own words; reasons_against says them as the dock does.
 ## lines: a line for each design, {id, name, copies, free, each, cost, starter}.
+## (0.34) What crafting a plan's missing cards costs, in words: "240 shards, 3 Rare equipment parts".
+static func craft_bill_text(p: Dictionary) -> String:
+	var bits := [Scoring.text(p["craftShards"]) + " shards"]
+	for ty in ["equipment", "aether"]:
+		for r in 6:
+			var n := int(p["craftParts"][ty][r])
+			if n > 0:
+				bits.append("%d %s %s part%s" % [n, Loot.RARITIES[r]["label"], ty, "" if n == 1 else "s"])
+	return ", ".join(bits)
+
+
 ## (0.34) The cards a team takes that must be held or crafted: {name: copies}
 ## (its Deck's Equipment, Command and Aether cards, its Heroes' Action cards, its Pouch's Chips).
 func need_of(team: Dictionary) -> Dictionary:
 	var need := {}
-	if dock == null or roster == null:
+	if dock == null or roster == null or Dock.every_card:
 		return need
 	var add := func(r, n: int):
 		var c = roster.card_named(Roster.ref_name(str(r)))
@@ -294,7 +305,16 @@ func reasons_against(team: Dictionary, pack = null) -> Array:
 				continue
 			out.append(str(r).left(1).to_upper() + str(r).substr(1) + ".")
 		if p["fits"] and not p["afford"]:
-			out.append("The stockpile can't pay for its copies: they cost %s, and it holds %s." % [Workshop.cost_text(p["parts"]), Workshop.cost_text(Loot.norm(stock)["parts"]["troop"])])
+			var held: Array = Loot.norm(stock)["parts"]["troop"]
+			var short_troop := false
+			for r in 6:
+				if held[r] < int(p["parts"][r]):
+					short_troop = true
+			if short_troop:
+				out.append("The stockpile can't pay for its copies: they cost %s, and it holds %s." % [Workshop.cost_text(p["parts"]), Workshop.cost_text(held)])
+			# (0.34) and the cards the stash lacks, crafted as it leaves
+			if not p["craft"].is_empty():
+				out.append("Crafting the cards the stash lacks (%s) costs %s; the stockpile can't pay for that." % [", ".join(p["craft"].map(func(cr): return (("%d × " % int(cr["n"])) if int(cr["n"]) > 1 else "") + str(cr["name"]))), craft_bill_text(p)])
 	return out
 
 

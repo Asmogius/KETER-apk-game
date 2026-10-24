@@ -25,7 +25,9 @@ def ck(n,c,d=""):
 TEAM="""()=>{ var deck=['design|Frame Trooper','design|Frame Trooper','design|Frame Trooper','design|Frame Trooper','test|Test Mortar Strike','test|Test Snare','test|Test Rally','test|Test Plating','test|Test Surge','test|Test Strip'];
   localStorage.setItem('keter-app-loadouts',JSON.stringify([{v:2,name:'Deploy Team',level:1,created:111,heroes:['test|Test Warden','test|Test Striker'],deck:deck,actions:{},pouch:{'basic|3':6}}]));
   /* (v14.14) the test Heroes lead the team out: Dev Mode makes them free, as the three free Heroes are */
-  localStorage.setItem('keter-app-dock-tables',JSON.stringify({free:['Dock Hand','Hangar Rifleman','Field Medic','Test Warden','Test Striker']})); return true; }"""
+  localStorage.setItem('keter-app-dock-tables',JSON.stringify({free:['Dock Hand','Hangar Rifleman','Field Medic','Test Warden','Test Striker']}));
+  /* (v14.19) and every card it takes counts as held: the stash has checks of its own (verify_stash.py) */
+  localStorage.setItem('keter-test-every-card','1'); return true; }"""
 LIB=r"""()=>{
 window.T={
   W:KETER_WORLD, D:KETER_DEPLOY, L:KETER_LOOT, P:KETER_PROG,

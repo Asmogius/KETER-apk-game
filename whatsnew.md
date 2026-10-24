@@ -6,6 +6,15 @@ the Change Log.
 
 <!-- NEWEST ENTRY GOES BELOW THIS LINE -->
 
+## v14.19 — The stash
+
+Alongside game 0.34.
+
+- **A deployment's cards come from the stash.** The Equipment, Command and Aether cards in its Deck, the Action cards its Heroes carry and the Chips in its Pouch must be held at the dock, or are crafted as it leaves. They go out with the team, come home with it, and are lost if it is wiped out. Troops, Consumables and Prototypes work as before.
+- **Craft, a new tab at the Dock**: any of those cards, for shards and parts of its rarity (Equipment parts for Equipment, Aether parts for Aether cards and Chips; Command and Action cards cost twice the shards instead). The tab lists what the stash holds. Deploy shows what the team takes from the stash and what is crafted for it.
+- **A new run begins with a starter stash**, and the pick of one of three rare cards. A run with deployments behind it is given what its Strike Teams need instead.
+- **Dev Mode** sets the crafting prices, the starter stash and how many rare cards are offered.
+
 ## v14.18 — The free Heroes generate Neutral Aether
 
 Alongside game 0.31.

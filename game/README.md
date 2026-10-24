@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.33 adds a match
-summary and vibration; v0.32 brought three save files.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.34 adds the stash:
+a deployment's cards are held or crafted; v0.33 brought a match summary.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,31 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.34 (Companion 14.19): **the stash**. In the campaign, a
+deployment's cards come from what the run holds, or can craft:
+
+- **What it takes must be held**: the Equipment, Command and Aether cards in
+  its Deck, the Action cards its Heroes carry and the Chips in its Pouch.
+  Troops (your designs), Consumables and Prototypes work as before; basic
+  Chips are free. Practice and Pass and play still have every card.
+- **Crafted as it leaves**: what the stash lacks is crafted from the
+  stockpile when the team leaves, for shards and parts of the card's rarity
+  (Equipment parts for Equipment, Aether parts for Aether cards and Chips;
+  Command and Action cards cost twice the shards instead). The cards go out
+  with the team, come home with it, and are lost if it is wiped out.
+- **Craft, a new tab at the dock**: craft ahead of time, by kind, with what
+  is held and each price. The Stockpile lists the stash.
+- **Deploy's Loadout**: choose a preset (your Strike Teams), then adjust it
+  for this deployment: more or fewer copies, cards from the stash added,
+  carried cards taken off; each card says what is held and what is crafted.
+  Save as preset keeps it as a Strike Team.
+- **A new run** begins with a starter stash (two of each Common Equipment,
+  Command, Aether and Action card, four Ballast Chips) and the pick of one
+  of three random rare cards. A run with deployments behind it is given what
+  its Strike Teams need instead.
+- The Companion's Dev Mode sets the prices, the starter stash and how many
+  rare cards are offered; they reach the game in the export.
 
 New in 0.33 (Companion 14.18):
 
@@ -630,7 +655,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-33_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-34_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -641,7 +666,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-33_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-34_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the

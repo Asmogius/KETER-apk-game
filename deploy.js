@@ -48,6 +48,8 @@
 
   /* (v14.19) the cards a team takes that must be held or crafted: {name: copies} */
   function needOf(lo, all){
+    /* (a test's switch: every card counts as held, as the game's tests have it) */
+    try{ if(localStorage.getItem("keter-test-every-card")==="1") return {}; }catch(e){}
     var need={}, add=function(r, n){ var c=resolve(r,all); if(!c || !K() || !K().isLimited || !K().isLimited(c) || !(n>0)) return; need[c.name]=(need[c.name]||0)+n; };
     (lo.deck||[]).forEach(function(r){ add(r,1); });
     Object.keys(lo.actions||{}).forEach(function(h){ (lo.actions[h]||[]).forEach(function(r){ add(r,1); }); });

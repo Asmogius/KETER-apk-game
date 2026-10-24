@@ -25,6 +25,8 @@ static func fresh() -> void:
 	Motion.still = true
 	# (0.25) the tests' teams lead with Heroes nobody has recruited: they count as yours, unless a test says not
 	Dock.every_hero = true
+	# (0.34) and every card they take counts as held: a test that is about the stash says not
+	Dock.every_card = true
 	# (0.26) and the Sandbox: a file of the tests' own, empty
 	Sandbox.path = SANDBOX
 	Sandbox.clear()
