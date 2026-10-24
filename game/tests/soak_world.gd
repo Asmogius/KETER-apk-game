@@ -834,7 +834,7 @@ func _screen_dock(when: String) -> void:
 		_whole_bag(cm.deploy.stock, "the stockpile", when)
 		var now := dock.stockpile()
 		var changed: bool = now != before
-		if changed and not (a[0] in ["buy_parts", "sell_parts", "buy_item", "buy_card", "sell_card", "buy_pre", "combine", "swap", "upgrade"]):
+		if changed and not (a[0] in ["buy_parts", "sell_parts", "buy_item", "buy_card", "sell_card", "buy_pre", "combine", "swap", "upgrade", "craft"]):
 			_bad("%s: %s changed the stockpile" % [when, str(a)])
 		var shards_said: bool = dk.note.text.contains("shards") or not changed
 		if not shards_said and a[0] != "combine" and a[0] != "swap" and a[0] != "upgrade":
@@ -851,7 +851,7 @@ func _screen_dock(when: String) -> void:
 		if not dk.hint.text.begins_with("Everything is paid in Aether shards; you hold %d." % dock.stockpile()["shards"]):
 			_bad("%s: the Exchange says '%s', and the stockpile holds %d shards" % [when, dk.hint.text.left(60), dock.stockpile()["shards"]])
 		dk.show_tab("stockpile")
-		var kept := dk.kept_lines().map(func(l): return l["text"])
+		var kept := (dk.kept_lines() + dk.stash_lines()).map(func(l): return l["text"])
 		for nm in dock.inv["cards"]:
 			if not kept.has("%d × %s" % [dock.owned(nm), nm]):
 				_bad("%s: the dock holds %d %s and lists %s" % [when, dock.owned(nm), nm, str(kept)])

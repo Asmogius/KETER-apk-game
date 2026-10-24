@@ -757,8 +757,8 @@ if shutil.which("xvfb-run"):
     if ok32:
         px = Image.open(p32).convert("RGB").load()
         rows = len([1 for y in range(170, 600, 2) if near(px[640, y], (23, 24, 25), 6)])      # (0.11: a row is a panel of its own)
-        ck("0.8: the stockpile lists what it brought, and the deployment is told below", count(p32, (78, 302, 216, 322), LOOT, 12) > 90 and rows > 90 and count(p32, (78, 358, 300, 450), (168, 186, 194), 12) > 150 and count(p32, (20, 536, 150, 558), CYAN, 12) > 120,
-           (count(p32, (78, 302, 216, 322), LOOT, 12), rows, count(p32, (78, 358, 300, 450), (168, 186, 194), 12), count(p32, (20, 536, 150, 558), CYAN, 12)))
+        ck("0.8: the stockpile lists what it brought, and the deployment is told below", count(p32, (78, 302, 216, 322), LOOT, 12) > 90 and rows > 90 and count(p32, (78, 358, 300, 450), (168, 186, 194), 12) > 150 and count(p32, (20, 566, 150, 588), CYAN, 12) > 120,
+           (count(p32, (78, 302, 216, 322), LOOT, 12), rows, count(p32, (78, 358, 300, 450), (168, 186, 194), 12), count(p32, (20, 566, 150, 588), CYAN, 12)))
     # 0.9: the Workshop, a design, the keyword builder, research, and a Field copy
     MAKE = "tab:blueprints;testing;tab:designs;new;chassis:Test Frame · Lazarus Siege;build:0;kb:none;kb:target enemy;kb:next;kb:damage;step:1;kb:pv:ok;kb:next;kb:Burst;step:1"
     p33 = pathlib.Path("/tmp/keter_game_workshop.png")
@@ -824,8 +824,8 @@ if shutil.which("xvfb-run"):
     if ok41:
         px = Image.open(p41).convert("RGB").load()
         # (0.25: six tabs, Recruit among them, so the row starts further left)
-        ck("0.10: six tabs along the top, the Stockpile's lit in cyan (0.11); its headings in cyan, the shards in pale yellow, and what it keeps listed", lit(px, 466, 1258, 30, 60) > 300 and count(p41, (468, 16, 584, 72), CYAN) > 80 and count(p41, (600, 16, 722, 72), CYAN) == 0 and count(p41, (20, 250, 170, 385), CYAN) > 220
-           and count(p41, (78, 302, 236, 322), LOOT, 12) > 100 and lit(px, 30, 200, 405, 425) > 60 and lit(px, 30, 200, 477, 497) > 80, (lit(px, 466, 1258, 30, 60), count(p41, (468, 16, 584, 72), CYAN), count(p41, (600, 16, 722, 72), CYAN), count(p41, (20, 250, 170, 385), CYAN), count(p41, (78, 302, 236, 322), LOOT, 12), lit(px, 30, 200, 405, 425), lit(px, 30, 200, 477, 497)))
+        ck("0.10: the tabs along the top (0.34: seven, Craft among them), the Stockpile's lit in cyan (0.11); its headings in cyan, the shards in pale yellow, and what it keeps listed", lit(px, 466, 1258, 30, 60) > 300 and count(p41, (375, 16, 495, 72), CYAN) > 80 and count(p41, (507, 16, 633, 72), CYAN) == 0 and count(p41, (20, 250, 170, 385), CYAN) > 220
+           and count(p41, (78, 302, 236, 322), LOOT, 12) > 100 and lit(px, 30, 200, 405, 425) > 60 and lit(px, 30, 200, 477, 497) > 80, (lit(px, 466, 1258, 30, 60), count(p41, (375, 16, 495, 72), CYAN), count(p41, (507, 16, 633, 72), CYAN), count(p41, (20, 250, 170, 385), CYAN), count(p41, (78, 302, 236, 322), LOOT, 12), lit(px, 30, 200, 405, 425), lit(px, 30, 200, 477, 497)))
     p42 = pathlib.Path("/tmp/keter_game_exchange.png")
     ok42, log42 = shot(p42, "screen=dock", "stock=0:300", "dock=tab:exchange")
     ck("0.10: the Exchange renders", ok42 and "SCRIPT ERROR" not in log42, log42[-300:])
@@ -841,9 +841,9 @@ if shutil.which("xvfb-run"):
     if ok425:
         px = Image.open(p425).convert("RGB").load()
         ck("0.25: its tab lit in cyan; what it can't deploy said; Heroes on offer as tiles, each its token, its price in gold, and Recruit in cyan",
-           count(p425, (736, 16, 856, 72), CYAN) > 80 and count(p425, (468, 16, 584, 72), CYAN) == 0 and count(p425, (20, 238, 1250, 282), (136, 163, 188)) > 600 and count(p425, (20, 306, 120, 330), CYAN) > 40
+           count(p425, (645, 16, 753, 72), CYAN) > 80 and count(p425, (375, 16, 495, 72), CYAN) == 0 and count(p425, (20, 238, 1250, 282), (136, 163, 188)) > 600 and count(p425, (20, 306, 120, 330), CYAN) > 40
            and count(p425, (34, 512, 122, 554), GOLD, 16) > 60 and count(p425, (228, 512, 306, 552), CYAN) > 30 and len(set(px[x, y] for x in range(36, 76, 2) for y in range(390, 460, 2))) >= 6,
-           (count(p425, (736, 16, 856, 72), CYAN), count(p425, (468, 16, 584, 72), CYAN), count(p425, (20, 238, 1250, 282), (136, 163, 188)), count(p425, (20, 306, 120, 330), CYAN), count(p425, (34, 512, 122, 554), GOLD, 16), count(p425, (228, 512, 306, 552), CYAN),
+           (count(p425, (645, 16, 753, 72), CYAN), count(p425, (375, 16, 495, 72), CYAN), count(p425, (20, 238, 1250, 282), (136, 163, 188)), count(p425, (20, 306, 120, 330), CYAN), count(p425, (34, 512, 122, 554), GOLD, 16), count(p425, (228, 512, 306, 552), CYAN),
             len(set(px[x, y] for x in range(36, 76, 2) for y in range(390, 460, 2)))))
     p43 = pathlib.Path("/tmp/keter_game_bounties.png")
     ok43, log43 = shot(p43, "screen=dock", "dock=meet;restock;tab:bounties")
