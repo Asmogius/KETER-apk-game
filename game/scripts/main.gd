@@ -203,6 +203,74 @@ func _ready() -> void:
 	load_export()
 
 
+## (0.32) The phone's Back button goes back a step, as the screen's own Back,
+## Home or Close would; on Home it asks before leaving the game.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		go_back()
+
+
+func go_back() -> void:
+	# a box over everything first: the topmost one shown
+	var top: Control = null
+	var stack: Array = [ui]
+	while not stack.is_empty():
+		var n = stack.pop_front()
+		if n is Control and not n.is_visible_in_tree():
+			continue
+		if n is Dialog or n is NameDialog or n is XDialog or n is BuilderSheet or n is OptionsBox or n is CardSheet or n is BehaviorSheet:
+			top = n
+		for k in n.get_children():
+			stack.append(k)
+	if top is Dialog:
+		var i: int = top.safe_index()
+		if i >= 0:
+			top.chosen.emit(i)
+		return
+	if top is NameDialog or top is BuilderSheet:
+		top.cancelled.emit()
+		return
+	if top is XDialog:
+		top.chosen.emit(0)
+		return
+	if top is OptionsBox:
+		top.closed.emit()
+		return
+	if top is CardSheet:
+		_close_sheet()
+		return
+	if top is BehaviorSheet:
+		_close_behaviors()
+		return
+	if handoff != null and handoff.visible:
+		return
+	if hand_tray != null and hand_tray.visible:
+		hand_tray.closed.emit()
+		return
+	if panel != null and panel.visible:
+		panel.closed.emit()
+		return
+	# then the screen shown: its own Back (or Home)
+	for s in [saves_screen, studio_screen, poi_screen, chassis_screen, forge_screen, workshop_screen, dock_screen, teams_screen, setup]:
+		if s != null and s.visible:
+			if s == teams_screen and teams_screen.editor != null and teams_screen.editor.visible:
+				teams_screen.editor.back_btn.pressed.emit()
+			else:
+				s.back_btn.pressed.emit()
+			return
+	if _board_live():
+		ask_leave()
+		return
+	if _map_live():
+		map_screen.home_btn.pressed.emit()
+		return
+	if home.visible and dialog == null:
+		_open_dialog(Dialog.new("Leave KETER?", "Your run is saved as it stands.", ["Stay", "Leave"], Color("#d6a851")), func(i):
+			_close_dialog()
+			if i == 1:
+				get_tree().quit())
+
+
 func _exit_tree() -> void:
 	Rules.hooks = {}              # the rules let go of the battle
 	if get_tree().node_added.is_connected(_on_node_added):
@@ -244,6 +312,10 @@ func _screen_key() -> String:
 		return "workshop"
 	if map_screen != null and map_screen.visible:
 		return "map"
+	# (0.32) and the Sandbox's tools and the save files
+	for pair in [[forge_screen, "forge"], [chassis_screen, "chassis"], [poi_screen, "poi"], [studio_screen, "studio"], [saves_screen, "saves"]]:
+		if pair[0] != null and pair[0].visible:
+			return pair[1]
 	return "battle" if battle != null else ""
 
 

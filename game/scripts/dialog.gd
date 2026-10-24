@@ -6,11 +6,22 @@ extends Control
 
 signal chosen(index: int)
 
+## (0.32) What the phone's Back button picks: the first button that turns away
+## ("Cancel", "Keep it", "Stay", "Close" ...); none, and it waits for a choice.
+const SAFE := ["cancel", "keep it", "keep mine", "keep editing", "keep drawing", "stay", "stay on the map", "go back", "not now", "close", "ok"]
+
 var title_label: Label
 var text_label: Label
 var buttons: Array[Button] = []
 var box: PanelContainer
 var stats: HFlowContainer = null       # (0.11) amounts as icons and numbers, under the text
+
+
+func safe_index() -> int:
+	for i in buttons.size():
+		if SAFE.has(buttons[i].text.strip_edges().to_lower()):
+			return i
+	return -1
 
 
 func _init(title: String, text: String, labels: Array, accent := Color("#73efe8")) -> void:
