@@ -9196,6 +9196,29 @@ func _thirtytwo() -> void:
 	ck("0.32 copy: never from an empty slot, nor onto itself", not SaveSlots.copy(1, 2) and not SaveSlots.copy(2, 2))
 	SaveSlots.delete(3)
 	ck("0.32 delete: a slot wiped is empty, its name gone; the others untouched", not SaveSlots.used(3) and SaveSlots.name_of(3) == "Save 3" and SaveSlots.summary(2)["shards"] == 1240)
+	# a card renamed in the Card Forge follows into every run and team
+	var tm := Kit.team("Renamed")
+	tm["heroes"] = ["Dock Hand", "master|Test Warden"]
+	tm["actions"] = {"Dock Hand": ["Test Piercing Rounds"]}
+	tm["deck"] = {"Test Drone": 2, "master|Test Drone": 1}
+	StrikeTeams.save_all([tm])
+	var run := {"kind": "campaign", "dock": {"heroes": {"Quillon Vex": 1}, "stock": {"items": ["Test Drone"], "heroes": ["Quillon Vex"], "sold": {"Test Drone": 1}, "hired": {}}},
+		"inventory": {"cards": {"Test Drone": 3}, "pre": {}}, "deployment": {"team": tm.duplicate(true)}}
+	SafeFile.write(Campaign.path, JSON.stringify(run))
+	SaveSlots.use(3)
+	StrikeTeams.save_all([tm.duplicate(true)])
+	SaveSlots.use(2)
+	Behaviors.remember("Test Drone", [{"k": "Hold"}])
+	CardRename.everywhere("Test Drone", "Drone Mk II")
+	CardRename.everywhere("Dock Hand", "Dock Chief")
+	var t2: Dictionary = StrikeTeams.load_all()[0]
+	var r2: Dictionary = SafeFile.read_json(Campaign.path)
+	var t3: Dictionary = SafeFile.read_json(SaveSlots.teams_file(3))["teams"][0]
+	ck("0.32 rename: a team's Heroes, carried cards and Deck follow (its origin kept; two references that meet add up)", t2["heroes"] == ["Dock Chief", "master|Test Warden"] and t2["actions"].has("Dock Chief") and not t2["deck"].has("Test Drone") and t2["deck"]["Drone Mk II"] == 2 and t2["deck"]["master|Drone Mk II"] == 1, t2)
+	ck("0.32 rename: and the run: the dock's offers, what was sold, what is held, the team that is out", r2["dock"]["stock"]["items"] == ["Drone Mk II"] and r2["dock"]["stock"]["sold"].has("Drone Mk II") and r2["inventory"]["cards"].keys() == ["Drone Mk II"] and int(r2["inventory"]["cards"]["Drone Mk II"]) == 3 and r2["deployment"]["team"]["heroes"][0] == "Dock Chief", r2)
+	ck("0.32 rename: in every save file, not only the one played; and the Behavior keywords chosen for it", t3["heroes"][0] == "Dock Chief" and Behaviors.for_card("Drone Mk II") != null and Behaviors.for_card("Test Drone") == null)
+	ck("0.32 rename: a name that only contains it is left alone", CardRename.ref("Test Drone Swarm", "Test Drone", "X") == "Test Drone Swarm" and CardRename.ref("test|Test Drone", "Test Drone", "X") == "test|X")
+	Behaviors.forget_all()
 	# a game saved before 0.32: its run becomes Save 1
 	_saves_fresh()
 	SaveSlots.old_campaign = "user://test_old_campaign.json"
@@ -9254,6 +9277,26 @@ func _thirtytwo_scene() -> void:
 	sv.back_btn.pressed.emit()
 	await _frames(1)
 	ck("0.32 home: back on Home, playing Save 1 again, as it was", scene.home.visible and "Save 1" in scene.home.save_btn.text and int(scene.campaign.deploy.stock["shards"]) == 500)
+	# renamed in the Card Forge itself
+	StrikeTeams.save_all([Kit.team("Forge rename")])
+	var had: String = StrikeTeams.load_all()[0]["heroes"][0]
+	scene.open_sandbox()
+	await _frames(1)
+	var fs: ForgeScreen = scene.forge_screen
+	fs.edit(scene.roster.card_named(had))
+	fs.card["name"] = had + " Prime"
+	fs.save_card()
+	await _frames(1)
+	ck("0.32 rename: a card renamed in the Card Forge is renamed in the Strike Teams at once", StrikeTeams.load_all()[0]["heroes"][0] == had + " Prime" and scene.roster.card_named(had + " Prime") != null, StrikeTeams.load_all()[0]["heroes"])
+	fs.edit(scene.roster.card_named("Dock Hand"))
+	fs.card["name"] = "Dock Chief"
+	fs.save_card()
+	await _frames(1)
+	ck("0.32 rename: a free Hero renamed is still free", scene.campaign.dock.is_free("Dock Chief") and not scene.campaign.dock.is_free("Hangar Chief"))
+	Sandbox.clear()
+	scene.reload_cards()
+	scene.show_home()
+	await _frames(1)
 	# the phone's Back button
 	scene.open_saves()
 	await _frames(1)

@@ -129,11 +129,7 @@ static func load_all() -> Dictionary:
 static func save_all(d: Dictionary) -> bool:
 	_cache = d
 	_cache_path = path
-	var f := FileAccess.open(path, FileAccess.WRITE)
-	if f == null:
-		return false
-	f.store_string(JSON.stringify({"format": 1, "cards": d}, "  "))
-	return true
+	return SafeFile.write(path, JSON.stringify({"format": 1, "cards": d}, "  "))
 
 
 ## What you chose for a card, or null if you never chose.
@@ -151,8 +147,7 @@ static func remember(name: String, list) -> bool:
 ## Forgets everything (for the tests).
 static func forget_all() -> void:
 	_cache = null
-	if FileAccess.file_exists(path):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	SafeFile.remove(path)
 
 
 ## Gives a Unit of yours what you chose for its card, the first time it is

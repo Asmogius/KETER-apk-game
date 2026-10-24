@@ -21,6 +21,7 @@ signal tool_requested(k: String)   # (0.28) another of the Sandbox's tools
 const TOOLS := [["forge", "Card Forge"], ["chassis", "Chassis"], ["poi", "POI Sandbox"], ["studio", "Pixel Studio"]]
 const SHOWS := [["all", "All"], ["changed", "Changed"], ["mine", "Yours"], ["deleted", "Deleted"]]
 
+var was_name := ""             # (0.32) the card's name when it was opened, to carry a rename
 var roster: Roster = null
 var mode := "list"             # "list": the cards; "edit": one of them
 var type_filter := "all"
@@ -283,6 +284,7 @@ func edit(c: Dictionary, as_new := false) -> void:
 	if not (card.get("entries") is Array):
 		card["entries"] = []
 	key = "" if as_new else Sandbox.key_of(c)
+	was_name = "" if as_new else str(c.get("name", ""))
 	dirty = as_new
 	tool_row.visible = false
 	back_btn.text = "Back"
@@ -692,6 +694,10 @@ func save_card() -> void:
 		return
 	card["lastEditedBy"] = "Sandbox"
 	var was_new := key == ""
+	# (0.32) renamed: every Strike Team and run that has it, in all three save files, follows
+	if not was_new and was_name != "" and str(card["name"]) != was_name:
+		CardRename.everywhere(was_name, str(card["name"]))
+	was_name = str(card["name"])
 	key = Sandbox.put(card, key)
 	dirty = false
 	_commit("%s %s." % [str(card["name"]), "made" if was_new else "saved"])

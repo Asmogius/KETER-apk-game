@@ -78,6 +78,16 @@ static func key_of(c: Dictionary) -> String:
 	return "%s|%s" % [str(c.get("_src", "master")) if Rules.truthy(c.get("_src")) else "master", str(c.get("name", ""))]
 
 
+## (0.32) The name an export's card came with, for one renamed here (else the name itself).
+static func original_name(name: String) -> String:
+	var cs: Dictionary = data.get("cards", {})
+	for k in cs:
+		var o = cs[k]
+		if not is_own(str(k)) and o is Dictionary and o.get("card") is Dictionary and str(o["card"].get("name", "")) == name and str(k).contains("|"):
+			return str(k).substr(str(k).find("|") + 1)
+	return name
+
+
 static func is_own(key: String) -> bool:
 	return key.begins_with("sandbox|")
 

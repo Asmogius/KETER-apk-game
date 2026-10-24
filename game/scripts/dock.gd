@@ -610,7 +610,8 @@ func hero_cards() -> Array:
 
 func is_free(name: String, t = null) -> bool:
 	var tb: Dictionary = t if t is Dictionary else tables
-	return tb["free"].has(name)
+	# (0.32) a free Hero renamed in the Sandbox is still free
+	return tb["free"].has(name) or (not Sandbox.data.get("cards", {}).is_empty() and tb["free"].has(Sandbox.original_name(name)))
 
 
 static func is_test_hero(c: Dictionary) -> bool:
