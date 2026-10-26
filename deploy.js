@@ -164,7 +164,7 @@
     var gone=clone(s.lost||{}), all=cards();
     var deck=s.lo.deck.filter(function(r){
       var c=resolve(r,all); if(c && c._src==="design" && gone[c._design]>0){ gone[c._design]--; return false; }
-      if(freeTroop(c) && gone["card|"+c.name]>0){ gone["card|"+c.name]--; return false; } return true;
+      if(freeTroop(c) && gone[c.name]>0){ gone[c.name]--; return false; } return true;
     });
     /* pre-built copies ride on top of the Deck, less those lost */
     Object.keys(s.pre||{}).forEach(function(id){ var d=WS().get(id); if(!d) return; var n=Math.max(0,s.pre[id]-(gone[id]||0)); for(var i=0;i<n;i++) deck.push("prebuilt|"+d.name); });
@@ -227,9 +227,9 @@
          and say so in the log */
       var c=all.filter(function(x){ return (x._src==="design"||x._src==="prebuilt") && x.name===nm && (((s.copies||{})[x._design])||((s.pre||{})[x._design])); })[0];
       if(c && copiesLeft(c._design, s)>0){ s.lost[c._design]=(s.lost[c._design]||0)+1; note(s, "A copy of "+nm+" is lost."); return; }
-      /* (v14.20) a free Common Troop from the Deck: gone until home, like any copy */
+      /* (v14.20) a free Common Troop from the Deck: gone until home, like any copy (kept by its name, as the game keeps it) */
       var took=s.lo.deck.filter(function(r){ var y=resolve(r,all); return freeTroop(y) && y.name===nm; }).length;
-      if(!c && took-(s.lost["card|"+nm]||0)>0){ s.lost["card|"+nm]=(s.lost["card|"+nm]||0)+1; note(s, "A copy of "+nm+" is lost."); } });
+      if(!c && took-(s.lost[nm]||0)>0){ s.lost[nm]=(s.lost[nm]||0)+1; note(s, "A copy of "+nm+" is lost."); } });
     /* a Consumable used is used, whoever won */
     (res.consUsed||[]).forEach(function(nm){ var pk=s.pack&&s.pack.cons; if(pk && pk[nm]>0){ pk[nm]--; if(!pk[nm]) delete pk[nm]; } });
     var out={next:"map", kind:a.kind, name:a.name};

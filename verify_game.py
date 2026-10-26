@@ -757,7 +757,7 @@ if shutil.which("xvfb-run"):
     if ok32:
         px = Image.open(p32).convert("RGB").load()
         rows = len([1 for y in range(170, 600, 2) if near(px[640, y], (23, 24, 25), 6)])      # (0.11: a row is a panel of its own)
-        ck("0.8: the stockpile lists what it brought, and the deployment is told below", count(p32, (78, 302, 216, 322), LOOT, 12) > 90 and rows > 90 and count(p32, (78, 358, 300, 450), (168, 186, 194), 12) > 150 and count(p32, (20, 566, 150, 588), CYAN, 12) > 120,
+        ck("0.8: the stockpile lists what it brought, and the deployment is told below", count(p32, (78, 302, 216, 322), LOOT, 12) > 90 and rows > 90 and count(p32, (78, 358, 300, 450), (168, 186, 194), 12) > 150 and count(p32, (20, 566, 300, 612), (136, 163, 188), 12) > 600,   # (0.35: a cache gives four parts, so the rows below are the stash and the blueprints)
            (count(p32, (78, 302, 216, 322), LOOT, 12), rows, count(p32, (78, 358, 300, 450), (168, 186, 194), 12), count(p32, (20, 566, 150, 588), CYAN, 12)))
     # 0.9: the Workshop, a design, the keyword builder, research, and a Field copy
     MAKE = "tab:blueprints;testing;tab:designs;new;chassis:Test Frame · Lazarus Siege;build:0;kb:none;kb:target enemy;kb:next;kb:damage;step:1;kb:pv:ok;kb:next;kb:Burst;step:1"

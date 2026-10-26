@@ -2896,7 +2896,9 @@ func _seven() -> void:
 	var le: Dictionary = bl.side_units("enemy")[0]
 	le["hp"] = 0
 	bl.check_downs()
-	var last: Dictionary = bl.log[bl.log.size() - 1]
+	# (0.35) its drop line: a blueprint it leaves (likelier now) may come after
+	var drops := bl.log.filter(func(l): return str(l["text"]).begins_with(str(le["name"]) + " drops: "))
+	var last: Dictionary = drops.back() if not drops.is_empty() else bl.log[bl.log.size() - 1]
 	ck("loot: an Enemy that goes down drops its loot, and the log says what", not Loot.is_empty(bl.loot) and bl.loot["shards"] >= 1 and last["kind"] == "loot" and str(last["text"]).begins_with(str(le["name"]) + " drops: ") and str(last["text"]).ends_with(bl.loot_table.text(bl.loot)), last)
 	ck("loot: a number rises off it", bl.floats.any(func(f): return f["kind"] == "loot" and f["unit"] == le["id"] and str(f["text"]).begins_with("+")), bl.floats)
 	var held := Loot.norm(bl.loot)
@@ -2926,7 +2928,7 @@ func _seven() -> void:
 	ck("loot: a Locked Chest marked LC3 holds three components", Loot.count(bl.loot) - c0 == 3 and bl.looted.has(Vector2i(3, 1)) and _texts(bl, lines0).any(func(l): return l.begins_with("Quillon Vex opens a Locked Chest: ")), [Loot.count(bl.loot) - c0, _texts(bl, lines0)])
 	c0 = Loot.count(bl.loot)
 	bl.move(lw, Vector2i(-3, 5))
-	ck("loot: one marked LC holds the usual two", Loot.count(bl.loot) - c0 == 2 and bl.looted.has(Vector2i(-3, 5)), Loot.count(bl.loot) - c0)
+	ck("loot: one marked LC holds the usual four (0.35; two before)", Loot.count(bl.loot) - c0 == 4 and bl.looted.has(Vector2i(-3, 5)), Loot.count(bl.loot) - c0)
 	var le2: Dictionary = bl.side_units("enemy")[1]
 	le2["pos"] = {"q": 2, "r": -2}
 	var kept := Loot.norm(bl.loot)
@@ -3991,7 +3993,7 @@ func _eight_scene() -> void:
 	# ---- sending a Strike Team out
 	dk.go_btn.pressed.emit()
 	await _frames(2)
-	ck("0.8 deploy: Deploy lists your Strike Teams, and which can go", dk.choosing and dk.title.text == "Deploy" and dk.row_texts() == ["Test Vanguard", "Empty Bench"] and dk.go_btn.text == "Leave the dock" and dk.go_btn.disabled and "Its Troops must be your designs" in dk.hint.text and "first 4 free" in dk.hint.text and
+	ck("0.8 deploy: Deploy lists your Strike Teams, and which can go", dk.choosing and dk.title.text == "Deploy" and dk.row_texts() == ["Test Vanguard", "Empty Bench"] and dk.go_btn.text == "Leave the dock" and dk.go_btn.disabled and "Common Troops are free" in dk.hint.text and "Any other Troop must be your design" in dk.hint.text and "first 4 free" in dk.hint.text and
 		_labels(dk._rows[0]["row"]).has("Ready") and _labels(dk._rows[1]["row"]).has("Can't go"), [dk.row_texts(), dk.hint.text])
 	var row1: Control = dk._rows[1]["row"]
 	dk.list.tap(row1.global_position - dk.list.global_position + row1.size / 2)
@@ -4792,7 +4794,7 @@ func _ten() -> void:
 	# ---- a new campaign
 	ck("0.10 dock: a new campaign's starts with nothing: no reach, no upgrades, nothing kept, no bounties, nothing on the shelves yet", dk.state["reach"] == 0 and Dock.UPGRADES.all(func(u): return dk.level(u["id"]) == 0)
 		and dk.inv == {"cards": {}, "pre": {}} and dk.bounties().is_empty() and dk.state["stock"] == null and dk.reach_rarity() == 0 and dk.starter_free() == 4 and dk.scan_range() == 1, dk.state)
-	ck("0.10 dock: it reads the export's tables", dk.tables["price"] == [6, 15, 40, 100, 250, 600] and dk.tables["preMult"] == 1.5 and dk.tables["effect"]["scanner"] == [2, 3, 4] and dk.tables["cost"]["starter"][0] == [150, "troop", 0, 10], dk.tables)
+	ck("0.10 dock: it reads the export's tables", dk.tables["price"] == [4, 10, 25, 60, 150, 360] and dk.tables["preMult"] == 1.5 and dk.tables["effect"]["scanner"] == [2, 3, 4] and dk.tables["cost"]["starter"][0] == [150, "troop", 0, 10], dk.tables)
 	# ---- the Exchange
 	var all_items: Array = r.from_export.filter(func(k): return ["consumable", "prototype"].has(Roster.type_of(k))).map(func(k): return str(k["name"]))
 	ck("0.10 exchange: with none ticked in the export, it carries every Consumable and Prototype, at 20 shards each (0.24: Quartermaster's Seal withdrawn)", dk.carries_all() and dk.items().map(func(i): return i["name"]) == all_items and dk.items().all(func(i): return i["price"] == 20) and all_items.size() == 26 and all_items.has("Grav-Boot Charge") and all_items.has("Gantry Mapper"), dk.items().size())
@@ -4814,7 +4816,7 @@ func _ten() -> void:
 	o = dk.sell_card(nm, 1)
 	ck("0.10 exchange: sold back at half its price", o["ok"] and o["gain"] == 10 and dk.owned(nm) == 1 and dep.stock["shards"] == 70 and dk.sell_card(nm, 2)["why"] == "You don't have that many", o)
 	o = dk.buy_parts("equipment", 0, 5)
-	ck("0.10 exchange: Commons of any part type, any amount", o["ok"] and o["price"] == 30 and dep.stock["parts"]["equipment"][0] == 5 and dep.stock["shards"] == 40 and dk.buy_parts("equipment", 1, 1)["why"] == "Not in stock", o)
+	ck("0.10 exchange: Commons of any part type, any amount", o["ok"] and o["price"] == 20 and dep.stock["parts"]["equipment"][0] == 5 and dep.stock["shards"] == 50 and dk.buy_parts("equipment", 1, 1)["why"] == "Not in stock", o)
 	dk.sell_parts("equipment", 0, 5)
 	# ---- pre-built Troops
 	var pid: String = st["pre"][0]
@@ -4866,7 +4868,7 @@ func _ten() -> void:
 	var stock_was: Dictionary = dep.stock.duplicate(true)
 	var h := dep.home()
 	var paid: Array = h["dock"].get("bounties", [])
-	ck("0.10 home: the bounty pays 15 shards a Skull Level and a component, into the stockpile", paid.size() == 1 and paid[0]["name"] == foe["name"] and paid[0]["bag"]["shards"] == 30 and Loot.count(paid[0]["bag"]) == 1
+	ck("0.10 home: the bounty pays 30 shards a Skull Level and two components (0.35), into the stockpile", paid.size() == 1 and paid[0]["name"] == foe["name"] and paid[0]["bag"]["shards"] == 60 and Loot.count(paid[0]["bag"]) == 2
 		and dep.stock == Loot.add(Loot.add(stock_was, _stock(0, 10)), paid[0]["bag"]), paid)
 	ck("0.10 home: what was packed and not used is back at the dock; the pre-built copies are gone", dk.inv["cards"] == {"Test Smoke": 2, "Test Stim": 1, "Test Aegis Core": 1} and dk.waiting().is_empty(), dk.inv)
 	ck("0.10 home: the reach is the furthest Skull Level it came home from, and new ground restocks the Exchange", h["dock"].get("reach") == w.skull_of(k1) and dk.state["reach"] == w.skull_of(k1) and h["dock"].get("restocked") == true and dk.stock()["n"] == 3, h["dock"])
@@ -4997,9 +4999,9 @@ func _ten_scene() -> void:
 	if had_chip:
 		dk.list.tap(chip.global_position - dk.list.global_position + chip.size / 2)
 	await _frames(1)
-	ck("0.10 exchange: a tap on a row's Buy 1 buys a Common part", had_chip and cm.deploy.stock["parts"]["troop"][0] == 1 and dock.stockpile()["shards"] == 274 and dk.note.text == "Bought 1 Scrap servos for 6 shards.", [dk.note.text, cm.deploy.stock, dock.stockpile()["shards"]])
+	ck("0.10 exchange: a tap on a row's Buy 1 buys a Common part", had_chip and cm.deploy.stock["parts"]["troop"][0] == 1 and dock.stockpile()["shards"] == 276 and dk.note.text == "Bought 1 Scrap servos for 4 shards.", [dk.note.text, cm.deploy.stock, dock.stockpile()["shards"]])
 	dk.act(["buy_card", "Nothing of the sort", 1])
-	ck("0.10 exchange: what can't be done is said", dk.note.text == "Not in stock." and dock.stockpile()["shards"] == 274, dk.note.text)
+	ck("0.10 exchange: what can't be done is said", dk.note.text == "Not in stock." and dock.stockpile()["shards"] == 276, dk.note.text)
 	var pid: String = dock.stock()["pre"][0]
 	var pdn: String = cm.workshop.get_design(pid)["name"]
 	var pcost: int = dock.pre_cost(cm.workshop.get_design(pid))
@@ -5009,7 +5011,7 @@ func _ten_scene() -> void:
 	dock.add_to_stockpile(gift)
 	dk.act(["buy_pre", pid, 1])
 	dk.act(["buy_pre", pid, 1])
-	ck("0.10 exchange: Buy a copy buys one for the next deployment", dock.waiting() == {pid: 2} and dock.stockpile()["shards"] == 274 and dk.note.text == "Bought a copy for %d shards: it joins the next deployment." % pcost, dk.note.text)
+	ck("0.10 exchange: Buy a copy buys one for the next deployment", dock.waiting() == {pid: 2} and dock.stockpile()["shards"] == 276 and dk.note.text == "Bought a copy for %d shards: it joins the next deployment." % pcost, dk.note.text)
 	dk.show_tab("stockpile")
 	var rows := dk.row_texts()
 	ck("0.10 stockpile: what the dock keeps for you is listed under the stockpile", rows.has("Also kept here") and rows.has("1 × %s" % nm) and rows.has("2 × %s" % pdn) and _labels(dk._rows[rows.find("2 × %s" % pdn)]["row"]).has("Pre-built copies · they join the next deployment"), rows)
@@ -5038,7 +5040,7 @@ func _ten_scene() -> void:
 	dk.act(["upgrade", "starter"])
 	srow = dk._rows[1]["row"]
 	ck("0.10 upgrades: paid for, it is raised, and says what it does now", dock.level("starter") == 1 and dk.note.text == "Upgraded to level 1." and dk.row_texts()[1] == "Starter bay · level 1 of 3" and _labels(srow).has("Level 2 · 400 shards, 6 Uncommon Troop parts")
-		and _labels(srow).any(func(l): return "Now: 6 free starter copies. Next: 8 free starter copies." in l) and dock.stockpile()["shards"] == 124, [dk.note.text, _labels(srow)])
+		and _labels(srow).any(func(l): return "Now: 6 free starter copies. Next: 8 free starter copies." in l) and dock.stockpile()["shards"] == 126, [dk.note.text, _labels(srow)])
 	# ---- testing
 	dk.show_tab("stockpile")
 	var n0: int = dock.state["restocks"]
@@ -5065,7 +5067,7 @@ func _ten_scene() -> void:
 		if dock.bounties()[i]["kind"] == "enemy" and dock.bounties()[i]["district"] != "" and at < 0:
 			at = i
 	ck("0.10 bounties: each says what it is, where, and what it pays", at >= 0 and dk.row_texts() == dock.bounties().map(func(b): return b["name"])
-		and _labels(dk._rows[at]["row"]).has("Enemy · District %s · pays 15 shards per Skull Level, and 1 component" % dock.bounties()[at]["district"]), _labels(dk._rows[maxi(at, 0)]["row"]))
+		and _labels(dk._rows[at]["row"]).has("Enemy · District %s · pays 30 shards per Skull Level, and 2 components" % dock.bounties()[at]["district"]), _labels(dk._rows[maxi(at, 0)]["row"]))
 	# ---- the Pack
 	dock.add_card("Test Stim", 3)
 	dk.go_btn.pressed.emit()
@@ -7896,8 +7898,8 @@ func _twentytwo() -> void:
 	ck("0.22 cards: one found reaches the dock, and reads as itself", p.grant("cd:Grav-Boot Charge") and got == ["Grav-Boot Charge"] and p.item_name("cd:Grav-Boot Charge") == "Grav-Boot Charge", [got, p.item_name("cd:Grav-Boot Charge")])
 	var lt := Loot.new(null, 1)
 	var src: Dictionary = lt.tables["sources"]
-	ck("0.22 cards: the chances: an Elite 25%, a Mini-Boss 50%, a Boss always, a Locked Chest 10%; a plain Enemy and a Loot Tile never",
-		[src["enemy"]["card"], src["elite"]["card"], src["miniboss"]["card"], src["boss"]["card"], src["lootTile"]["card"], src["chest"]["card"]] == [0, 25, 50, 100, 0, 10])
+	ck("0.22 cards: the chances (0.35): an Elite 40%, a Mini-Boss 75%, a Boss always, a Locked Chest 25%; a plain Enemy and a Loot Tile never",
+		[src["enemy"]["card"], src["elite"]["card"], src["miniboss"]["card"], src["boss"]["card"], src["lootTile"]["card"], src["chest"]["card"]] == [0, 40, 75, 100, 0, 25])
 	var d3 := _gap_floor()
 	d3.district = "3"
 	var bb := Battle.from_state(d3, [_mk(r, "Test Grunt", "ally", "a1", Vector2i(-2, 1))], 3, r.cards)
@@ -8172,7 +8174,7 @@ func _twentyfive() -> void:
 	var dep := c.deploy
 	ck("0.25 cards: the three free Heroes are in the export: common, of no District, each with its token", FREE_HEROES.all(func(n): return _free_hero_ok(r, n)))
 	ck("0.25 dock: the free Heroes are always yours, the others not until recruited", dk.tables["free"] == FREE_HEROES and FREE_HEROES.all(func(n): return dk.owns(n)) and not dk.owns("Rictus") and not dk.owns("Test Warden") and dk.owned_heroes().is_empty())
-	ck("0.25 dock: a Hero's price is by its rarity, and 3 are on offer", dk.tables["heroPrice"] == [40, 80, 150, 300, 600, 1200] and int(dk.tables["heroOnOffer"]) == 3 and dk.hero_price("Rictus") == 600 and dk.hero_price("Volt-Warden Ryska") == 150 and dk.hero_price("Nobody") == 0)
+	ck("0.25 dock: a Hero's price is by its rarity, and 3 are on offer", dk.tables["heroPrice"] == [25, 50, 90, 180, 360, 720] and int(dk.tables["heroOnOffer"]) == 3 and dk.hero_price("Rictus") == 360 and dk.hero_price("Volt-Warden Ryska") == 90 and dk.hero_price("Nobody") == 0)
 	var st := dk.stock()
 	ck("0.25 recruit: nobody on offer before a District is fought in (every Hero but the free ones has one)", st["heroes"].is_empty() and st["hired"].is_empty(), st["heroes"])
 	# Deploy: only Heroes who are yours
