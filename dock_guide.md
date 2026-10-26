@@ -43,12 +43,12 @@ The Exchange sells six kinds of things. Everything is paid in Aether shards.
 
 | Rarity | Price each |
 | --- | --- |
-| Common | 6 |
-| Uncommon | 15 |
-| Rare | 40 |
-| Epic | 100 |
-| Legendary | 250 |
-| Mythic | 600 |
+| Common | 4 |
+| Uncommon | 10 |
+| Rare | 25 |
+| Epic | 60 |
+| Legendary | 150 |
+| Mythic | 360 |
 
 ### Blueprints and chassis
 
@@ -62,9 +62,9 @@ even if you don't buy it.
 
 | Item | Price |
 | --- | --- |
-| A blueprint you haven't found (level 1) | 150 |
-| A later level | its research price × 1.25: 75 for level 2, 150 for level 3 |
-| A chassis | 300 |
+| A blueprint you haven't found (level 1) | 90 |
+| A later level | its research price: 60 for level 2, 120 for level 3 |
+| A chassis | 180 |
 
 Buying one grants it at once. It's yours in the Workshop.
 
@@ -127,7 +127,7 @@ or Heroes you have **recruited** here. (Practice fights take any Hero.)
 
 | Common | Uncommon | Rare | Epic | Legendary | Mythic |
 | --- | --- | --- | --- | --- | --- |
-| 40 | 80 | 150 | 300 | 600 | 1,200 |
+| 25 | 50 | 90 | 180 | 360 | 720 |
 
 - **A recruited Hero is yours until a wipe.** One copy of each, which can
   lead any of your Strike Teams. Going down in a fight only sits them out
@@ -158,10 +158,10 @@ Boss**. Each is an Enemy you've met, from a District you've fought in.
 
 | Kind | Shards per Skull Level | Components |
 | --- | --- | --- |
-| Enemy | 15 | 1 |
-| Elite | 30 | 2 |
-| Mini-Boss | 60 | 3 |
-| Boss | 120 | 5 |
+| Enemy | 30 | 2 |
+| Elite | 60 | 4 |
+| Mini-Boss | 120 | 6 |
+| Boss | 240 | 10 |
 
 A bounty pays once. The board changes when the Exchange restocks.
 

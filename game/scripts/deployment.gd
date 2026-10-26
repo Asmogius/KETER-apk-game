@@ -143,6 +143,25 @@ func need_of(team: Dictionary) -> Dictionary:
 	return need
 
 
+## (0.35) Common Troops are free: a Common Troop card off the card list deploys
+## as it is, and a design whose copies cost only Common parts costs nothing to take.
+func free_troop(c) -> bool:
+	return c is Dictionary and Roster.type_of(c) == "troop" and not ["workshop", "design", "prebuilt"].has(str(c.get("_src", ""))) and Dock.hero_rarity(c) == 0
+
+
+## For the tests made before 0.35, whose designs' copies are paid for in Common parts: off, they are again.
+static var common_designs_free := true
+
+
+static func common_cost(each: Array) -> bool:
+	if not common_designs_free:
+		return false
+	for r in range(1, each.size()):
+		if int(each[r]) > 0:
+			return false
+	return true
+
+
 func plan(team: Dictionary, pack = null) -> Dictionary:
 	var reasons := []
 	var heroes := []
@@ -171,6 +190,10 @@ func plan(team: Dictionary, pack = null) -> Dictionary:
 				reasons.append("a card in its Deck is missing (%s)" % str(n))
 				continue
 			if Roster.type_of(c) == "troop":
+				# (0.35) a Common Troop off the card list goes as it is, free
+				if free_troop(c):
+					other += 1
+					continue
 				if c.get("_src") != "workshop":
 					var key := str(c["name"]) + ("|design" if c.get("_src") == "design" else ("|prebuilt" if c.get("_src") == "prebuilt" else ""))
 					if not forge.has(key):
@@ -193,7 +216,7 @@ func plan(team: Dictionary, pack = null) -> Dictionary:
 		elif key.ends_with("|design"):
 			reasons.append("%s is a design from your export%s: copy it into your Workshop to take it out" % [nm, times])
 		else:
-			reasons.append("%s is a Forge Troop%s: Troops come only from the Workshop" % [nm, times])
+			reasons.append("%s is a Forge Troop%s: Troops come only from the Workshop, unless Common" % [nm, times])
 	var parts := [0, 0, 0, 0, 0, 0]
 	var lines := []
 	for id in per_order:
@@ -206,12 +229,13 @@ func plan(team: Dictionary, pack = null) -> Dictionary:
 		if not chk["ok"]:
 			reasons.append("%s does not fit its chassis (%s)" % [ln["name"], "; ".join(chk["reasons"])])
 		var each: Array = workshop.cost(d)["parts"]
-		var free: int = mini(ln["copies"], starter_free()) if Rules.truthy(d.get("starter")) else 0
+		var common := common_cost(each)
+		var free: int = ln["copies"] if common else (mini(ln["copies"], starter_free()) if Rules.truthy(d.get("starter")) else 0)
 		var paid: int = ln["copies"] - free
 		var cost := each.map(func(n): return int(n) * paid)
 		for r in 6:
 			parts[r] += cost[r]
-		lines.append({"id": id, "name": ln["name"], "copies": ln["copies"], "free": free, "each": each, "cost": cost, "starter": Rules.truthy(d.get("starter"))})
+		lines.append({"id": id, "name": ln["name"], "copies": ln["copies"], "free": free, "each": each, "cost": cost, "starter": Rules.truthy(d.get("starter")), "common": common})
 	var have: Array = Loot.norm(stock)["parts"]["troop"]
 	var afford := true
 	for r in 6:
@@ -324,7 +348,7 @@ func field_copy(team: Dictionary, name: String) -> Dictionary:
 	var t := StrikeTeams.copy_of(team, name)
 	for n in team.get("deck", {}).keys():
 		var c = roster.card_named(str(n)) if roster != null else null
-		if c != null and Roster.type_of(c) == "troop" and c.get("_src") != "workshop":
+		if c != null and Roster.type_of(c) == "troop" and c.get("_src") != "workshop" and not free_troop(c):
 			t["deck"].erase(n)
 	if workshop != null:
 		var starter_name := str(Workshop.STARTER["name"])
@@ -337,7 +361,7 @@ func field_copy(team: Dictionary, name: String) -> Dictionary:
 func needs_field_copy(team: Dictionary) -> bool:
 	for n in team.get("deck", {}):
 		var c = roster.card_named(str(n)) if roster != null else null
-		if c != null and Roster.type_of(c) == "troop" and c.get("_src") != "workshop" and StrikeTeams.copies(team, str(n)) > 0:
+		if c != null and Roster.type_of(c) == "troop" and c.get("_src") != "workshop" and not free_troop(c) and StrikeTeams.copies(team, str(n)) > 0:
 			return true
 	return false
 

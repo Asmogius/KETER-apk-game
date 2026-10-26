@@ -2,6 +2,9 @@
 ## whether the rules have anything to say about it. Tap one to build on it;
 ## New team starts another; a team can be copied or deleted. Teams are kept on
 ## the phone, and outlive a new export.
+## (0.35) With no Strike Team yet, opening it walks a first team through being
+## built, one step at a time (team_guide.gd); Walk me through starts that
+## again while no team is ready.
 class_name TeamsScreen
 extends Control
 
@@ -22,6 +25,9 @@ var hint: Label
 var note: Label
 var back_btn: Button
 var new_btn: Button
+var guide_btn: Button
+## (0.35) Whether opening with no team starts the walk-through (the tests turn it off).
+static var auto_guide := true
 var dialog: Dialog = null
 var namer: NameDialog = null
 var _rows: Array = []
@@ -49,6 +55,8 @@ func _init() -> void:
 	note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	foot.add_child(note)
+	guide_btn = UI.button("Walk me through", func(): start_guide(), 230)
+	foot.add_child(guide_btn)
 	new_btn = UI.button("New team", ask_new, 200)
 	new_btn.theme_type_variation = "MainButton"     # (0.15) the one thing to do next
 	foot.add_child(new_btn)
@@ -56,6 +64,7 @@ func _init() -> void:
 	editor.visible = false
 	editor.changed.connect(save)
 	editor.closed.connect(close_editor)
+	editor.guide_done.connect(_guide_done)
 	add_child(editor)
 
 
@@ -67,6 +76,8 @@ func open(r: Roster) -> void:
 	editor.visible = false
 	show_list()
 	note.text = StrikeTeams.error
+	if teams.is_empty() and auto_guide:
+		start_guide()
 
 
 func save() -> void:
@@ -79,7 +90,8 @@ func show_list() -> void:
 	var keep := list.scroll
 	list.clear()
 	_rows = []
-	hint.text = "A Strike Team is up to 3 Heroes, one Deck they share, the Action cards each carries, an Aether Pouch, any Prototypes and its Consumables. Tap a team to build on it." if not teams.is_empty() else "No Strike Teams yet. Tap New team to build your first."
+	hint.text = "A Strike Team is up to 3 Heroes, one Deck they share, the Action cards each carries, an Aether Pouch, any Prototypes and its Consumables. Tap a team to build on it." if not teams.is_empty() else "No Strike Teams yet. Tap Walk me through to build your first one step at a time, or New team to build it your own way."
+	guide_btn.visible = not any_ready()
 	for i in teams.size():
 		var t: Dictionary = teams[i]
 		var tally := StrikeTeams.tally(StrikeTeams.pings(t, roster))
@@ -88,6 +100,9 @@ func show_list() -> void:
 		var state := ("%d to fix" % tally["bad"]) if tally["bad"] > 0 else (("%d note%s" % [tally["warn"], "" if tally["warn"] == 1 else "s"]) if tally["warn"] > 0 else "Ready")
 		if is_locked(i):
 			_add_row(i, str(t["name"]), sub, "Out on a deployment", UI.CYAN, hs)
+			continue
+		if t.has("guide"):
+			_add_row(i, str(t["name"]), sub, "Being built · step %d of %d" % [clampi(int(Rules.num(t["guide"], 0)), 0, TeamGuide.count() - 1) + 1, TeamGuide.count()], UI.GOLD, hs)
 			continue
 		var unrecruited := unowned(t)
 		if tally["bad"] == 0 and not unrecruited.is_empty():
@@ -224,13 +239,32 @@ func delete_team(i: int) -> void:
 	note.text = "%s deleted." % name
 
 
-func edit(i: int) -> void:
+func edit(i: int, guided := false) -> void:
 	if is_locked(i):
 		return
 	editing = i
 	editor.owns = owns
-	editor.open(roster, teams[i])
+	editor.open(roster, teams[i], guided)
 	editor.visible = true
+
+
+## (0.35) Whether some team is built: a Hero, a Deck of 10 or more, and not still in the walk-through.
+func any_ready() -> bool:
+	return teams.any(func(t): return not t.has("guide") and not t.get("heroes", []).is_empty() and StrikeTeams.deck_count(t) >= 10)
+
+
+## (0.35) A new team, built in the walk-through.
+func start_guide() -> void:
+	if dialog != null or namer != null:
+		return
+	edit(new_team("Strike Team"), true)
+	save()           # the step is kept on the team: it picks up there if it's left
+
+
+func _guide_done() -> void:
+	var nm := str(teams[editing]["name"]) if editing >= 0 and editing < teams.size() else "The team"
+	close_editor()
+	note.text = "%s is built. Tap it to change it, or take it out from the dock's Deploy." % nm
 
 
 func close_editor() -> void:

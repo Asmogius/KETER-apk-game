@@ -50,6 +50,7 @@ static func tidy(t: Dictionary) -> Dictionary:
 static func copy_of(t: Dictionary, name: String) -> Dictionary:
 	var c: Dictionary = t.duplicate(true)
 	c["name"] = name
+	c.erase("guide")          # (0.35) a copy isn't mid-walk-through
 	return c
 
 

@@ -38,8 +38,8 @@
   var DEFAULTS={v:1, radius:18, ringsPerSkull:3, blocked:15,
     density:{poi:5, ambush:4, cache:5, event:4},
     ambushStep:5, floorsBySkull:[1,1,2,2,3,3], respawn:3, starterFree:4,
-    cache:{shards:3, n:2, bonus:0, bp:15, card:20},
-    poi:{shards:10, n:3, bonus:1, bp:35, card:30}};
+    cache:{shards:6, n:4, bonus:0, bp:30, card:35},
+    poi:{shards:20, n:6, bonus:1, bp:60, card:50}};
 
   function clone(o){ return JSON.parse(JSON.stringify(o)); }
   /* The map is drawn a thousand tiles at a time, each asking for the tables,

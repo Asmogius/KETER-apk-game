@@ -36,20 +36,20 @@ const DEFAULTS := {
 		"aether": ["Inert Aetherite", "Charged filaments", "Resonant crystals", "Aetherite prisms", "Void glass", "Rift seed"]},
 	"weights": [
 		[100, 0, 0, 0, 0, 0],
-		[70, 30, 0, 0, 0, 0],
-		[50, 33, 17, 0, 0, 0],
-		[38, 31, 21, 10, 0, 0],
-		[30, 28, 22, 14, 6, 0],
-		[25, 25, 22, 16, 9, 3]],
+		[60, 40, 0, 0, 0, 0],
+		[40, 35, 25, 0, 0, 0],
+		[28, 30, 26, 16, 0, 0],
+		[20, 25, 25, 19, 11, 0],
+		[15, 20, 23, 20, 15, 7]],
 	"sources": {
-		"enemy": {"label": "Enemy", "shards": 2, "min": 1, "max": 1, "bonus": 0, "top": 0, "bp": 2, "card": 0, "skull": "own"},
-		"elite": {"label": "Elite", "shards": 4, "min": 2, "max": 2, "bonus": 1, "top": 0, "bp": 6, "card": 25, "skull": "own"},
-		"miniboss": {"label": "Mini-Boss", "shards": 8, "min": 3, "max": 3, "bonus": 1, "top": 0, "bp": 15, "card": 50, "skull": "own"},
-		"boss": {"label": "Boss", "shards": 16, "min": 5, "max": 5, "bonus": 0, "top": 1, "bp": 35, "card": 100, "skull": "poi"},
-		"lootTile": {"label": "Loot Tile", "shards": 3, "min": 1, "max": 2, "bonus": 0, "top": 0, "bp": 8, "card": 0, "skull": "poi"},
-		"chest": {"label": "Locked Chest", "shards": 3, "min": 0, "max": 0, "bonus": 0, "top": 0, "bp": 15, "card": 10, "skull": "poi", "fromTile": true}},
+		"enemy": {"label": "Enemy", "shards": 4, "min": 2, "max": 2, "bonus": 0, "top": 0, "bp": 4, "card": 0, "skull": "own"},
+		"elite": {"label": "Elite", "shards": 8, "min": 4, "max": 4, "bonus": 1, "top": 0, "bp": 12, "card": 40, "skull": "own"},
+		"miniboss": {"label": "Mini-Boss", "shards": 16, "min": 6, "max": 6, "bonus": 1, "top": 0, "bp": 30, "card": 75, "skull": "own"},
+		"boss": {"label": "Boss", "shards": 32, "min": 10, "max": 10, "bonus": 0, "top": 2, "bp": 70, "card": 100, "skull": "poi"},
+		"lootTile": {"label": "Loot Tile", "shards": 6, "min": 2, "max": 4, "bonus": 0, "top": 0, "bp": 16, "card": 0, "skull": "poi"},
+		"chest": {"label": "Locked Chest", "shards": 6, "min": 0, "max": 0, "bonus": 0, "top": 0, "bp": 30, "card": 25, "skull": "poi", "fromTile": true}},
 	"spread": 50,
-	"chestDefault": 2}
+	"chestDefault": 4}
 
 var tables: Dictionary
 var _a := 0                   # the seeded stream, as loot.js keeps it

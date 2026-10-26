@@ -10682,8 +10682,85 @@ function pingHTML(list){
 }
 
 /* ---- rendering ---- */
+/* (v14.20) A first Strike Team, one step at a time: with no Loadout yet, the
+   Deck Builder opens a new one in this walk-through. Each step says what it
+   needs before Next goes on; the Deck and the Pouch can be suggested, from
+   Common cards (free to take on a deployment) and Basic Chips. The step is
+   kept on the Loadout (guide), so it picks up again where it was left. */
+function curGuide(){ var lo=loadouts[dkLo]; return dkMode!=="list" && lo && typeof lo.guide==="number" && lo.guide>=0 && lo.guide<GUIDE.length ? lo.guide : -1; }
+var GUIDE=[
+  {id:"name", mode:"loadout", title:"Name it", text:"A Strike Team is up to 3 Heroes, one Deck they share, the Action Cards each Hero carries, and an Aether Pouch. First, give it a name in the box below. You can rename it at any time."},
+  {id:"heroes", mode:"loadout", title:"Choose its Heroes", text:"Tap Add Hero. One is enough to begin; up to 3 share the Deck. The free Heroes can lead a deployment from the start; others are recruited at the dock."},
+  {id:"deck", mode:"deck", title:"Fill its Deck", text:"The Deck is 10 to 60 Troop, Equipment, Command and Aether Cards. Tap Add cards. Common cards are free to take on a deployment. Suggest a Deck fills it with Common cards to start."},
+  {id:"actions", mode:"loadout", title:"Give out Action Cards", text:"Tap a Hero to give it Action Cards, up to its Action Slots: they are its own Actions in a fight, never in the Deck. This step can be skipped."},
+  {id:"pouch", mode:"pouch", title:"Fill its Pouch", text:"The Pouch holds the Chips that make Aether to play cards. It needs at least as many as the Deck's most expensive card costs. Suggest a Pouch fills it with Basic Chips of the Deck's Districts."},
+  {id:"review", mode:"loadout", title:"Look it over", text:"What the rules say about the team, and its Player Level. Tap Finish: the team is ready for practice fights and, with recruited or free Heroes, for a deployment."}];
+function guideNeeds(step, lo){
+  var id=GUIDE[step].id;
+  if(id==="name" && !String(lo.name||"").trim()) return "Give it a name first.";
+  if(id==="heroes" && !loHeroes(lo).length) return "Add at least one Hero.";
+  if(id==="deck"){ var n=(lo.deck||[]).length; if(n<10) return "The Deck needs at least 10 cards (it has "+n+")."; if(n>60) return "The Deck holds at most 60 cards (it has "+n+")."; }
+  if(id==="pouch"){ var have=pouchCount(lo), need=Math.max(1,pouchMinimum(lo)); if(have<need) return "The Pouch needs at least "+need+" Chip"+(need===1?"":"s")+" (it has "+have+")."; }
+  return "";
+}
+function guideCommon(c){ return c && c._src!=="design" && c._src!=="prebuilt" && !isToken(c) && (!window.KETER_DOCK || KETER_DOCK.heroRarity(c)===0); }
+/* Fills the Deck to 20 with Common cards: Troops first, two copies each, those of the Heroes' Districts before the rest */
+function guideSuggestDeck(lo){
+  var homes={}; loHeroes(lo).forEach(function(h){ homes[districtOf(h)]=1; });
+  function pick(types){
+    var cs=allCards().filter(function(c){ return types.indexOf(c.cardType)>=0 && guideCommon(c); });
+    var real=cs.filter(function(c){ return !/^Test /.test(String(c.name||"")); }); if(real.length) cs=real;
+    return cs.sort(function(a,b){ var ha=!!homes[districtOf(a)], hb=!!homes[districtOf(b)]; return ha!==hb?(ha?-1:1):(a.name<b.name?-1:a.name>b.name?1:0); });
+  }
+  var added=0, list=pick(["troop"]).slice(0,4).concat(pick(["equipment","command","aether"]));
+  list.forEach(function(c){ var room=20-lo.deck.length, k=refKey(c); if(room<=0 || lo.deck.indexOf(k)>=0) return;
+    for(var i=0;i<Math.min(2,room);i++){ lo.deck.push(k); added++; } });
+  return added;
+}
+/* Fills the Pouch with Basic Chips, split by the Districts of the Deck's cards, to what it needs and at least 10 */
+function guideSuggestPouch(lo){
+  var want=Math.max(10,pouchMinimum(lo))-pouchCount(lo); if(want<=0) return 0;
+  var by={}; loDeckCards(lo).forEach(function(c){ var d=districtOf(c); if(/^[1-6]$/.test(d)) by[d]=(by[d]||0)+1; });
+  loHeroes(lo).forEach(function(h){ var d=districtOf(h); if(/^[1-6]$/.test(d) && !by[d]) by[d]=1; });
+  if(!Object.keys(by).length) by["1"]=1;
+  var ds=Object.keys(by).sort(function(a,b){ return by[a]!==by[b]?by[b]-by[a]:(a<b?-1:1); }), total=ds.reduce(function(t,d){ return t+by[d]; },0), given=0;
+  ds.forEach(function(d,i){ var n=i===ds.length-1?want-given:Math.round(want*by[d]/total); n=Math.max(0,Math.min(n,want-given));
+    if(n>0){ var key="basic|"+d; lo.pouch[key]=(parseInt(lo.pouch[key],10)||0)+n; given+=n; } });
+  return given;
+}
+function guideHTML(lo){
+  var dkGuide=curGuide(), st=GUIDE[dkGuide], need=guideNeeds(dkGuide, lo), last=dkGuide===GUIDE.length-1;
+  var extra={deck:"Suggest a Deck", pouch:"Suggest a Pouch"}[st.id];
+  return '<div class="dkguide" style="margin:10px 12px;padding:11px 12px;border:2px solid var(--gold,#f0bd57);border-radius:6px;font-size:12.5px;line-height:1.6;">'+
+    '<b style="color:var(--gold,#f0bd57);font-size:14px;">Step '+(dkGuide+1)+' of '+GUIDE.length+' · '+esc(st.title)+'</b><div>'+esc(st.text)+'</div>'+
+    (need?'<div class="dkguideneed" style="color:var(--danger);margin-top:4px;">'+esc(need)+'</div>':'')+
+    '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">'+
+    '<button class="ghost" data-guide="back"'+(dkGuide===0?' disabled':'')+'>‹ Back</button>'+
+    (extra?'<button class="ghost" data-guide="suggest">'+extra+'</button>':'')+
+    '<button data-guide="next" style="margin-left:auto;"'+(need?' disabled':'')+'>'+(last?'Finish':'Next ›')+'</button></div></div>';
+}
+function startGuide(){
+  loadouts.push(normaliseLoadout({name:"Strike Team",level:1,created:Date.now(),
+    createdBy:userName()||null,lastEditedBy:userName()||null, guide:0}));
+  saveLoadouts(); dkLo=loadouts.length-1; dkMode=GUIDE[0].mode;
+}
+function guideAct(a){
+  var lo=loadouts[dkLo], at=curGuide(); if(at<0 || !lo) return;
+  normaliseLoadout(lo);
+  if(a==="suggest"){ var id=GUIDE[at].id; if(id==="deck") guideSuggestDeck(lo); if(id==="pouch") guideSuggestPouch(lo); saveLoadouts(); renderDeck(); return; }
+  if(a==="next" && guideNeeds(at, lo)) return;
+  var to=at+(a==="next"?1:-1);
+  if(to>=GUIDE.length){ delete lo.guide; saveLoadouts(); dkMode="loadout"; renderDeck(); return; }
+  lo.guide=Math.max(0,to); saveLoadouts(); dkMode=GUIDE[lo.guide].mode; renderDeck();
+}
 function renderDeck(){
   ensureMigrated();
+  if(dkMode==="list" && !loadouts.length) startGuide();
+  var r=renderDeckPage();
+  if(curGuide()>=0) $("dkbody").insertAdjacentHTML("afterbegin", guideHTML(loadouts[dkLo]));
+  return r;
+}
+function renderDeckPage(){
   var body=$("dkbody");
   $("dkBack").style.display = dkMode==="list" ? "none" : "";
   $("dkAdd").style.display = (dkMode==="list"||dkMode==="loadout") ? "" : "none";
@@ -10727,7 +10804,7 @@ function renderLoadoutList(body){
     var hs=loHeroes(lo), bad=pingsForLoadout(lo).filter(function(x){ return x[0]==="bad"; }).length;
     var out=window.KETER_DEPLOY && KETER_DEPLOY.lockedLoadout(lo);
     return '<div class="dkrow" data-lo="'+i+'"><div class="m"><b>'+esc(lo.name||"Untitled")+
-      "</b><i>"+(out?"Out on a deployment \u00b7 ":"")+(hs.length?esc(hs.map(function(h){ return h.name; }).join(", ")):"No Heroes")+
+      "</b><i>"+(out?"Out on a deployment \u00b7 ":"")+(typeof lo.guide==="number"?"Being built, step "+(lo.guide+1)+" of "+GUIDE.length+" \u00b7 ":"")+(hs.length?esc(hs.map(function(h){ return h.name; }).join(", ")):"No Heroes")+
       " \u00b7 "+(lo.deck||[]).length+" cards"+
       (bad?" \u00b7 "+bad+" problem"+(bad===1?"":"s"):"")+"</i></div></div>";
   }).join("")+
@@ -11740,6 +11817,8 @@ $("dkAdd").addEventListener("click",function(){
   }
 });
 $("dkbody").addEventListener("click",function(e){
+  var gd=e.target.closest?e.target.closest("[data-guide]"):null;
+  if(gd){ guideAct(gd.getAttribute("data-guide")); return; }
   var lo=e.target.closest?e.target.closest("[data-lo]"):null;
   if(lo){ dkLo=+lo.getAttribute("data-lo"); goDeck("loadout"); return; }
   var hr=e.target.closest?e.target.closest("[data-hero]"):null;

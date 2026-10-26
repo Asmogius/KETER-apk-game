@@ -110,7 +110,7 @@ func _run() -> void:
 			kt["actions"] = {"Quillon Vex": [o["carry"]]}
 		if o["screen"] in ["dock", "deploy", "map", "workshop"] and o["empty"] == "":
 			# 0.9: a team leaves with your designs only; the old one needs a Field copy
-			Kit.keep([Kit.field_team(), Kit.team("Old Vanguard")])
+			Kit.keep([Kit.field_team(), Kit.old_team("Old Vanguard")])
 		else:
 			Kit.keep([kt])
 	scene.load_export("res://tests/fixtures/export.zip")

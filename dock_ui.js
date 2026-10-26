@@ -41,11 +41,11 @@
   function craftHTML(){
     var X=K(), t=X.tables(), st=L().stock(), closed=X.closed(), v=X.inv().cards, all=window.KETER_ALLCARDS?window.KETER_ALLCARDS():[];
     var held=Object.keys(v).filter(function(n){ return v[n]>0 && X.isLimited(X.cardOf(n)); }).sort();
-    var h='<p class="pxsub">The stash</p><p class="pxnote">The Equipment, Command and Aether cards, Action cards and Chips a deployment takes come from here, or are crafted as it leaves. They go out with the team and come home with it; a wipe loses them.</p>'+
+    var h='<p class="pxsub">The stash</p><p class="pxnote">The Uncommon and rarer Equipment, Command and Aether cards, Action cards and Chips a deployment takes come from here, or are crafted as it leaves; Common cards are free. They go out with the team and come home with it; a wipe loses them.</p>'+
       (held.length?'<p>'+held.map(function(n){ return esc(n)+' ×'+v[n]; }).join(" · ")+'</p>':'<p class="pxnote">The stash is empty.</p>')+
       '<p class="pxsub">Craft</p><p class="pxnote">From shards and parts of the card’s rarity: Equipment from Equipment parts, Aether cards and Chips from Aether parts; Command and Action cards, which have no part type, cost '+t.craft.noParts+'× the shards.</p>';
     CRAFT_KINDS.forEach(function(k){
-      var seen={}, cs=all.filter(function(c){ if(c.cardType!==k[0] || c._src==="design" || c._src==="prebuilt" || seen[c.name] || (/^Test /.test(c.name) && !(v[c.name]>0))) return false; seen[c.name]=1; return true; })
+      var seen={}, cs=all.filter(function(c){ if(c.cardType!==k[0] || !X.isLimited(c) || c._src==="design" || c._src==="prebuilt" || seen[c.name] || (/^Test /.test(c.name) && !(v[c.name]>0))) return false; seen[c.name]=1; return true; })
         .sort(function(a,b){ return X.heroRarity(a)-X.heroRarity(b) || (a.name<b.name?-1:a.name>b.name?1:0); });
       if(!cs.length) return;
       h+='<p class="pxsub">'+k[1]+'</p><div class="dklist">'+cs.map(function(c){

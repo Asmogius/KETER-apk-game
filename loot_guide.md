@@ -43,11 +43,11 @@ weighted toward the low end.
 | Skull | Common | Uncommon | Rare | Epic | Legendary | Mythic |
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 100 | — | — | — | — | — |
-| 2 | 70 | 30 | — | — | — | — |
-| 3 | 50 | 33 | 17 | — | — | — |
-| 4 | 38 | 31 | 21 | 10 | — | — |
-| 5 | 30 | 28 | 22 | 14 | 6 | — |
-| 6 | 25 | 25 | 22 | 16 | 9 | 3 |
+| 2 | 60 | 40 | — | — | — | — |
+| 3 | 40 | 35 | 25 | — | — | — |
+| 4 | 28 | 30 | 26 | 16 | — | — |
+| 5 | 20 | 25 | 25 | 19 | 11 | — |
+| 6 | 15 | 20 | 23 | 20 | 15 | 7 |
 
 The figures are the percentage of components at each rarity. They're starting
 weights, and you can change them on the Tables tab.
@@ -61,20 +61,20 @@ Every drop includes shards. The numbers here are the starting values.
 
 | Source | Shards | Components | Rarity |
 | --- | --- | --- | --- |
-| Enemy | 2 per Skull Level | 1 | its own Skull Level |
-| Elite | 4 per Skull Level | 2 | one Skull Level higher |
-| Mini-Boss | 8 per Skull Level | 3 | one Skull Level higher |
-| Boss | 16 per Skull Level | 5 | the POI's Skull Level, one always at the rarest it can reach |
-| Loot Tile | 3 per Skull Level | 1 or 2 | the POI's Skull Level |
-| Locked Chest | 3 per Skull Level | the number on its tile | the POI's Skull Level |
+| Enemy | 4 per Skull Level | 2 | its own Skull Level |
+| Elite | 8 per Skull Level | 4 | one Skull Level higher |
+| Mini-Boss | 16 per Skull Level | 6 | one Skull Level higher |
+| Boss | 32 per Skull Level | 10 | the POI's Skull Level, two always at the rarest it can reach |
+| Loot Tile | 6 per Skull Level | 2 to 4 | the POI's Skull Level |
+| Locked Chest | 6 per Skull Level | the number on its tile | the POI's Skull Level |
 
-- **Shards** vary by up to half either way, so an Enemy at Skull 3 drops 3 to 9.
+- **Shards** vary by up to half either way, so an Enemy at Skull 3 drops 6 to 18.
 - **A blueprint or chassis** can drop too, by a small chance for each source:
-  2% from an Enemy, up to 35% from a Boss.
+  4% from an Enemy, up to 70% from a Boss.
 - **Rolling one Skull Level higher** means an Elite at Skull 1 can drop an
   Uncommon, but never a Rare.
 - **A Locked Chest** in the Sandbox is a symbol whose text is **LC**, with its
-  count after it: **LC3** holds three components. With no number it holds two.
+  count after it: **LC3** holds three components. With no number it holds four.
 
 ### Salvage
 

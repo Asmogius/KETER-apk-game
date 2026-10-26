@@ -19,7 +19,8 @@
 ## Exchange each thing for sale is a tile with its picture and a price tag;
 ## a section with nothing in it is one quiet line; Deploy is the gold button.
 ##
-## Deploy chooses a Strike Team: its Troops must be your Workshop's designs,
+## Deploy chooses a Strike Team: its Troops must be your Workshop's designs
+## (0.35: or Common Troops, which are free),
 ## and every copy in its Deck is paid for in Troop parts as it leaves (the
 ## starter's first few free); pre-built copies bought at the Exchange join it;
 ## and the Pack picks which of the Consumables and Prototypes you own go with
@@ -32,6 +33,7 @@ signal closed                          # Home
 signal map_requested                   # look at the map, or go back to the team that is out
 signal deployed                        # a Strike Team has just left
 signal workshop_requested
+signal teams_requested                  # (0.35) build a first Strike Team
 
 const TABS := [["stockpile", "Stockpile"], ["exchange", "Exchange"], ["recruit", "Recruit"], ["craft", "Craft"], ["reclaim", "Reclaim"], ["bounties", "Bounties"], ["upgrades", "Upgrades"]]
 ## (0.34) The kinds of card the stash holds, in the order the Craft tab shows them.
@@ -405,12 +407,12 @@ func stash_lines() -> Array:
 func _craft_rows() -> void:
 	var dk := dock()
 	var out := campaign.deploy.active()
-	hint.text = "Crafting makes a card for the stash, from shards and parts of its own rarity (Command and Action cards, which have no part type, cost twice the shards). A deployment crafts what its team lacks as it leaves, too." + _closed_note()
+	hint.text = "Crafting makes an Uncommon or rarer card for the stash, from shards and parts of its own rarity (Command and Action cards, which have no part type, cost twice the shards); Common cards are free. A deployment crafts what its team lacks as it leaves, too." + _closed_note()
 	help_text = "Equipment is crafted from Equipment parts; Aether cards and Chips from Aether parts. The stash's cards go out with a Strike Team and come home with it; a wipe loses them."
 	var st := dk.stockpile()
 	_head("Craft", "%s shards to spend." % Scoring.text(st["shards"]))
 	for kind in STASH_KINDS:
-		var cs: Array = (roster.from_export if roster != null else []).filter(func(c): return str(c.get("cardType", "")) == kind[0] and c.get("_src") != "design" and c.get("_src") != "prebuilt" and (not str(c.get("name", "")).begins_with("Test ") or dk.owned(str(c["name"])) > 0))
+		var cs: Array = (roster.from_export if roster != null else []).filter(func(c): return str(c.get("cardType", "")) == kind[0] and Dock.is_limited(c) and c.get("_src") != "design" and c.get("_src") != "prebuilt" and (not str(c.get("name", "")).begins_with("Test ") or dk.owned(str(c["name"])) > 0))
 		var seen := {}
 		cs = cs.filter(func(c):
 			if seen.has(c["name"]):
@@ -909,6 +911,9 @@ func act(what: Array) -> void:
 		"ld", "lp", "la", "lsave", "lreset":
 			loadout_act(what)
 			return
+		"teams":
+			teams_requested.emit()
+			return
 	if r.get("ok"):
 		campaign.save()
 		_say(_done_text(what, r))
@@ -983,9 +988,10 @@ func show_teams() -> void:
 	help_text = ""
 	_keeper_says("deploy")
 	_list_of = []
-	hint.text = "Choose the Strike Team that goes out. Its Troops must be your designs, and each copy in its Deck is paid for in Troop parts as it leaves (the Frame Trooper's first %d free). A Hero who goes down sits out the rest of the deployment; a Troop that falls, and a Consumable that is used, are gone until the team is home. It can't be changed while it is out." % campaign.deploy.starter_free()
+	hint.text = "Choose the Strike Team that goes out. Common Troops are free: a Common Troop card goes as it is, and so does a design whose copies cost only Common parts. Any other Troop must be your design, each copy paid for in Troop parts as it leaves (the Frame Trooper's first %d free). A Hero who goes down sits out the rest of the deployment; a Troop that falls, and a Consumable that is used, are gone until the team is home. It can't be changed while it is out." % campaign.deploy.starter_free()
 	if teams.is_empty():
-		hint.text = "You have no Strike Teams yet. Go Home and build one under Strike Teams."
+		hint.text = "You have no Strike Teams yet. Build one, one step at a time, then come back to Deploy."
+		_chips_row("No Strike Teams yet", "Strike Teams walks you through your first: its Heroes, its Deck, their Action cards, its Pouch.", [["Build one now", ["teams"], UI.GOLD]])
 	for i in teams.size():
 		var t: Dictionary = teams[i]
 		var hs: Array = t["heroes"]
@@ -1021,7 +1027,7 @@ func _loadout_rows() -> void:
 	var names: Array = need.keys()
 	names.sort()
 	if names.is_empty():
-		_quiet("It takes no Equipment, Command or Aether cards, Action cards or Chips.")
+		_quiet("It takes no Uncommon or rarer Equipment, Command or Aether cards, Action cards or Chips. Common cards are free: they go without the stash.")
 	for nm in names:
 		var c = dk.card_of(nm)
 		var where := _loadout_where(nm)
@@ -1180,7 +1186,7 @@ func _not_designs(t: Dictionary) -> Array:
 	for n in t.get("deck", {}):
 		var c = campaign.roster.card_named(str(n)) if campaign.roster != null else null
 		var k := StrikeTeams.copies(t, str(n))
-		if c != null and Roster.type_of(c) == "troop" and c.get("_src") != "workshop" and k > 0:
+		if c != null and Roster.type_of(c) == "troop" and c.get("_src") != "workshop" and not campaign.deploy.free_troop(c) and k > 0:
 			out.append(str(n) + ((" ×%d" % k) if k > 1 else ""))
 	return out
 

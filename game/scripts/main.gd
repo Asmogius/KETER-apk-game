@@ -3253,6 +3253,7 @@ func _build_ui() -> void:
 	dock_screen.map_requested.connect(show_map)
 	dock_screen.deployed.connect(show_map)
 	dock_screen.workshop_requested.connect(open_workshop)
+	dock_screen.teams_requested.connect(open_teams)
 	ui.add_child(dock_screen)
 
 	workshop_screen = WorkshopScreen.new()

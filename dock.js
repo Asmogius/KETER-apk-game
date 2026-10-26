@@ -54,17 +54,17 @@
   var LIMITED=["equipment","command","aether","action","sphere"];
   var CRAFT_PART={equipment:"equipment", aether:"aether", sphere:"aether", command:"", action:""};
   var DEFAULTS={v:1,
-    price:[6,15,40,100,250,600], sell:0.5,
-    bpFirst:150, bpLater:1.25, chassis:300, preMult:1.5,
+    price:[4,10,25,60,150,360], sell:0.5,
+    bpFirst:90, bpLater:1, chassis:180, preMult:1.5,
     lots:3, lotMax:3, bpOffers:2, chOffers:1, itemsOnOffer:3, preOnOffer:3,
     reclaimUp:3, reclaimSwap:2,
-    bounty:{shards:{enemy:15, elite:30, miniboss:60, boss:120}, n:{enemy:1, elite:2, miniboss:3, boss:5}},
+    bounty:{shards:{enemy:30, elite:60, miniboss:120, boss:240}, n:{enemy:2, elite:4, miniboss:6, boss:10}},
     items:[],   /* Consumables and Prototypes the Exchange carries: {name, price} */
-    heroPrice:[40,80,150,300,600,1200], heroOnOffer:3,
+    heroPrice:[25,50,90,180,360,720], heroOnOffer:3,
     free:["Dock Hand","Hangar Rifleman","Field Medic"],   /* (v14.14) Heroes always yours */
     /* (v14.19) crafting, by rarity: shards and parts; noParts multiplies the shards of a card with no part type */
-    craft:{shards:[20,50,120,280,600,1300], parts:[2,2,3,3,4,5], noParts:2},
-    starterStash:{"Datamine":2, "Static Veil":2, "Recall":2, "Tighten Ranks":2, "Flank Them":2, "Ballast Plate":2, "Field Weld":2, "Subdermal Armor Plating 2":2, "Ballast Chip":4},
+    craft:{shards:[12,30,70,170,360,780], parts:[1,1,2,2,3,4], noParts:2},
+    starterStash:{"Hold the Line":2, "Reroute Power":2, "Aether Bolt":2, "Scavenge Parts":2, "Counterweight Fist":1, "Overpressure":1, "Surge Chip":2},
     rareOffer:3,
     effect:{exchange:[1,2,3], starter:[6,8,10], insurance:[10,20,30], scanner:[2,3,4]},
     cost:{exchange:[[150,"equipment",0,10],[400,"equipment",1,6],[900,"equipment",2,3]],
@@ -269,7 +269,8 @@
   function heroRarity(c){ var r=String(c&&c.rarity||"").toLowerCase(), i=L().RARITIES.map(function(x){ return x.id; }).indexOf(r); return i<0?0:i; }
 
   /* ---- (v14.19) the stash: crafting, and how a run begins ---- */
-  function isLimited(c){ return !!c && LIMITED.indexOf(String(c.cardType||""))>=0; }
+  /* (v14.20) a Common card is free: the stash limits only Uncommon and rarer */
+  function isLimited(c){ return !!c && LIMITED.indexOf(String(c.cardType||""))>=0 && heroRarity(c)>0; }
   /* what one copy of a card costs to craft: {name, rarity, type, n (parts), shards}; null for a card that isn't crafted */
   function craftCost(name, t){
     t=t||tables(); var c=cardOf(name); if(!isLimited(c)) return null;

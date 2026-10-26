@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.34 adds the stash:
-a deployment's cards are held or crafted; v0.33 brought a match summary.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.35 rebalances the campaign:
+more loot, cheaper prices, free Common cards, and a first team built step by step; v0.34 brought the stash.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,30 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.35 (Companion 14.20): **balance, and a first team step by step**.
+
+- **More loot.** Every Enemy, Elite, Mini-Boss, Boss, Loot Tile and Locked
+  Chest drops about twice the shards and parts; a Boss's first two parts come
+  at the highest rarity it can reach. Caches and POIs on the World Map give
+  twice as much, and Elites, Mini-Bosses, Chests, Caches and POIs drop a
+  Consumable or Prototype more often. The Bounty Board pays twice as much.
+- **Rarer parts sooner.** From Skull 2 up, more of what drops is Uncommon or
+  rarer (Skull 6: 7% Mythic, from 3%).
+- **Cheaper at the dock.** Parts at the Exchange, blueprints, chassis and
+  recruiting Heroes cost about 40% less; crafting costs about 40% fewer
+  shards and fewer parts.
+- **Common cards are free.** A deployment takes its Common Equipment,
+  Command and Aether cards, Action cards and Chips without the stash, and a
+  Common Troop card goes as it is, without the Workshop. A design whose
+  copies cost only Common parts costs nothing to take out. The starter stash
+  is Uncommon cards now.
+- **A first Strike Team, one step at a time.** With no Strike Team yet,
+  Strike Teams opens a new one in a walk-through: name it, choose its
+  Heroes, fill its Deck (or have one suggested from Common cards), give out
+  Action cards, fill its Pouch (or have it suggested from Basic Chips), and
+  look it over. Walk me through starts it again while no team is ready, and
+  the dock's Deploy offers it when there are no teams.
 
 New in 0.34 (Companion 14.19): **the stash**. In the campaign, a
 deployment's cards come from what the run holds, or can craft:
@@ -655,7 +679,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-34_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-35_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -666,7 +690,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-34_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-35_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the

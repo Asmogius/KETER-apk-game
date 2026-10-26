@@ -32,6 +32,10 @@ static func fresh() -> void:
 	Sandbox.clear()
 	# (0.32) and the save files: the game doesn't pick one when it starts
 	SaveSlots.auto = false
+	# (0.35) and opening Strike Teams with none doesn't start the walk-through, unless a test says so
+	TeamsScreen.auto_guide = false
+	# (0.35) and a design's copies are paid for, Common parts or not, unless a test says not
+	Deployment.common_designs_free = false
 
 
 ## Three Heroes (the third has the Action Slots, and carries an Action card),
@@ -58,6 +62,14 @@ static func field_team(name := "Test Vanguard") -> Dictionary:
 	for n in ["Test Drone", "Test Sapper", "Test Battery", "Test Scout"]:
 		t["deck"].erase(n)
 	t["deck"]["Frame Trooper"] = 3
+	return t
+
+
+## (0.35) A team made before 0.9, which a Field copy is for: Kit.team's own
+## Troops are Common (free since 0.35), so an Uncommon one off the card list too.
+static func old_team(name := "Test Vanguard") -> Dictionary:
+	var t := team(name)
+	t["deck"]["Foundry Sentinel"] = 2
 	return t
 
 

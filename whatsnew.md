@@ -6,6 +6,16 @@ the Change Log.
 
 <!-- NEWEST ENTRY GOES BELOW THIS LINE -->
 
+## v14.20 — More loot, free Common cards, a first team step by step
+
+Alongside game 0.35.
+
+- **More loot.** Every Enemy, Elite, Mini-Boss, Boss, Loot Tile and Locked Chest drops about twice the shards and parts; a Boss's first two parts come at the highest rarity it can reach. Caches and POIs give twice as much, and drop a Consumable or Prototype more often, as do Elites, Mini-Bosses and Chests. The Bounty Board pays twice as much.
+- **Rarer parts sooner**: from Skull 2 up, more of each drop is Uncommon or rarer.
+- **Cheaper at the dock**: parts, blueprints, chassis and recruiting cost about 40% less; crafting costs fewer shards and parts.
+- **Common cards are free.** A deployment takes Common Equipment, Command, Aether and Action cards and Chips without the stash; a Common Troop card goes without the Workshop; and a design whose copies cost only Common parts costs nothing to take. The starter stash is Uncommon cards now.
+- **A first Strike Team, one step at a time.** With no Loadout yet, the Deck Builder walks a new one through: name, Heroes, Deck (Suggest a Deck fills it with Common cards), Action Cards, Pouch (Suggest a Pouch), and a last look.
+
 ## v14.19 — The stash
 
 Alongside game 0.34.

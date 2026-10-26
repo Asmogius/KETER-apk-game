@@ -6,11 +6,16 @@
 ## The Checks tab lists what the Handbook has to say about the team as it
 ## stands. Nothing there blocks: only a team with no Hero can't fight.
 ## Every change is kept as it's made (the changed signal).
+## (0.35) Opened guided, it walks a first team through its steps one at a time
+## (team_guide.gd): the tabs give way to a bar that says what the step is for
+## and what it still needs, with Back and Next. The step is kept on the team
+## (guide), so opening it again picks up where it was left.
 class_name TeamEditor
 extends Control
 
 signal changed
 signal closed
+signal guide_done
 
 const TABS := ["heroes", "deck", "carried", "pouch", "protos", "consumables", "checks"]
 const FILTERS := ["all", "troop", "equipment", "command", "aether"]
@@ -40,6 +45,15 @@ var hint: Label
 var grid: CardGrid
 var checks: TouchList
 var _shown: Array = []          # what each tile stands for: a card, or a chip's key
+var guide := -1                 # (0.35) the walk-through's step, or -1 when it isn't guided
+var tabs_row: HBoxContainer
+var guide_bar: PanelContainer
+var guide_title: Label
+var guide_text: Label
+var guide_need: Label
+var guide_back: Button
+var guide_extra: Button
+var guide_next: Button
 
 
 func _init() -> void:
@@ -64,8 +78,10 @@ func _init() -> void:
 	head.add_child(level_label)
 	head.add_child(UI.button("+", func(): set_level(int(team["level"]) + 1), 64))
 
+	_build_guide_bar(col)
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 8)
+	tabs_row = tabs
 	col.add_child(tabs)
 	for t in TABS:
 		var k: String = t
@@ -91,10 +107,14 @@ func _init() -> void:
 	col.add_child(checks)
 
 
-func open(r: Roster, t: Dictionary) -> void:
+func open(r: Roster, t: Dictionary, guided := false) -> void:
 	roster = r
 	team = t
-	tab = "heroes"
+	if guided:
+		t["guide"] = 0
+	var gv = Rules.num(t.get("guide"), -1) if t.has("guide") else -1
+	guide = clampi(int(gv), 0, TeamGuide.count() - 1) if gv >= 0 else -1
+	tab = "heroes" if guide < 0 else str(TeamGuide.STEPS[guide]["tab"])
 	deck_filter = "all"
 	deck_only = false
 	carrier = ""
@@ -119,9 +139,12 @@ func refresh(keep_place := true) -> void:
 	for c in sub.get_children():
 		sub.remove_child(c)
 		c.queue_free()
-	grid.visible = tab != "checks"
+	_show_guide()
+	grid.visible = tab != "checks" and tab != ""
 	checks.visible = tab == "checks"
 	_shown = []
+	if tab == "":
+		hint.text = ""
 	match tab:
 		"heroes": _show_heroes(keep_place)
 		"deck": _show_deck(keep_place)
@@ -135,6 +158,91 @@ func refresh(keep_place := true) -> void:
 func open_tab(t: String) -> void:
 	tab = t
 	refresh(false)
+
+
+# ---------------------------------------------------------------- (0.35) the walk-through
+func _build_guide_bar(col: Control) -> void:
+	guide_bar = PanelContainer.new()
+	guide_bar.add_theme_stylebox_override("panel", UI.box(UI.PANEL_LIT, UI.GOLD, 2, 6, 12))
+	guide_bar.visible = false
+	col.add_child(guide_bar)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 6)
+	guide_bar.add_child(v)
+	guide_title = UI.label("", 22, UI.GOLD)
+	v.add_child(guide_title)
+	guide_text = UI.label("", 17, UI.TEXT, true)
+	v.add_child(guide_text)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	v.add_child(row)
+	guide_back = UI.button("‹ Back", func(): guide_step(-1), 140)
+	row.add_child(guide_back)
+	guide_extra = UI.button("", guide_suggest, 230)
+	row.add_child(guide_extra)
+	guide_need = UI.label("", 17, UI.SOFT_RED, true)
+	guide_need.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	guide_need.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(guide_need)
+	guide_next = UI.button("Next ›", func(): guide_step(1), 170)
+	guide_next.theme_type_variation = "MainButton"
+	row.add_child(guide_next)
+
+
+func _show_guide() -> void:
+	var on := guide >= 0
+	guide_bar.visible = on
+	tabs_row.visible = not on
+	if not on:
+		return
+	var st: Dictionary = TeamGuide.STEPS[guide]
+	guide_title.text = "Step %d of %d · %s" % [guide + 1, TeamGuide.count(), st["title"]]
+	guide_text.text = str(st["text"])
+	var need := TeamGuide.needs(guide, team, roster)
+	guide_need.text = need
+	guide_next.text = "Finish" if guide == TeamGuide.count() - 1 else "Next ›"
+	guide_next.disabled = need != ""
+	guide_back.disabled = guide == 0
+	var extra: String = {"name": "Name it", "deck": "Suggest a Deck", "pouch": "Suggest a Pouch"}.get(str(st["id"]), "")
+	guide_extra.text = extra
+	guide_extra.visible = extra != ""
+
+
+## Back (-1) or Next (+1). Next goes on only once the step has what it needs; past the last step the walk-through is done.
+func guide_step(by: int) -> void:
+	if guide < 0:
+		return
+	if by > 0 and TeamGuide.needs(guide, team, roster) != "":
+		return
+	var to := guide + by
+	if to >= TeamGuide.count():
+		guide = -1
+		team.erase("guide")
+		tab = "heroes"
+		changed.emit()
+		refresh(false)
+		guide_done.emit()
+		return
+	guide = clampi(to, 0, TeamGuide.count() - 1)
+	team["guide"] = guide
+	changed.emit()
+	tab = str(TeamGuide.STEPS[guide]["tab"])
+	refresh(false)
+
+
+## The step's own button: name it, or suggest a Deck or a Pouch.
+func guide_suggest() -> void:
+	if guide < 0:
+		return
+	match str(TeamGuide.STEPS[guide]["id"]):
+		"name":
+			ask_name()
+		"deck":
+			if TeamGuide.suggest_deck(team, roster) > 0:
+				_touch()
+		"pouch":
+			if TeamGuide.suggest_pouch(team, roster) > 0:
+				_touch()
 
 
 func _carried_count() -> int:

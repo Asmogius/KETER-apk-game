@@ -58,6 +58,12 @@
   }
 
   /* ---- what leaving costs ---- */
+  /* (v14.20) Common Troops are free: a Common Troop card off the card list deploys as it is,
+     and a design whose copies cost only Common parts costs nothing to take */
+  function freeTroop(c){ return !!c && c.cardType==="troop" && c._src!=="design" && c._src!=="prebuilt" && !!K() && K().heroRarity(c)===0; }
+  function commonCost(each){
+    try{ if(localStorage.getItem("keter-test-paid-commons")==="1") return false; }catch(e){}   /* the checks made before v14.20 */
+    return each.every(function(n,r){ return r===0 || !n; }); }
   function plan(index, pack){
     var lo=loadouts().filter(function(l){ return l.index===+index; })[0];
     if(!lo) return {ok:false, fits:false, afford:false, reasons:["That Strike Team is gone"], lines:[], parts:[0,0,0,0,0,0]};
@@ -70,20 +76,21 @@
       var c=resolve(r,all);
       if(!c){ reasons.push("a card in its Deck is missing ("+String(r).split("|").slice(1).join("|")+")"); return; }
       if(c.cardType==="troop"){
-        if(c._src!=="design"){ forge[c.name]=(forge[c.name]||0)+1; return; }
+        /* (v14.20) a Common Troop off the card list goes as it is, free */
+        if(c._src!=="design"){ if(freeTroop(c)) other++; else forge[c.name]=(forge[c.name]||0)+1; return; }
         per[c._design]=per[c._design]||{id:c._design, name:c.name, copies:0}; per[c._design].copies++;
       } else other++;
     });
-    Object.keys(forge).forEach(function(n){ reasons.push(n+" is a Forge Troop"+(forge[n]>1?" (×"+forge[n]+")":"")+": Troops come only from the Workshop"); });
+    Object.keys(forge).forEach(function(n){ reasons.push(n+" is a Forge Troop"+(forge[n]>1?" (×"+forge[n]+")":"")+": Troops come only from the Workshop, unless Common"); });
     var parts=[0,0,0,0,0,0], lines=[];
     Object.keys(per).forEach(function(id){
       var ln=per[id], d=WS().get(id);
       if(!d){ reasons.push(ln.name+" is no longer in the Workshop"); return; }
       var chk=WS().check(d); if(!chk.ok) reasons.push(ln.name+" does not fit its chassis ("+chk.reasons.join("; ")+")");
-      var each=WS().cost(d).parts, free=d.starter?Math.min(ln.copies, K()?K().starterFree():T.starterFree):0, paid=ln.copies-free;
+      var each=WS().cost(d).parts, common=commonCost(each), free=common?ln.copies:d.starter?Math.min(ln.copies, K()?K().starterFree():T.starterFree):0, paid=ln.copies-free;
       var cost=each.map(function(n){ return n*paid; });
       cost.forEach(function(n,r){ parts[r]+=n; });
-      lines.push({id:id, name:ln.name, copies:ln.copies, free:free, each:each, cost:cost, starter:!!d.starter});
+      lines.push({id:id, name:ln.name, copies:ln.copies, free:free, each:each, cost:cost, starter:!!d.starter, common:common});
     });
     var st=L().stock(), afford=parts.every(function(n,r){ return st.parts.troop[r]>=n; });
     /* (v14.19) the cards it takes must be held, or are crafted as it leaves */
@@ -156,7 +163,8 @@
     s=s||cur(); if(!s) return [];
     var gone=clone(s.lost||{}), all=cards();
     var deck=s.lo.deck.filter(function(r){
-      var c=resolve(r,all); if(c && c._src==="design" && gone[c._design]>0){ gone[c._design]--; return false; } return true;
+      var c=resolve(r,all); if(c && c._src==="design" && gone[c._design]>0){ gone[c._design]--; return false; }
+      if(freeTroop(c) && gone["card|"+c.name]>0){ gone["card|"+c.name]--; return false; } return true;
     });
     /* pre-built copies ride on top of the Deck, less those lost */
     Object.keys(s.pre||{}).forEach(function(id){ var d=WS().get(id); if(!d) return; var n=Math.max(0,s.pre[id]-(gone[id]||0)); for(var i=0;i<n;i++) deck.push("prebuilt|"+d.name); });
@@ -218,7 +226,10 @@
          copy, and the last copy can be lost but no more than that; this used to count both,
          and say so in the log */
       var c=all.filter(function(x){ return (x._src==="design"||x._src==="prebuilt") && x.name===nm && (((s.copies||{})[x._design])||((s.pre||{})[x._design])); })[0];
-      if(c && copiesLeft(c._design, s)>0){ s.lost[c._design]=(s.lost[c._design]||0)+1; note(s, "A copy of "+nm+" is lost."); } });
+      if(c && copiesLeft(c._design, s)>0){ s.lost[c._design]=(s.lost[c._design]||0)+1; note(s, "A copy of "+nm+" is lost."); return; }
+      /* (v14.20) a free Common Troop from the Deck: gone until home, like any copy */
+      var took=s.lo.deck.filter(function(r){ var y=resolve(r,all); return freeTroop(y) && y.name===nm; }).length;
+      if(!c && took-(s.lost["card|"+nm]||0)>0){ s.lost["card|"+nm]=(s.lost["card|"+nm]||0)+1; note(s, "A copy of "+nm+" is lost."); } });
     /* a Consumable used is used, whoever won */
     (res.consUsed||[]).forEach(function(nm){ var pk=s.pack&&s.pack.cons; if(pk && pk[nm]>0){ pk[nm]--; if(!pk[nm]) delete pk[nm]; } });
     var out={next:"map", kind:a.kind, name:a.name};

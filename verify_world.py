@@ -144,9 +144,9 @@ with sync_playwright() as p:
     ck("the world's tables keep only what differs", r["saved"]=={"ambushStep":7,"floorsBySkull":[2,1,2,2,3,3]} and r["a"]==[7,2] and r["b"]==5, r)
 
     # ================= deploying =================
-    r=E("""()=>{ var l=JSON.parse(localStorage.getItem('keter-app-loadouts')); l[0].deck.push('test|Test Drone'); localStorage.setItem('keter-app-loadouts',JSON.stringify(l));
+    r=E("""()=>{ var l=JSON.parse(localStorage.getItem('keter-app-loadouts')); l[0].deck.push('master|Foundry Sentinel'); localStorage.setItem('keter-app-loadouts',JSON.stringify(l));
       var p=KETER_DEPLOY.plan(0); l[0].deck.pop(); localStorage.setItem('keter-app-loadouts',JSON.stringify(l)); return {ok:p.ok, why:p.reasons}; }""")
-    ck("Troops must be designs: a Forge Troop stops it", r["ok"] is False and r["why"]==["Test Drone is a Forge Troop: Troops come only from the Workshop"], r)
+    ck("Troops must be designs: a Forge Troop stops it", r["ok"] is False and r["why"]==["Foundry Sentinel is a Forge Troop: Troops come only from the Workshop, unless Common"], r)
     r=E("""()=>{ var p=KETER_DEPLOY.plan(0); return {ok:p.ok, lines:p.lines, parts:p.parts, other:p.other, heroes:p.heroes}; }""")
     ck("the starter design: four copies free", r["ok"] and r["lines"][0]["free"]==4 and r["parts"]==[0]*6 and r["other"]==6, r)
     r=E("""()=>{ var l=JSON.parse(localStorage.getItem('keter-app-loadouts')); l[0].deck.push('design|Frame Trooper','design|Frame Trooper'); localStorage.setItem('keter-app-loadouts',JSON.stringify(l));
