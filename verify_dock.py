@@ -28,7 +28,7 @@ def ck(n,c,d=""):
 TEAM="""()=>{ var deck=['design|Frame Trooper','design|Frame Trooper','design|Frame Trooper','design|Frame Trooper','test|Test Mortar Strike','test|Test Snare','test|Test Rally','test|Test Plating','test|Test Surge','test|Test Strip'];
   localStorage.setItem('keter-app-loadouts',JSON.stringify([{v:2,name:'Deploy Team',level:1,created:111,heroes:['test|Test Warden','test|Test Striker'],deck:deck,actions:{},pouch:{'basic|3':6}}]));
   /* (v14.19) every card it takes counts as held: the stash has checks of its own (verify_stash.py) */
-  localStorage.setItem('keter-test-every-card','1'); return true; }"""
+  localStorage.setItem('keter-test-every-card','1'); localStorage.setItem('keter-test-paid-commons','1'); return true; }"""
 LIB=r"""()=>{
 window.T={
   K:KETER_DOCK, D:KETER_DEPLOY, W:KETER_WORLD, L:KETER_LOOT, P:KETER_PROG, WS:KETER_WORKSHOP,
@@ -61,7 +61,7 @@ with sync_playwright() as p:
       return {free:t.free, price:t.heroPrice, n:t.heroOnOffer, owns:['Dock Hand','Hangar Rifleman','Field Medic','Test Warden','Rictus'].map(K.owns),
         reasons:pl.reasons, offer:K.stock().heroes, cards:K.heroCards().map(function(c){ return c.name; })}; }""")
     ck("three free Heroes, always yours; the rest not until recruited", r["free"]==["Dock Hand","Hangar Rifleman","Field Medic"] and r["owns"]==[True,True,True,False,False], r)
-    ck("Heroes priced by rarity: 40 to 1,200 shards, 3 on offer", r["price"]==[40,80,150,300,600,1200] and r["n"]==3, r)
+    ck("Heroes priced by rarity: 25 to 720 shards (v14.20), 3 on offer", r["price"]==[25,50,90,180,360,720] and r["n"]==3, r)
     ck("the free Heroes are cards in the compendium", all(n in r["cards"] for n in ["Dock Hand","Hangar Rifleman","Field Medic"]), r["cards"])
     ck("a team led by Heroes not recruited can't leave", "Test Warden isn't recruited: recruit them at the dock, or swap in a free Hero" in r["reasons"] and "Test Striker isn't recruited: recruit them at the dock, or swap in a free Hero" in r["reasons"], r["reasons"])
     ck("nobody on offer before any District is fought in (every Hero has one)", r["offer"]==[], r["offer"])
@@ -70,7 +70,7 @@ with sync_playwright() as p:
       T.cash(5000); var nm=offer[0], price=K.heroPrice(nm), r1=K.recruit(nm), r2=K.recruit(nm), no=K.recruit('Dock Hand');
       return {offer:offer, rec:rec, nm:nm, price:price, rar:K.heroRarity(K.cardOf(nm)), r1:r1, r2:r2, no:no, sh:T.L.stock().shards, mine:K.ownedHeroes(), hired:K.stock().hired}; }""")
     ck("District 3 fought in: 3 of its Heroes on offer, never a free one nor a Test one", len(r["offer"])==3 and all(n in r["rec"] for n in r["offer"]) and not any(n.startswith("Test ") or n in ("Dock Hand","Hangar Rifleman","Field Medic") for n in r["rec"]), r)
-    ck("recruiting one pays its rarity's price, and it's yours", r["r1"]=={"ok":True,"price":r["price"]} and r["price"]==[40,80,150,300,600,1200][r["rar"]] and r["sh"]==5000-r["price"] and r["mine"]==[r["nm"]] and r["hired"]=={r["nm"]:1}, r)
+    ck("recruiting one pays its rarity's price, and it's yours", r["r1"]=={"ok":True,"price":r["price"]} and r["price"]==[25,50,90,180,360,720][r["rar"]] and r["sh"]==5000-r["price"] and r["mine"]==[r["nm"]] and r["hired"]=={r["nm"]:1}, r)
     ck("once only; and a free Hero isn't for hire", r["r2"]["why"]=="Already yours" and r["no"]["why"]=="Not on offer", r)
     r=E("""()=>{ var K=T.K, nm=K.ownedHeroes()[0], o=K.deploymentEnded({result:'wipe', heroes:[nm,'Dock Hand']}); var h=K.deploymentEnded({result:'home', heroes:['Dock Hand']});
       var s=K.state(); s.upgrades.exchange=1; K._save(s); var n=K.restock().heroes.length; s=K.state(); s.upgrades.exchange=0; K._save(s);
@@ -84,7 +84,7 @@ with sync_playwright() as p:
       price:t.price, up:T.K.UPGRADES.map(function(u){ return u.id; }), lv:T.K.level('starter'), free:T.K.starterFree(), scan:T.K.scanRange(), ins:T.K.insurance(), closed:T.K.closed()}; }""")
     ck("a new dock: no reach, Commons only", r["reach"]==0 and r["rr"]==0 and r["lots"]==0, r)
     ck("nothing else on offer until you've fought somewhere but the shipped pre-built Troops (v14.9: the Skitter Runner and Harrier), and no bounties", r["bps"]==0 and r["items"]==0 and r["pre"]==2 and r["b"]==0, r)
-    ck("drafted prices: 6, 15, 40, 100, 250, 600 shards", r["price"]==[6,15,40,100,250,600], r["price"])
+    ck("drafted prices: 4, 10, 25, 60, 150, 360 shards (v14.20)", r["price"]==[4,10,25,60,150,360], r["price"])
     ck("four upgrades, none bought: 4 free starters, sight 1, no insurance", r["up"]==["exchange","starter","insurance","scanner"] and r["lv"]==0 and r["free"]==4 and r["scan"]==1 and r["ins"]==0, r)
     ck("open while nobody is out", r["closed"] is False)
 
@@ -92,9 +92,9 @@ with sync_playwright() as p:
     r=E("""()=>{ T.cash(100); var a=T.K.buyParts('troop',0,5), st=T.L.stock(); var no=T.K.buyParts('troop',0,50);
       var sold=T.K.sellParts('troop',0,4), st2=T.L.stock(); var none=T.K.sellParts('aether',0,1); var noLot=T.K.buyParts('troop',1,1,0);
       return {a:a, sh:st.shards, n:st.parts.troop[0], no:no, sold:sold, sh2:st2.shards, n2:st2.parts.troop[0], none:none.ok, noLot:noLot.ok, log:T.L.history()[0].why}; }""")
-    ck("Commons in any amount: 5 for 30 shards", r["a"]["ok"] and r["a"]["price"]==30 and r["sh"]==70 and r["n"]==5, r)
-    ck("not without the shards", r["no"]["ok"] is False and "Needs 300 shards" in r["no"]["why"], r["no"])
-    ck("sold at half price, rounded down: 4 Commons for 12", r["sold"]["gain"]==12 and r["sh2"]==82 and r["n2"]==1 and r["log"]=="Sold at the Exchange", r)
+    ck("Commons in any amount: 5 for 20 shards", r["a"]["ok"] and r["a"]["price"]==20 and r["sh"]==80 and r["n"]==5, r)
+    ck("not without the shards", r["no"]["ok"] is False and "Needs 200 shards" in r["no"]["why"], r["no"])
+    ck("sold at half price, rounded down: 4 Commons for 8", r["sold"]["gain"]==8 and r["sh2"]==88 and r["n2"]==1 and r["log"]=="Sold at the Exchange", r)
     ck("nothing sold that you don't have, and no rarer parts without a lot", r["none"] is False and r["noLot"] is False, r)
 
     # ================= reach and rarer lots =================
@@ -111,7 +111,7 @@ with sync_playwright() as p:
       var a=T.K.buyParts(lot.type,lot.rarity,1,0), b=T.K.buyParts(lot.type,lot.rarity,2,0), c=T.K.buyParts(lot.type,lot.rarity,1,0), d=T.K.buyParts(lot.type,lot.rarity,1,0);
       var wrong=T.K.buyParts(lot.type==='troop'?'aether':'troop',lot.rarity,1,0);
       return {a:a.ok, pa:a.price, b:b.why, c:c.ok, d:d.why, bought:T.K.stock().lots[0].bought, have:T.L.stock().parts[lot.type][lot.rarity], wrong:wrong.why, r:lot.rarity}; }""")
-    ck("a lot sells what it holds, at its rarity's price", r["a"] and r["pa"]==[6,15,40][r["r"]] and r["c"] and r["bought"]==2 and r["have"]>=2, r)
+    ck("a lot sells what it holds, at its rarity's price", r["a"] and r["pa"]==[4,10,25][r["r"]] and r["c"] and r["bought"]==2 and r["have"]>=2, r)
     ck("and no more", r["b"]=="Only 1 left in that lot" and r["d"]=="Only 0 left in that lot", r)
     ck("only what the lot is", r["wrong"]=="Not in stock", r)
 
@@ -138,18 +138,18 @@ with sync_playwright() as p:
     ck("blueprints and a chassis from the pools of Districts fought in", len(r["bps"])==2 and len(r["chs"])<=1 and r["inPool"], r)
     ck("only what could come next", r["elig"] and all(x.endswith(":1") for x in r["bps"]), r["bps"])
     ck("seeing one on the shelf names it", r["nb"]==0 and len(r["named"])==len(r["bps"])+len(r["chs"]), r)
-    r=E("""()=>{ var st=T.K.stock(), it=st.bps[0], nm=T.P.parseItem(it).name; T.cash(100); var no=T.K.buyItem(it); T.cash(500);
+    r=E("""()=>{ var st=T.K.stock(), it=st.bps[0], nm=T.P.parseItem(it).name; T.cash(50); var no=T.K.buyItem(it); T.cash(500);
       var a=T.K.buyItem(it), again=T.K.buyItem(it), sh=T.L.stock().shards;
       var p2=T.K.bpPrice('bp:'+nm+':2'), p3=T.K.bpPrice('bp:'+nm+':3'), rp=T.P.researchPrice(nm,2), ch=T.K.bpPrice('ch:x'), not=T.K.buyItem('bp:Nothing:1');
       return {no:no.why, a:a, own:T.P.owned(nm), sold:T.K.stock().sold[it], again:again.why, sh:sh, p2:p2, p3:p3, rp:rp, ch:ch, not:not.why, log:T.L.history()[0].why}; }""")
-    ck("an unfound blueprint costs 150 shards", "Needs 150 shards" in r["no"] and r["a"]=={"ok":True,"price":150} and r["sh"]==350, r)
+    ck("an unfound blueprint costs 90 shards (v14.20)", "Needs 90 shards" in r["no"] and r["a"]=={"ok":True,"price":90} and r["sh"]==410, r)
     ck("bought, it's yours at once, and sold from the shelf", r["own"]==1 and r["sold"]==1 and "Bought" in r["log"], r)
     ck("a shelf item sells once", r["again"]=="You can't use that one yet", r)
-    ck("later levels: research × 1.25 (75 and 150); a chassis 300", r["rp"]==60 and r["p2"]==75 and r["p3"]==150 and r["ch"]==300, r)
+    ck("later levels: their research price (60 and 120); a chassis 180 (v14.20)", r["rp"]==60 and r["p2"]==60 and r["p3"]==120 and r["ch"]==180, r)
     ck("only what's on the shelf", r["not"]=="Not in stock", r)
     r=E("""()=>{ var s=T.K.state(); var ch=T.P.chassisList().filter(function(c){ return c.id!=='ch_test_general'; })[0]; if(!ch) return {none:true};
       s.stock.chs=['ch:'+ch.id]; T.K._save(s); T.cash(400); var a=T.K.buyItem('ch:'+ch.id); return {a:a, has:T.P.hasChassis(ch.id), sh:T.L.stock().shards}; }""")
-    ck("a chassis bought is yours", r.get("none") or (r["a"]["ok"] and r["has"] and r["sh"]==100), r)
+    ck("a chassis bought is yours", r.get("none") or (r["a"]["ok"] and r["has"] and r["sh"]==220), r)
 
     # ================= Consumables and Prototypes =================
     r=E("""()=>{ var t=T.K.tables(); t.items=[{name:'Test Stim',price:20},{name:'Test Aegis Core',price:80},{name:'Field Dressing',price:12},{name:'Ledger Core',price:90}]; T.K.saveTables(t);
@@ -170,7 +170,7 @@ with sync_playwright() as p:
       var list=T.WS.list().map(function(d){ return d.name; }), pb=T.WS.prebuilts().map(function(d){ return d.name; }), cards=T.WS.prebuiltCards().map(function(c){ return c._src; });
       var comp=T.WS.cards().filter(function(c){ return /^Pre /.test(c.name); }).length;
       var st=T.K.restock(), a=st.pre.map(function(id){ return T.WS.get(id).name; }); var b=T.K.restock().pre.map(function(id){ return T.WS.get(id).name; });
-      var d=T.WS.get(ids[0]), parts=T.WS.cost(d).parts, sum=0; parts.forEach(function(n,r){ sum+=n*[6,15,40,100,250,600][r]; });
+      var d=T.WS.get(ids[0]), parts=T.WS.cost(d).parts, sum=0; parts.forEach(function(n,r){ sum+=n*[4,10,25,60,150,360][r]; });
       return {ids:ids, list:list.filter(function(n){ return /^Pre /.test(n); }), pb:pb, cards:cards, comp:comp, a:a, b:b, cost:T.K.preCost(d), want:Math.round(sum*1.5), chk:T.WS.check(d).ok}; }""")
     ck("pre-builts aren't your designs, and aren't in the Compendium's", r["list"]==[] and r["comp"]==0 and r["pb"]==["Pre Alpha","Pre Beta","Pre Gamma","Pre Delta","Skitter Runner Mk I","Skitter Harrier Mk I"] and set(r["cards"])=={"prebuilt"}, r)
     # (v14.9: the two shipped ones were on offer first, so the turn has moved on two)
@@ -235,7 +235,7 @@ with sync_playwright() as p:
       return {ok:h.ok, dock:h.dock, bs:bs, sh:st.shards, k0:k[0].name, k0s:k[0].skull, parts:T.L.count(st), inv:T.K.inv(), haul:h.haul.shards, pre:T.D.last().pre}; }""")
     pd=r["dock"]["bounties"]
     ck("coming home pays the bounties matched", r["ok"] and [x["name"] for x in pd]==[r["k0"],"Boss X"], r["dock"])
-    ck("by kind and Skull Level: an Enemy at its Skull Level, a Boss at 2 pays 240, each with components", pd[0]["bag"]["shards"]==15*r["k0s"] and pd[1]["bag"]["shards"]==240 and r["sh"]==15*r["k0s"]+240+r["haul"] and r["parts"]>=6, r)
+    ck("by kind and Skull Level: an Enemy at its Skull Level, a Boss at 2 pays 480 (v14.20), each with components", pd[0]["bag"]["shards"]==30*r["k0s"] and pd[1]["bag"]["shards"]==480 and r["sh"]==30*r["k0s"]+480+r["haul"] and r["parts"]>=12, r)
     ck("the unused pack goes back to the dock: the Prototype and the other Stim", r["inv"]["cards"]=={"Test Stim":1,"Test Aegis Core":1}, r["inv"])
     ck("pre-built copies don't come back", r["inv"]["pre"]=={}, r["inv"])
     ck("new ground revealed: the Exchange restocks", r["dock"].get("restocked") is True, r["dock"])
@@ -304,7 +304,7 @@ with sync_playwright() as p:
     pg.locator('[data-dkq="c:troop"]').fill("4"); pg.locator('[data-dkq="c:troop"]').dispatch_event("input")
     pg.locator('[data-dkbuyc="troop"]').click(); pg.wait_for_timeout(200)
     r=E("()=>({msg:KETER_DOCK_UI.state().msg, sh:KETER_LOOT.stock().shards, n:KETER_LOOT.stock().parts.troop[0]})")
-    ck("buying from the page, by the amount typed", "Bought 4" in r["msg"] and r["sh"]==276 and r["n"]==10, r)
+    ck("buying from the page, by the amount typed", "Bought 4" in r["msg"] and r["sh"]==284 and r["n"]==10, r)
     n_pre=E("()=>document.querySelectorAll('#v-dock [data-dkbuypre]').length")
     ck("pre-builts on the shelf with their abilities", n_pre>=3 and "Shot" in E("()=>document.getElementById('v-dock').innerText"), n_pre)
     pg.locator('[data-dktab="reclaim"]').click(); pg.wait_for_timeout(200)
@@ -338,7 +338,7 @@ with sync_playwright() as p:
     ck("prices and costs are editable, and only changes are kept", r["p"]==33 and r["r"]==45 and r["c"]==120 and set(r["saved"].keys())=={"price","cost","items"}, r)
     E("()=>{ KETER_DOCK.resetTables(); }")
     r=E("()=>({t:KETER_DOCK.tables().price[2], items:KETER_DOCK.tables().items.length})")
-    ck("resetting the tables keeps the Exchange's list", r["t"]==40 and r["items"]==5, r)
+    ck("resetting the tables keeps the Exchange's list", r["t"]==25 and r["items"]==5, r)
     pg.locator("#dkReach").click(); pg.wait_for_timeout(200)
     ck("Reach +1", E("()=>KETER_DOCK.state().reach")==4)
 

@@ -27,7 +27,7 @@ TEAM="""()=>{ var deck=['design|Frame Trooper','design|Frame Trooper','design|Fr
   /* (v14.14) the test Heroes lead the team out: Dev Mode makes them free, as the three free Heroes are */
   localStorage.setItem('keter-app-dock-tables',JSON.stringify({free:['Dock Hand','Hangar Rifleman','Field Medic','Test Warden','Test Striker']}));
   /* (v14.19) and every card it takes counts as held: the stash has checks of its own (verify_stash.py) */
-  localStorage.setItem('keter-test-every-card','1'); return true; }"""
+  localStorage.setItem('keter-test-every-card','1'); localStorage.setItem('keter-test-paid-commons','1'); return true; }"""
 LIB=r"""()=>{
 window.T={
   W:KETER_WORLD, D:KETER_DEPLOY, L:KETER_LOOT, P:KETER_PROG,
@@ -278,7 +278,7 @@ with sync_playwright() as p:
     E("""()=>{ KETER_LOOT.resetStock(); KETER_PROG.reset(); var l=JSON.parse(localStorage.getItem('keter-app-loadouts')); l[0].deck=l[0].deck.slice(0,10); localStorage.setItem('keter-app-loadouts',JSON.stringify(l)); KETER_DEPLOY.start(0); }""")
     r=E("""()=>{ var k=T.find('cache',2); T.go(k); KETER_LOOT.seed(5); var c=KETER_DEPLOY.openCache(k); var again=KETER_DEPLOY.openCache(k); var s=KETER_DEPLOY.cur();
       return {shards:c.bag.shards, parts:KETER_LOOT.count(c.bag), again:again, haul:s.haul.shards, cleared:KETER_WORLD.isCleared(k)}; }""")
-    ck("a cache: shards and two components into the haul, once", r["parts"]==2 and 3<=r["shards"]<=9 and r["haul"]==r["shards"] and r["again"] is None and r["cleared"], r)
+    ck("a cache: shards and four components into the haul, once (v14.20)", r["parts"]==4 and 6<=r["shards"]<=18 and r["haul"]==r["shards"] and r["again"] is None and r["cleared"], r)
     r=E("""()=>{ var k=T.find('event'); T.go(k); var ev=KETER_DEPLOY.eventAt(k); var i=ev.choices.findIndex(function(c){ return !+c.check; });
       var o=KETER_DEPLOY.choose(k,i); return {title:ev.title, check:o.check, won:o.won, cleared:KETER_WORLD.isCleared(k), again:KETER_DEPLOY.eventAt(k)}; }""")
     ck("an Event: a choice with no check always goes as written, and the tile is done", r["check"]==0 and r["won"] and r["cleared"] and r["again"] is None, r)

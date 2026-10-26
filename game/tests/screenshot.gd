@@ -82,7 +82,7 @@ func _run() -> void:
 	var args := OS.get_cmdline_user_args()
 	var out := args[0] if args.size() > 0 else "user://shot.png"
 	var o := {"step": "battle", "floor": "", "heroes": "", "troops": "", "taps": "", "seed": "7", "place": "", "stage": "", "sure": "",
-		"screen": "battle", "mode": "quick", "tab": "heroes", "card": "", "deckonly": "", "empty": "", "timer": "", "districts": "", "carry": "", "map": "", "ws": "", "stock": "", "pick": "0", "dock": "", "motion": "", "after": "40", "options": "", "scroll": "", "view": "", "atmos": "", "freeze": "", "turns": "", "gen": "", "genchunks": "", "whole": "", "kind": "", "forge": "", "pvp": "", "chassis": "", "poi": "", "poitab": "", "poitool": "", "studio": "", "studioview": ""}
+		"screen": "battle", "mode": "quick", "tab": "heroes", "card": "", "deckonly": "", "empty": "", "timer": "", "districts": "", "carry": "", "map": "", "ws": "", "stock": "", "pick": "0", "dock": "", "motion": "", "after": "40", "options": "", "scroll": "", "view": "", "atmos": "", "freeze": "", "turns": "", "gen": "", "genchunks": "", "whole": "", "kind": "", "forge": "", "pvp": "", "chassis": "", "poi": "", "poitab": "", "poitool": "", "studio": "", "studioview": "", "guide": ""}
 	for a in args.slice(1):
 		var kv: PackedStringArray = a.split("=", true, 1)
 		if kv.size() == 2:
@@ -145,6 +145,25 @@ func _run() -> void:
 			scene.open_options()
 			for i in 30:
 				await process_frame
+		await _shoot(out)
+		return
+	if o["screen"] == "teams" and o["guide"] != "":
+		# (0.35) the walk-through for a first team, at a step: guide=1..6
+		Kit.keep([])
+		TeamsScreen.auto_guide = true
+		scene.open_teams()
+		var ed: TeamEditor = scene.teams_screen.editor
+		var at := int(o["guide"])
+		if at >= 3:
+			ed.toggle_hero("Dock Hand")
+		for i in at - 1:
+			if ed.guide == 2:
+				ed.guide_suggest()
+			if ed.guide == 4:
+				ed.guide_suggest()
+			ed.guide_step(1)
+		for i in 6:
+			await process_frame
 		await _shoot(out)
 		return
 	if o["screen"] == "teams" or o["screen"] == "editor":
