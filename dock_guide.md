@@ -172,7 +172,7 @@ Each upgrade has three levels, paid in shards and parts:
 | Upgrade | Level 1 | Level 2 | Level 3 |
 | --- | --- | --- | --- |
 | **Exchange stock** | +1 rare lot, pre-built and Hero on offer | +2 | +3 |
-| **Starter bay** | 6 free starter copies | 8 | 10 |
+| **Starter bay** | 1 design goes out free | 2 | 3 |
 | **Salvage insurance** | keep 10% of a wiped haul | 20% | 30% |
 | **Long-range scanner** | see 2 steps away | 3 | 4 |
 
@@ -185,8 +185,9 @@ Each upgrade has three levels, paid in shards and parts:
 The parts are Equipment parts for the Exchange and the scanner, Troop parts
 for the Starter bay, and Aether parts for insurance.
 
-- **Starter bay** raises how many copies of **Frame Trooper** come free on
-  every deployment. Without it, 4 do.
+- **Starter bay** lets the copies of more of your designs go out free on
+  every deployment, the dearest first: 1, 2, then 3 designs. Without it,
+  only Frame Trooper's 4 copies do.
 - **Salvage insurance** keeps that share of a wiped haul's shards and parts.
   Blueprints and chassis in the haul are still lost.
 - **Long-range scanner**: without it, the team sees what the tiles next to it

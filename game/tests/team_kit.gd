@@ -23,6 +23,8 @@ static func fresh() -> void:
 	Motion.path = SETTINGS
 	Motion.reset()
 	Motion.still = true
+	# (0.36) and the dock's Testing row shows, as Developer in Options has it, unless a test says not
+	Motion.dev = true
 	# (0.25) the tests' teams lead with Heroes nobody has recruited: they count as yours, unless a test says not
 	Dock.every_hero = true
 	# (0.34) and every card they take counts as held: a test that is about the stash says not

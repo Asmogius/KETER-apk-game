@@ -329,7 +329,23 @@ func show_help() -> void:
 	if dialog != null:
 		return
 	var name: String = "Deploy" if choosing else ({"stockpile": "Stockpile", "exchange": "Exchange", "recruit": "Recruit", "craft": "Craft", "reclaim": "Reclaim", "bounties": "Bounties", "upgrades": "Upgrades"}.get(tab, "The dock"))
-	dialog = Dialog.new(name, hint.text + ("\n\n" + help_text if help_text != "" else ""), ["Close"], UI.CYAN)
+	dialog = Dialog.new(name, hint.text + ("\n\n" + help_text if help_text != "" else ""), ["Close", "Words"], UI.CYAN)
+	add_child(dialog)
+	dialog.chosen.connect(func(k):
+		_close_dialog()
+		if k == 1:
+			show_words())
+
+
+## (0.36) The campaign's words, each in a line.
+func show_words() -> void:
+	if dialog != null:
+		return
+	dialog = Dialog.new("Words", Glossary.text(), ["Close"], UI.CYAN)
+	# a line each: wide, and read from the left
+	dialog.text_label.custom_minimum_size = Vector2(1080, 0)
+	dialog.text_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	Look.size_to(dialog.text_label, 16)
 	add_child(dialog)
 	dialog.chosen.connect(func(_k): _close_dialog())
 
@@ -372,8 +388,10 @@ func _stockpile_rows() -> void:
 		for e in hist:
 			var bad: bool = e.get("result") == "wipe"
 			_row(campaign.deploy.history_line(e), "", UI.SOFT_RED if bad else UI.PALE)
-	_chips_row("Testing", "As the Companion's Dev Mode has them. Each asks first.",
-		[["Restock now", ["testing", "restock"], UI.CYAN], ["Reach +1", ["testing", "reach"], UI.CYAN], ["Reset the dock", ["testing", "reset"], UI.SOFT_RED]])
+	# (0.36) only with Developer on, in Options
+	if Motion.dev:
+		_chips_row("Testing", "As the Companion's Dev Mode has them. Each asks first.",
+			[["Restock now", ["testing", "restock"], UI.CYAN], ["Reach +1", ["testing", "reach"], UI.CYAN], ["Reset the dock", ["testing", "reset"], UI.SOFT_RED]])
 
 
 ## What the dock keeps for you: [{text, sub}].
@@ -678,7 +696,7 @@ func _effect_text(id: String, v) -> String:
 	var dk := dock()
 	match id:
 		"exchange": return ("+%s rare lot%s and pre-built%s on offer" % [Scoring.text(v), "" if Scoring.num(v) == 1.0 else "s", "" if Scoring.num(v) == 1.0 else "s"]) if v != null else "the usual stock"
-		"starter": return ("%s free starter copies" % Scoring.text(v)) if v != null else ("%d free starter copies" % dk.starter_free())
+		"starter": return ("%s design%s go%s out free" % [Scoring.text(v), "" if Scoring.num(v) == 1.0 else "s", "es" if Scoring.num(v) == 1.0 else ""]) if v != null else "only the starter goes out free"
 		"insurance": return ("keep %s%% of a wiped haul" % Scoring.text(v)) if v != null else "a wipe keeps nothing"
 		"scanner": return ("see %s steps away" % Scoring.text(v)) if v != null else "the team sees the tiles beside it"
 	return str(v)
@@ -1027,7 +1045,7 @@ func _loadout_rows() -> void:
 	var names: Array = need.keys()
 	names.sort()
 	if names.is_empty():
-		_quiet("It takes no Uncommon or rarer Equipment, Command or Aether cards, Action cards or Chips. Common cards are free: they go without the stash.")
+		_quiet("Nothing from the stash: its cards are all Common, and Common cards are free.")
 	for nm in names:
 		var c = dk.card_of(nm)
 		var where := _loadout_where(nm)
@@ -1084,7 +1102,7 @@ func _loadout_step(part: String, nm: String, by: int) -> void:
 	for k in d:
 		if Roster.ref_name(str(k)) == nm:
 			key = str(k)
-	var n: int = maxi(0, Dock._pi(d.get(key, 0)) + by)
+	var n: int = clampi(Dock._pi(d.get(key, 0)) + by, 0, StrikeTeams.MAX_COPIES)      # (0.36) 4 of a card at most
 	if n == 0:
 		d.erase(key)
 	else:

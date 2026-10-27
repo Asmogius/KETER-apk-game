@@ -26,6 +26,8 @@ const FORMAT := 1
 ## What may go in a Deck. Action cards never do: a Hero carries those.
 const DECK_TYPES := ["troop", "equipment", "command", "aether"]
 const DISTRICTS := ["1", "2", "3", "4", "5", "6"]
+## (0.36) At most this many copies of a card: in the Deck, and of a Chip that is a card (Basic Chips aren't).
+const MAX_COPIES := 4
 
 ## Where the teams are kept (the tests point this somewhere of their own).
 static var path := FILE
@@ -44,6 +46,19 @@ static func tidy(t: Dictionary) -> Dictionary:
 			t[k] = b[k]
 	var lv = Rules.num(t["level"], 1)
 	t["level"] = clampi(int(lv) if Rules.truthy(lv) else 1, 1, 6)
+	trim(t)
+	return t
+
+
+## (0.36) A team from before the limit, trimmed to 4 copies of each card.
+static func trim(t: Dictionary) -> Dictionary:
+	for k in t.get("deck", {}).keys():
+		if copies(t, str(k)) > MAX_COPIES:
+			t["deck"][k] = MAX_COPIES
+	for k in t.get("pouch", {}).keys():
+		var q = Rules.num(t["pouch"][k], 0)
+		if not str(k).begins_with("basic|") and (int(q) if Rules.truthy(q) else 0) > MAX_COPIES:
+			t["pouch"][k] = MAX_COPIES
 	return t
 
 

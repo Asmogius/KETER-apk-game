@@ -16,7 +16,7 @@ one of them to **lead** each Combat. Heroes left out are your reserves: they are
 what lets a lost Combat be retried, so bringing more Heroes than a Floor admits
 is what buys a safety net.
 
-A **Deck** is **one** Deck of 10 to 60 cards, shared by every Hero in the team.
+A **Deck** is **one** Deck of 10 to 60 cards, shared by every Hero in the team, with at most **4 copies** of any card (v14.21; a Loadout from before is trimmed). A Chip that is a card is 4 at most in the Pouch too; Basic Chips aren't limited.
 You draw 6 at the start of a Combat, then 1 per Hero standing each Draw Phase.
 
 **On the World Map** (the video game), a Strike Team's Troops must be designs

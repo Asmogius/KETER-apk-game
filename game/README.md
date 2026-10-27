@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.35 rebalances the campaign:
-more loot, cheaper prices, free Common cards, and a first team built step by step; v0.34 brought the stash.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.36 tightens the campaign:
+4 copies of a card, shorter early fights, and the dock's testing tools put away; v0.35 rebalanced it.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,22 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.36 (Companion 14.21): **the first of the audit's improvements**.
+
+- **4 copies of a card at most**, in every Deck and every mode, Troops
+  included; a Chip that is a card is 4 at most in the Pouch (Basic Chips
+  aren't limited). A team saved before is trimmed as it is read.
+- **The Starter bay** frees the copies of more of your designs instead of
+  more Frame Troopers: the dearest 1, 2 or 3 of them go out free.
+- **Shorter fights where it's easy.** A deployment's fight has 3, 3, 4, 4,
+  5 or 6 waves by its Skull Level, one fewer in an ambush (2 at least).
+  Practice Battles keep six.
+- **A gentler start.** At Skull 1 and 2, two Heroes may enter whatever the
+  floor's size, and the Enemy spawn tiles take turns, wave by wave.
+- **The dock's Testing row** (restock, reach, reset) shows only with
+  **Developer** on, in Options, now laid out in two columns.
+- **Words**: the dock's "?" has a glossary of the campaign's words.
 
 New in 0.35 (Companion 14.20): **balance, and a first team step by step**.
 
@@ -679,7 +695,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-35_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-36_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -690,7 +706,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-35_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-36_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the
@@ -988,8 +1004,8 @@ the map's **Team** box lists the board, and which you have beaten.
 
 - **Exchange stock**: more lots of rarer components, and more pre-built
   Troops on offer at once.
-- **Starter bay**: more free Frame Trooper copies on every deployment: 6,
-  then 8, then 10.
+- **Starter bay** (0.36): the copies of more of your designs go out free on
+  every deployment, the dearest first: 1, then 2, then 3 designs.
 - **Salvage insurance**: a wipe keeps 10%, 20% or 30% of the haul's shards
   and parts.
 - **Long-range scanner**: the team sees what tiles hold 2, 3 or 4 steps
@@ -1012,7 +1028,7 @@ lists still set it up for practice fights, where nothing is spent.)
 (see The Workshop). Each copy of a design in its Deck is paid for in Troop
 parts as the team leaves, at the price the Workshop shows; what is paid is
 spent, whatever happens out there. The built-in **Frame Trooper** brings its
-first 4 copies free (more with the Starter bay). A team whose copies the
+first 4 copies free (the Starter bay frees more designs). A team whose copies the
 stockpile can't pay for stays at the dock, and the bottom line says what
 they cost and what it holds. Pre-built copies bought at the Exchange go with
 whichever team leaves next, on top of its Deck. Everything else in the team

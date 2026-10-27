@@ -19,7 +19,7 @@ signal guide_done
 
 const TABS := ["heroes", "deck", "carried", "pouch", "protos", "consumables", "checks"]
 const FILTERS := ["all", "troop", "equipment", "command", "aether"]
-const MAX_COPIES := 60
+const MAX_COPIES := StrikeTeams.MAX_COPIES      # (0.36) 4 of a card; it was 60
 const MAX_CHIPS := 30
 const MAX_CONSUMABLES := 9
 
@@ -306,7 +306,7 @@ func _show_deck(keep: bool) -> void:
 	sub.add_child(gap)
 	_chip("See Deck", deck_only, func(): set_deck_only(not deck_only), 150)
 	var n := StrikeTeams.deck_count(team)
-	hint.text = "The Deck holds %d card%s; a Deck is 10 to 60. Troop, Equipment, Command and Aether cards go in it. Tap a card to read it and set how many copies." % [n, "" if n == 1 else "s"]
+	hint.text = "The Deck holds %d card%s; a Deck is 10 to 60, and 4 copies of a card at most. Troop, Equipment, Command and Aether cards go in it. Tap a card to read it and set how many copies." % [n, "" if n == 1 else "s"]
 	var items := _gone_items(team["deck"].keys(), func(nm): return {"count": StrikeTeams.copies(team, nm)})
 	for c in roster.of_types(StrikeTeams.DECK_TYPES):
 		var k := StrikeTeams.copies(team, c["name"])
@@ -483,7 +483,7 @@ func toggle_carried(hero: String, n: String) -> void:
 
 
 func set_chips(key: String, k: int) -> void:
-	StrikeTeams.set_chips(team, key, clampi(k, 0, MAX_CHIPS))
+	StrikeTeams.set_chips(team, key, clampi(k, 0, MAX_CHIPS if key.begins_with("basic|") else StrikeTeams.MAX_COPIES))
 	_touch()
 
 
@@ -547,7 +547,7 @@ func tap_card(i: int) -> void:
 					toggle_carried(hero, nm))
 		"pouch":
 			var key: String = what["chip"]
-			var s2 := CardSheet.new(c, roster.art_for(c) if not Rules.truthy(c.get("basic")) else null, {"stepper": {"value": int(Rules.num(team["pouch"].get(key), 0)), "min": 0, "max": MAX_CHIPS, "label": "In the Pouch"}})
+			var s2 := CardSheet.new(c, roster.art_for(c) if not Rules.truthy(c.get("basic")) else null, {"stepper": {"value": int(Rules.num(team["pouch"].get(key), 0)), "min": 0, "max": MAX_CHIPS if key.begins_with("basic|") else StrikeTeams.MAX_COPIES, "label": "In the Pouch"}})
 			s2.stepped.connect(func(v): set_chips(key, v))
 			_open_sheet(s2, func(_id): pass)
 		"consumables":

@@ -166,13 +166,13 @@
   }
 
   /* ---- upgrades ---- */
-  function effectText(id, v){ return id==="starter"?v+" free starter copies":id==="insurance"?v+"% of a wiped haul kept":id==="scanner"?"see "+v+" steps away":"+"+v+" lot"+(v===1?"":"s")+" of rarer parts and +"+v+" pre-built"+(v===1?"":"s")+" and +"+v+" Hero"+(v===1?"":"es")+" on offer"; }
+  function effectText(id, v){ return id==="starter"?v+" design"+(v===1?"":"s")+" go"+(v===1?"es":"")+" out free":id==="insurance"?v+"% of a wiped haul kept":id==="scanner"?"see "+v+" steps away":"+"+v+" lot"+(v===1?"":"s")+" of rarer parts and +"+v+" pre-built"+(v===1?"":"s")+" and +"+v+" Hero"+(v===1?"":"es")+" on offer"; }
   function upgradesHTML(){
     var X=K(), closed=X.closed();
     return '<div class="dklist">'+X.UPGRADES.map(function(u){
       var lv=X.level(u.id), t=X.tables(), c=X.nextCost(u.id);
       return '<div class="dkrow dkup"><span><b>'+esc(u.name)+' · level '+lv+' of 3</b><i>'+esc(u.what)+'</i>'+
-        '<i>Now: '+(lv?effectText(u.id,t.effect[u.id][lv-1]):(u.id==="starter"?(window.KETER_WORLD?window.KETER_WORLD.tables().starterFree:4)+" free starter copies":u.id==="scanner"?"see 1 step away":u.id==="insurance"?"nothing kept after a wipe":"the basic stock"))+
+        '<i>Now: '+(lv?effectText(u.id,t.effect[u.id][lv-1]):(u.id==="starter"?"only the starter goes out free":u.id==="scanner"?"see 1 step away":u.id==="insurance"?"nothing kept after a wipe":"the basic stock"))+
         (c?' · next: '+effectText(u.id,t.effect[u.id][lv])+'</i><i>Costs '+c.shards+' shards and '+c.n+' '+L().RARITIES[c.rarity].label+' '+esc(tyShort(c.type))+' parts':'')+'</i></span>'+
         (c?btn('data-dkupg="'+u.id+'"',"Upgrade",closed,true):'<i class="wldok">Done</i>')+'</div>';
     }).join("")+'</div>';

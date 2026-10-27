@@ -2,7 +2,8 @@
 sooner, cheaper dock prices; Common cards free on a deployment (Common Troop
 cards off the card list go as they are; a design costing only Common parts
 costs nothing); and with no Loadout yet the Deck Builder walks a new one
-through, step by step."""
+through, step by step. (v14.21) Four copies of a card; the Starter bay frees
+designs; fewer waves where it's easy; a gentler start."""
 import http.server, socketserver, threading, functools, pathlib, shutil
 from playwright.sync_api import sync_playwright
 TMP=pathlib.Path("/tmp/serve_balance")
@@ -95,6 +96,18 @@ with sync_playwright() as p:
     ck("Step 6 looks it over, and Finish ends it", r and "Step 6 of 6" in r["text"] and "Finish" in r["text"], r)
     pg.locator('[data-guide="next"]').click(); pg.wait_for_timeout(300)
     ck("finished, the walk-through is gone and the team is kept", g() is None and E("()=>JSON.parse(localStorage.getItem('keter-app-loadouts')).length")==1)
+    # ================= v14.21 =================
+    E("""()=>{ localStorage.setItem('keter-app-loadouts',JSON.stringify([{v:2,name:'Over',level:1,created:5,heroes:['master|Dock Hand'],
+        deck:['test|Test Drone','test|Test Drone','test|Test Drone','test|Test Drone','test|Test Drone','test|Test Drone','test|Test Snare'],actions:{},pouch:{'test|Test Spark Chip':6,'basic|3':12}}])); return true; }""")
+    r=E("()=>{ var lo=KETER_DEPLOY.loadouts()[0]; return {drones:lo.deck.filter(function(x){ return /Drone/.test(x); }).length, n:lo.deck.length, chip:lo.pouch['test|Test Spark Chip'], basic:lo.pouch['basic|3']}; }")
+    ck("v14.21: a Loadout from before is read with 4 copies of a card at most; Basic Chips aren't limited", r=={"drones":4,"n":5,"chip":4,"basic":12}, r)
+    pg.reload(); pg.wait_for_timeout(1900)
+    r=E("()=>{ var lo=JSON.parse(localStorage.getItem('keter-app-loadouts'))[0]; return lo.deck.length; }")
+    ck("v14.21: and the Deck Builder saves it trimmed", r==5, r)
+    r=E("""()=>{ var D=KETER_DEPLOY; return {poi:[1,2,3,4,5,6].map(function(k){ return D.waves(k,'poi'); }), amb:[1,2,3,4,5,6].map(function(k){ return D.waves(k,'ambush'); }), soft:[D.soft(1),D.soft(2),D.soft(3)]}; }""")
+    ck("v14.21: waves by Skull Level, 3 3 4 4 5 6, one fewer in an ambush; Skull 1 and 2 are the gentle ones", r=={"poi":[3,3,4,4,5,6],"amb":[2,2,3,3,4,5],"soft":[True,True,False]}, r)
+    r=E("""()=>{ var K=KETER_DOCK, s=K.state(); var a=K.freeDesigns(), f=K.starterFree(); s.upgrades.starter=2; K._save(s); return {a:a, f:f, b:K.freeDesigns(), f2:K.starterFree(), eff:K.tables().effect.starter}; }""")
+    ck("v14.21: the Starter bay frees designs (1, 2, 3), and the starter keeps its 4", r=={"a":0,"f":4,"b":2,"f2":4,"eff":[1,2,3]}, r)
     ck("no page errors", not errs, errs)
     b.close()
 print(f"\nBALANCE PASS {len(ok)}  FAIL {len(bad)}")

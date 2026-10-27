@@ -143,6 +143,23 @@ func need_of(team: Dictionary) -> Dictionary:
 	return need
 
 
+## (0.36) A deployment's fight: fewer waves at a low Skull Level, one fewer in
+## an ambush than in a POI; and at Skull 1 or 2 two Heroes may enter whatever
+## the floor's size, and its Enemy spawn tiles take turns, wave by wave.
+const WAVES_BY_SKULL := [3, 3, 4, 4, 5, 6]
+
+
+static func waves_for(skull, kind: String) -> int:
+	var sv = Rules.num(skull, 1)
+	var n: int = WAVES_BY_SKULL[clampi(int(sv) if Rules.truthy(sv) else 1, 1, 6) - 1]
+	return maxi(2, n - 1) if kind == "ambush" else n
+
+
+static func soft(skull) -> bool:
+	var sv = Rules.num(skull, 1)
+	return (int(sv) if Rules.truthy(sv) else 1) <= 2
+
+
 ## (0.35) Common Troops are free: a Common Troop card off the card list deploys
 ## as it is, and a design whose copies cost only Common parts costs nothing to take.
 func free_troop(c) -> bool:
@@ -236,6 +253,30 @@ func plan(team: Dictionary, pack = null) -> Dictionary:
 		for r in 6:
 			parts[r] += cost[r]
 		lines.append({"id": id, "name": ln["name"], "copies": ln["copies"], "free": free, "each": each, "cost": cost, "starter": Rules.truthy(d.get("starter")), "common": common})
+	# (0.36) the Starter bay: the copies of the dearest of your designs go free, as many designs as its level
+	var bay := dock.free_designs() if dock != null else 0
+	if bay > 0:
+		var pr: Array = dock.tables["price"]
+		var worth := func(l: Dictionary) -> float:
+			var w := 0.0
+			for r in 6:
+				w += float(l["cost"][r]) * float(pr[r])
+			return w
+		var cands: Array = lines.filter(func(l): return not l["starter"] and not l["common"] and l["copies"] > l["free"])
+		cands.sort_custom(func(a, b):
+			var wa: float = worth.call(a)
+			var wb: float = worth.call(b)
+			if wa != wb:
+				return wa > wb
+			if str(a["name"]) != str(b["name"]):
+				return str(a["name"]) < str(b["name"])
+			return str(a["id"]) < str(b["id"]))
+		for l in cands.slice(0, bay):
+			for r in 6:
+				parts[r] -= int(l["cost"][r])
+			l["free"] = l["copies"]
+			l["cost"] = [0, 0, 0, 0, 0, 0]
+			l["bay"] = true
 	var have: Array = Loot.norm(stock)["parts"]["troop"]
 	var afford := true
 	for r in 6:

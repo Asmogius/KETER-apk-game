@@ -32,12 +32,24 @@
   var K=function(){ return window.KETER_DOCK; };
 
   /* ---- Strike Teams, as the Deck Builder keeps them ---- */
+  /* (v14.21) at most 4 copies of a card: in the Deck, and of a Chip that is a card (Basic Chips aren't) */
+  var MAX_COPIES=4;
+  function trim(lo){
+    var seen={}; lo.deck=lo.deck.filter(function(r){ var k=String(r).split("|").slice(1).join("|")||String(r); seen[k]=(seen[k]||0)+1; return seen[k]<=MAX_COPIES; });
+    Object.keys(lo.pouch||{}).forEach(function(k){ if(String(k).indexOf("basic|")!==0 && (parseInt(lo.pouch[k],10)||0)>MAX_COPIES) lo.pouch[k]=MAX_COPIES; });
+    return lo;
+  }
+  /* (v14.21) a deployment's fight: fewer waves at a low Skull Level, one fewer in an ambush than in a POI;
+     and at Skull 1 or 2, two Heroes may enter whatever the floor's size, and its spawn tiles take turns */
+  var WAVES_BY_SKULL=[3,3,4,4,5,6];
+  function waves(skull, kind){ var n=WAVES_BY_SKULL[Math.max(1,Math.min(6,+skull||1))-1]; return kind==="ambush"?Math.max(2,n-1):n; }
+  function soft(skull){ return (+skull||1)<=2; }
   function loadouts(){
     var lo=read(LOAD_KEY,[])||[], out=[];
     lo.forEach(function(l,i){
       if(!l) return;
-      if(Array.isArray(l.heroes)) out.push({index:i, name:l.name||"Untitled", level:l.level||1, created:l.created||null,
-        heroes:(l.heroes||[]).slice(), deck:(l.deck||[]).slice(), actions:clone(l.actions||{}), pouch:clone(l.pouch||{})});
+      if(Array.isArray(l.heroes)) out.push(trim({index:i, name:l.name||"Untitled", level:l.level||1, created:l.created||null,
+        heroes:(l.heroes||[]).slice(), deck:(l.deck||[]).slice(), actions:clone(l.actions||{}), pouch:clone(l.pouch||{})}));
     });
     return out;
   }
@@ -92,6 +104,14 @@
       cost.forEach(function(n,r){ parts[r]+=n; });
       lines.push({id:id, name:ln.name, copies:ln.copies, free:free, each:each, cost:cost, starter:!!d.starter, common:common});
     });
+    /* (v14.21) the Starter bay: the copies of the dearest of your designs go free, as many designs as its level */
+    var bay=K()&&K().freeDesigns?K().freeDesigns():0;
+    if(bay>0){
+      var pr=K().tables().price, worth=function(l){ return l.cost.reduce(function(t,n,r){ return t+n*pr[r]; },0); };
+      lines.filter(function(l){ return !l.starter && !l.common && l.copies>l.free; })
+        .sort(function(a,b){ return worth(b)-worth(a) || (a.name<b.name?-1:a.name>b.name?1:0) || (a.id<b.id?-1:a.id>b.id?1:0); }).slice(0,bay)
+        .forEach(function(l){ l.cost.forEach(function(n,r){ parts[r]-=n; }); l.free=l.copies; l.cost=[0,0,0,0,0,0]; l.bay=true; });
+    }
     var st=L().stock(), afford=parts.every(function(n,r){ return st.parts.troop[r]>=n; });
     /* (v14.19) the cards it takes must be held, or are crafted as it leaves */
     var need=needOf(lo,all), craft=[], craftShards=0, craftParts={equipment:[0,0,0,0,0,0], aether:[0,0,0,0,0,0]};
@@ -345,7 +365,7 @@
   function abandon(){ var s=cur(); if(!s) return false; s.active=false; s.result="abandoned"; save(s); W().endDeployment(); if(K()) K().deploymentEnded({result:"abandoned", explored:false}); return true; }
   function last(){ var s=read(KEY,null); return s&&!s.active?s:null; }
 
-  window.KETER_DEPLOY={KEY:KEY, HIST_KEY:HIST_KEY, loadouts:loadouts, resolve:resolve, needOf:needOf, plan:plan, start:start, cur:cur, active:active,
+  window.KETER_DEPLOY={MAX_COPIES:MAX_COPIES, trim:trim, waves:waves, soft:soft, WAVES_BY_SKULL:WAVES_BY_SKULL, KEY:KEY, HIST_KEY:HIST_KEY, loadouts:loadouts, resolve:resolve, needOf:needOf, plan:plan, start:start, cur:cur, active:active,
     lockedDesign:lockedDesign, lockedLoadout:lockedLoadout, heroRefs:heroRefs, deckRefs:deckRefs, team:team, copiesLeft:copiesLeft,
     stepTo:stepTo, enterPOI:enterPOI, ambush:ambush, spec:spec, fightOver:fightOver, retryable:retryable,
     openCache:openCache, eventAt:eventAt, choose:choose, home:home, wipe:wipe, abandon:abandon, history:history, last:last,

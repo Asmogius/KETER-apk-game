@@ -15,6 +15,7 @@ var atmos_btns := {}           # (0.18) level -> Button
 var shake_btns := {}           # true/false -> Button
 var buzz_btns := {}            # (0.33) true/false -> Button
 var sound_btns := {}
+var dev_btns := {}             # (0.36) the Developer switch
 var close_btn: Button
 var look_btn: Button
 var again_btn: Button                 # (0.15) Look again (from Home)
@@ -44,16 +45,24 @@ func _init() -> void:
 	var t := UI.label("Options", 34, UI.CYAN)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(t)
-	col.add_child(_row("Speed", "How fast fights play. At Instant nothing moves; the rules are the same at every speed.",
+	# (0.36) two columns, so that there is room for more
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 28)
+	grid.add_theme_constant_override("v_separation", 10)
+	col.add_child(grid)
+	grid.add_child(_row("Speed", "How fast fights play. At Instant nothing moves.",
 		Motion.SPEEDS.map(func(s): return [s, Motion.SPEED_NAMES[s]]), speed_btns, func(k): Motion.set_speed(k)))
-	col.add_child(_row("Atmosphere", "Glows on hazards and pads, flickering lights, and embers, ash and dust over a fight.",
+	grid.add_child(_row("Atmosphere", "Glows, flickering lights, embers and dust over a fight.",
 		Atmos.LEVELS.map(func(s): return [s, Atmos.LEVEL_NAMES[s]]), atmos_btns, func(k): Motion.set_atmos(k)))
-	col.add_child(_row("Screen shake", "A small shake on a heavy blow, or a Unit brought down.",
+	grid.add_child(_row("Screen shake", "A small shake on a heavy blow.",
 		[[true, "On"], [false, "Off"]], shake_btns, func(k): Motion.set_shake(k)))
-	col.add_child(_row("Vibration", "On a phone: a buzz when one of yours is hit, or lands a heavy blow.",
+	grid.add_child(_row("Vibration", "On a phone: a buzz when one of yours is hit.",
 		[[true, "On"], [false, "Off"]], buzz_btns, func(k): Motion.set_buzz(k)))
-	col.add_child(_row("Sound", "Retro blips for shots, hits, cards and buttons (yours, if the README's .wavs are there).",
+	grid.add_child(_row("Sound", "Retro blips for shots, hits, cards and buttons.",
 		[[true, "On"], [false, "Off"]], sound_btns, func(k): Motion.set_sound(k)))
+	grid.add_child(_row("Developer", "The dock's testing buttons: restock, reach, reset.",
+		[[true, "On"], [false, "Off"]], dev_btns, func(k): Motion.set_dev(k)))
 	about = Look.read("", UI.DIM, true)
 	about.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	about.custom_minimum_size = Vector2(640, 0)
@@ -79,7 +88,7 @@ func _row(title: String, under: String, choices: Array, into: Dictionary, pick: 
 	h.add_theme_constant_override("separation", 10)
 	v.add_child(h)
 	var l := UI.label(title, 22, UI.TEXT)
-	l.custom_minimum_size = Vector2(200, 0)
+	l.custom_minimum_size = Vector2(150, 0)
 	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(l)
 	for c in choices:
@@ -87,14 +96,14 @@ func _row(title: String, under: String, choices: Array, into: Dictionary, pick: 
 		var b := Button.new()
 		b.text = str(c[1])
 		b.toggle_mode = true
-		b.custom_minimum_size = Vector2(140, 56)
+		b.custom_minimum_size = Vector2(104 if choices.size() > 2 else 120, 52)
 		b.pressed.connect(func():
 			pick.call(key)
 			_show())
 		h.add_child(b)
 		into[key] = b
 	var u := UI.label(under, 15, UI.DIM, true)
-	u.custom_minimum_size = Vector2(640, 0)
+	u.custom_minimum_size = Vector2(480, 0)
 	v.add_child(u)
 	return v
 
@@ -118,6 +127,8 @@ func _show() -> void:
 		sound_btns[k].set_pressed_no_signal(k == Motion.sound)
 	for k in buzz_btns:
 		buzz_btns[k].set_pressed_no_signal(k == Motion.buzz)
+	for k in dev_btns:
+		dev_btns[k].set_pressed_no_signal(k == Motion.dev)
 
 
 func _ready() -> void:

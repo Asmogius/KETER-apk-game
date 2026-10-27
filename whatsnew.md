@@ -6,6 +6,15 @@ the Change Log.
 
 <!-- NEWEST ENTRY GOES BELOW THIS LINE -->
 
+## v14.21 — Four of a card, shorter early fights
+
+Alongside game 0.36.
+
+- **4 copies of a card at most** in a Loadout's Deck, Troops included, and of a Chip that is a card in the Pouch (Basic Chips aren't limited). A Loadout from before is trimmed.
+- **The Starter bay** now frees the copies of your dearest designs (1, 2 or 3 of them) on every deployment, instead of more Frame Troopers.
+- **A deployment's fight has fewer waves where it's easy**: 3, 3, 4, 4, 5, 6 by Skull Level, one fewer in an ambush.
+- **A gentler start**: at Skull 1 and 2 two Heroes may enter any floor, and the Enemy spawn tiles take turns, wave by wave.
+
 ## v14.20 — More loot, free Common cards, a first team step by step
 
 Alongside game 0.35.

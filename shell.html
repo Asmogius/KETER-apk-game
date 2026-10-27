@@ -3041,7 +3041,7 @@ function simPhaseLine(){
 }
 function simBankHTML(){
   if(!SIM.map) return "";
-  var wave=SIM.wave?("Wave <b>"+SIM.wave+"</b> of "+WAVES_PER_FLOOR+
+  var wave=SIM.wave?("Wave <b>"+SIM.wave+"</b> of "+simWaves()+
     (simEnemiesLeft()?"":" \u00b7 clear")):"";
   var chips=(SIM.bank||[]).map(function(c,i){
     var has=!!(c.text||"").trim();
@@ -3144,6 +3144,10 @@ function simOutcome(){
    cleared or the wave timer runs out, and when nothing more can arrive and the
    board is clear, the Combat is won. */
 var WAVES_PER_FLOOR=6;
+/* (v14.21) a deployment's fight has fewer waves at a low Skull Level, and one fewer in an ambush */
+function simWaves(){ var d=simDepCtx(); return d&&window.KETER_DEPLOY&&KETER_DEPLOY.waves?KETER_DEPLOY.waves(+d.skull||1, d.kind):WAVES_PER_FLOOR; }
+/* (v14.21) and at Skull 1 or 2 its Enemy spawn tiles take turns, wave by wave */
+function simSoftSkip(i, n){ var d=simDepCtx(); return !!(d && n>1 && window.KETER_DEPLOY && KETER_DEPLOY.soft(+d.skull||1) && (SIM.wave+i)%2===0); }
 function simEnemySpawnTiles(){
   var out=[], labels=(SIM.map&&SIM.map.colorLabels)||{};
   Object.keys((SIM.map&&SIM.map.hexes)||{}).forEach(function(k){
@@ -3210,10 +3214,11 @@ function simInstabilityPick(){
   return pool[Math.floor(simDice().roll("d20")/21*pool.length)];
 }
 function simSpawnWave(){
-  if(SIM.wave>=WAVES_PER_FLOOR) return 0;
+  if(SIM.wave>=simWaves()) return 0;
   SIM.wave++; SIM.waveTurn=0;
   var tiles=simEnemySpawnTiles(), made=0, missed=0;
-  tiles.forEach(function(t){
+  tiles.forEach(function(t, i){
+    if(simSoftSkip(i, tiles.length)) return;      /* (v14.21) its turn off */
     if(simUnitAt(t.q,t.r)) return;               /* something is standing there */
     var card=null, special=simInstabilityPick();
     if(special){
@@ -3242,7 +3247,7 @@ function simSpawnWave(){
     simRunTrigger(unit,"deployed");
     made++;
   });
-  SIM.log.push({t:Date.now(), text:"Wave "+SIM.wave+" of "+WAVES_PER_FLOOR+": "+
+  SIM.log.push({t:Date.now(), text:"Wave "+SIM.wave+" of "+simWaves()+": "+
     (made?made+(made===1?" Enemy arrives":" Enemies arrive"):"nothing arrives")+
     (missed?" ("+missed+" Spawn Tile"+(missed===1?"":"s")+" had nothing left to draw)":"")});
   return made;
@@ -3253,7 +3258,7 @@ function simEnemiesLeft(){
 /* Nothing more can arrive once the sixth wave has come and the pile can no
    longer answer any Spawn Tile's Level. */
 function simNothingMoreComing(){
-  if(SIM.wave<WAVES_PER_FLOOR) {
+  if(SIM.wave<simWaves()) {
     var levels={};
     simEnemySpawnTiles().forEach(function(t){ levels[t.level]=1; });
     var can=SIM.enemyPile.some(function(c){ return levels[parseInt(c.level,10)||1]; });
@@ -3266,7 +3271,7 @@ function simWaveStep(){
   if(!SIM.wave){ simSpawnWave(); return; }
   SIM.waveTurn++;
   var clear=!simEnemiesLeft();
-  if(SIM.wave>=WAVES_PER_FLOOR) return;
+  if(SIM.wave>=simWaves()) return;
   if(clear || SIM.waveTurn>=Math.max(1,SIM.waveTimer)){
     if(!clear) SIM.log.push({t:Date.now(), text:"The wave timer runs out."});
     simSpawnWave();
@@ -7896,7 +7901,10 @@ function simHeroCapacity(){
     sz = n<100?"Small":(n<=250?"Medium":"Large");
   }
   /* the Sandbox writes it in either case */
-  return {small:1,medium:2,large:3}[String(sz).toLowerCase()]||1;
+  var cap={small:1,medium:2,large:3}[String(sz).toLowerCase()]||1;
+  /* (v14.21) a deployment's fight at Skull 1 or 2 lets two Heroes in, whatever the floor's size */
+  var d=simDepCtx(); if(d && window.KETER_DEPLOY && KETER_DEPLOY.soft(+d.skull||1)) cap=Math.max(cap,2);
+  return cap;
 }
 
 function simAllCards(){
@@ -8276,7 +8284,7 @@ function simTeamsOf(l){
 function simEnemyWant(){
   var tiles=simEnemySpawnTiles();
   var by={};
-  tiles.forEach(function(t){ by[t.level]=(by[t.level]||0)+WAVES_PER_FLOOR; });
+  tiles.forEach(function(t){ by[t.level]=(by[t.level]||0)+simWaves(); });
   return by;
 }
 
@@ -10480,6 +10488,10 @@ var MIGRATE_KEY="keter-app-migrate14";
 function loadLoadouts(){
   try{ loadouts=JSON.parse(localStorage.getItem(LOAD_KEY)||"[]")||[]; }
   catch(e){ loadouts=[]; }
+  /* (v14.21) a Loadout from before the 4-copy limit is trimmed, and kept so */
+  var was=JSON.stringify(loadouts);
+  loadouts.forEach(function(lo){ if(lo && Array.isArray(lo.heroes) && window.KETER_DEPLOY && KETER_DEPLOY.trim){ lo.deck=lo.deck||[]; lo.pouch=lo.pouch||{}; KETER_DEPLOY.trim(lo); } });
+  if(JSON.stringify(loadouts)!==was){ try{ localStorage.setItem(LOAD_KEY,JSON.stringify(loadouts)); }catch(e){} }
 }
 /* Migration waits until the Deck Builder is shown. Run at startup it happened
    before the card collection had loaded, so it could not tell an Action Card
@@ -10499,8 +10511,12 @@ function ensureMigrated(){
 function normaliseLoadout(lo){
   lo.v=2; lo.heroes=lo.heroes||[]; lo.deck=lo.deck||[];
   lo.actions=lo.actions||{}; lo.pouch=lo.pouch||{};
+  /* (v14.21) at most 4 copies of a card: a Loadout from before is trimmed */
+  if(window.KETER_DEPLOY && KETER_DEPLOY.trim) KETER_DEPLOY.trim(lo);
   return lo;
 }
+var MAX_COPIES=4;
+function copiesOf(lo, k){ return (lo.deck||[]).filter(function(x){ return x===k; }).length; }
 /* A Loadout made before 14.0 held several Strike Teams of one Hero each. Each
    becomes its own one-Hero Loadout, so nothing is merged; Action Cards come out
    of the Deck, since they can no longer be in it, and every Hero's slots start
@@ -11835,6 +11851,7 @@ $("dkbody").addEventListener("click",function(e){
   if(pq){
     var lo1=normaliseLoadout(loadouts[dkLo]), key=pq.getAttribute("data-pq");
     var q=(parseInt(lo1.pouch[key],10)||0)+(+pq.getAttribute("data-d"));
+    if(key.indexOf("basic|")!==0) q=Math.min(q,MAX_COPIES);      /* (v14.21) a Chip that is a card: 4 at most */
     if(q>0) lo1.pouch[key]=q; else delete lo1.pouch[key];
     saveLoadouts(); renderDeck(); return;
   }
@@ -11871,7 +11888,7 @@ document.addEventListener("click",function(e){
   if(id==="cdPlus"||id==="cdMinus"||id==="cdAll"){
     t=normaliseLoadout(loadouts[dkLo]);
     var k=window._deckKey;
-    if(id==="cdPlus") t.deck.push(k);
+    if(id==="cdPlus" && copiesOf(t,k)<MAX_COPIES) t.deck.push(k);
     if(id==="cdMinus"){ var i=t.deck.indexOf(k); if(i>=0) t.deck.splice(i,1); }
     if(id==="cdAll") t.deck=t.deck.filter(function(x){ return x!==k; });
     saveLoadouts(); renderDeck(); $("modal").classList.remove("on");
@@ -11989,9 +12006,10 @@ document.addEventListener("click",function(e){
       saveLoadouts(); renderDeck();
       if(lt.actions[hk2].length>=actionSlotsOf(hh)) $("modal").classList.remove("on");
     }else{
-      lt.deck.push(refKey(c)); saveLoadouts(); renderDeck();
+      var full=copiesOf(lt, refKey(c))>=MAX_COPIES;
+      if(!full) lt.deck.push(refKey(c)); saveLoadouts(); renderDeck();
       var q=el.querySelector(".qty");
-      if(q){ q.textContent="\u2713"; setTimeout(function(){ q.textContent="+"; },600); }
+      if(q){ q.textContent=full?"4 max":"\u2713"; setTimeout(function(){ q.textContent="+"; },full?1200:600); }
     }
   }
 });

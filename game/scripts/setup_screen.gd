@@ -204,6 +204,13 @@ func steps() -> Array:
 
 
 ## "Bunker · floor 1 of 2 · Skull 3", or "Ambush · Skull 2".
+## How many Heroes may enter: the floor's size says, and (0.36) a deployment's fight at Skull 1 or 2 lets two in.
+func cap_of(f: FloorData) -> int:
+	if f == null:
+		return 1
+	return Roster.deploy_capacity(f, deploy_spec.get("skull", 1)) if mode == "deploy" else Roster.hero_capacity(f)
+
+
 func deploy_title() -> String:
 	var sp := deploy_spec
 	if sp.get("kind") == "poi":
@@ -350,7 +357,7 @@ func _default_entry() -> void:
 	leader = ""
 	if team() == null or the_floor() == null:
 		return
-	var cap := Roster.hero_capacity(the_floor())
+	var cap := cap_of(the_floor())
 	for c in StrikeTeams.heroes(team(), roster):
 		if heroes.size() < cap:
 			heroes.append(str(c["name"]))
@@ -359,11 +366,11 @@ func _default_entry() -> void:
 
 func _show_team_heroes() -> void:
 	var f: FloorData = the_floor()
-	var cap := Roster.hero_capacity(f)
+	var cap := cap_of(f)
 	var hs := StrikeTeams.heroes(team(), roster)
 	hint.text = "%s lets %d Hero%s in. Tap a Hero to send it in or hold it back; tap Lead on one to put it in charge (Prototypes act through the leader). %d enter%s." % [f.name, cap, "" if cap == 1 else "es", heroes.size(), "s" if heroes.size() == 1 else ""]
 	if mode == "deploy":
-		hint.text += " A Hero who goes down here sits out the rest of the deployment. Enemies are %s, at Skull Level %d." % [("from District " + str(deploy_spec.get("district"))) if str(deploy_spec.get("district", "")) != "" else "from any District", int(deploy_spec.get("skull", 1))]
+		hint.text += " A Hero who goes down here sits out the rest of the deployment. Enemies are %s, at Skull Level %d, in %d waves." % [("from District " + str(deploy_spec.get("district"))) if str(deploy_spec.get("district", "")) != "" else "from any District", int(deploy_spec.get("skull", 1)), Deployment.waves_for(deploy_spec.get("skull", 1), str(deploy_spec.get("kind", "ambush")))]
 	for c in hs:
 		var n := str(c.get("name", ""))
 		var u := Rules.unit_from_card(Roster.unit_spec(c), "ally")
@@ -636,7 +643,7 @@ func choose_floor(i: int) -> void:
 func toggle_hero(n: String) -> void:
 	var keep := list.scroll
 	var at := heroes.find(n)
-	var cap := Roster.hero_capacity(the_floor())
+	var cap := cap_of(the_floor())
 	var msg := ""
 	if at >= 0:
 		heroes.remove_at(at)

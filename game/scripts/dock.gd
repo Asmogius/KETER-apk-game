@@ -37,7 +37,7 @@ extends RefCounted
 
 const UPGRADES := [
 	{"id": "exchange", "name": "Exchange stock", "what": "More lots of rarer components, and more pre-built Troops and Heroes on offer at once."},
-	{"id": "starter", "name": "Starter bay", "what": "More free starter copies every deployment."},
+	{"id": "starter", "name": "Starter bay", "what": "The copies of more of your designs go out free every deployment."},
 	{"id": "insurance", "name": "Salvage insurance", "what": "Keep a share of the haul's shards and parts after a wipe."},
 	{"id": "scanner", "name": "Long-range scanner", "what": "See what tiles hold further from where the Strike Team stands."}]
 const KIND_LABEL := {"enemy": "Enemy", "elite": "Elite", "miniboss": "Mini-Boss", "boss": "Boss"}
@@ -56,7 +56,7 @@ const DEFAULTS := {"v": 1,
 	"craft": {"shards": [12, 30, 70, 170, 360, 780], "parts": [1, 1, 2, 2, 3, 4], "noParts": 2},
 	"starterStash": {"Hold the Line": 2, "Reroute Power": 2, "Aether Bolt": 2, "Scavenge Parts": 2, "Counterweight Fist": 1, "Overpressure": 1, "Surge Chip": 2},
 	"rareOffer": 3,
-	"effect": {"exchange": [1, 2, 3], "starter": [6, 8, 10], "insurance": [10, 20, 30], "scanner": [2, 3, 4]},
+	"effect": {"exchange": [1, 2, 3], "starter": [1, 2, 3], "insurance": [10, 20, 30], "scanner": [2, 3, 4]},
 	"cost": {"exchange": [[150, "equipment", 0, 10], [400, "equipment", 1, 6], [900, "equipment", 2, 3]],
 		"starter": [[150, "troop", 0, 10], [400, "troop", 1, 6], [900, "troop", 2, 3]],
 		"insurance": [[150, "aether", 0, 10], [400, "aether", 1, 6], [900, "aether", 2, 3]],
@@ -962,9 +962,13 @@ func upgrade(id: String) -> Dictionary:
 ## The effects the rest of the game asks for.
 func starter_free() -> int:
 	var base = Rules.num(world.tables.get("starterFree"), 4) if world != null else 4
-	var b: int = int(base) if Rules.truthy(base) else 0
+	return int(base) if Rules.truthy(base) else 0
+
+
+## (0.36) The Starter bay: how many of your designs' copies go out free (the dearest first).
+func free_designs() -> int:
 	var e = effect("starter")
-	return maxi(b, int(e)) if Rules.truthy(e) else b
+	return int(e) if Rules.truthy(e) else 0
 
 
 func scan_range() -> int:

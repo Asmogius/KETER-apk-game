@@ -97,6 +97,11 @@ static func origin(c: Dictionary) -> String:
 # ---------------------------------------------------------------- how many
 ## The floor's size decides how many Heroes enter: Small 1, Medium 2, Large 3.
 ## A floor saved without a size is sized by counting its tiles.
+## (0.36) On a deployment at Skull 1 or 2, two Heroes may enter whatever the floor's size.
+static func deploy_capacity(f: FloorData, skull) -> int:
+	return maxi(hero_capacity(f), 2) if Deployment.soft(skull) else hero_capacity(f)
+
+
 static func hero_capacity(f: FloorData) -> int:
 	var sz := size_word(f)
 	if sz == "":

@@ -142,7 +142,8 @@ static func begin_team(f: FloorData, r: Roster, setup: Dictionary, seed = null) 
 			"pending": dp["pending"].duplicate() if dp.get("pending") is Array else [],
 			"bounties": dp["bounties"].duplicate() if dp.get("bounties") is Array else []}
 	b.with_cards = true
-	b.waves_total = WAVES_PER_FLOOR
+	# (0.36) a deployment's fight has fewer waves at a low Skull Level, and one fewer in an ambush
+	b.waves_total = Deployment.waves_for(b.deploy["skull"], b.deploy["kind"]) if b.deploy != null else WAVES_PER_FLOOR
 	b.wave = 0
 	b._build_team(setup, "ally")
 	# The Enemy pile: six for every Spawn Tile at its level, from the floor's District
@@ -2482,7 +2483,13 @@ func spawn_wave() -> int:
 	wave_turn = 0
 	var made := 0
 	var missed := 0
-	for t in enemy_spawns():
+	var spawns := enemy_spawns()
+	# (0.36) at Skull 1 or 2 on a deployment, the spawn tiles take turns
+	var turns := deploy != null and spawns.size() > 1 and Deployment.soft(deploy["skull"])
+	for i in spawns.size():
+		var t: Dictionary = spawns[i]
+		if turns and (wave + i) % 2 == 0:
+			continue
 		if unit_at(t["at"]) != null:
 			continue                       # something is standing there
 		var card = null

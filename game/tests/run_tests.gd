@@ -24,6 +24,14 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	if OS.get_cmdline_user_args().has("thirtysix"):
+		_thirtysix()
+		await _thirtysix_scene()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("thirtyfive"):
 		_nine()
 		await _nine_scene()
@@ -305,6 +313,7 @@ func _run() -> void:
 	_thirtythree()
 	_thirtyfour()
 	_thirtyfive()
+	_thirtysix()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -338,6 +347,7 @@ func _run() -> void:
 	await _thirtythree_scene()
 	await _thirtyfour_scene()
 	await _thirtyfive_scene()
+	await _thirtysix_scene()
 	Kit.fresh()
 	print("\nGAME PASS %d  FAIL %d" % [ok, bad])
 	Rules.hooks = {}              # the rules let go of the last battle
@@ -2029,7 +2039,7 @@ func _builder() -> void:
 	ck("builder: an empty Deck says so", ed.grid.tiles.is_empty() and ed.team["deck"].is_empty() and _labels(ed.grid).any(func(l): return "The Deck is empty" in l), _labels(ed.grid))
 	ed.set_deck_only(false)
 	ed.set_copies("Test Drone", 999)
-	ck("builder: never more than 60 of a card", ed.team["deck"]["Test Drone"] == 60)
+	ck("builder: never more than 4 of a card (0.36; 60 before)", ed.team["deck"]["Test Drone"] == 4)
 	ed.set_copies("Test Drone", 0)
 	# what a Hero carries
 	ed.toggle_hero("Quillon Vex")
@@ -4746,14 +4756,14 @@ func _nine_scene() -> void:
 	cm.deploy.stock = _stock(6, 10)
 	dk.show_teams()
 	dk.choose_team(0)
-	ck("0.9 deploy: copies that can't be paid for keep it at the dock", dk.go_btn.disabled and dk.note.text == "The stockpile can't pay for its copies: they cost %d Common, and it holds 6 Common." % (6 + 2 * each), dk.note.text)
+	ck("0.9 deploy: copies that can't be paid for keep it at the dock", dk.go_btn.disabled and dk.note.text == "The stockpile can't pay for its copies: they cost %d Common, and it holds 6 Common." % (2 * each), dk.note.text)
 	cm.deploy.stock = _stock(100, 10)
 	dk.show_teams()
 	dk.choose_team(0)
-	ck("0.9 deploy: those that can are priced before it leaves", not dk.go_btn.disabled and dk.note.text == "Test Vanguard is ready to leave. Its copies: 5 × Frame Trooper: 6 Common (4 free) · 2 × Lancer: %d Common." % (2 * each), dk.note.text)
+	ck("0.9 deploy: those that can are priced before it leaves", not dk.go_btn.disabled and dk.note.text == "Test Vanguard is ready to leave. Its copies: 4 × Frame Trooper, free · 2 × Lancer: %d Common." % (2 * each), dk.note.text)      # (0.36: the 5th trimmed: 4 of a card)
 	dk.go_btn.pressed.emit()
 	await _frames(3)
-	ck("0.9 deploy: leaving pays", cm.deploy.active() and cm.deploy.stock == _stock(100 - 6 - 2 * each, 10), cm.deploy.stock)
+	ck("0.9 deploy: leaving pays", cm.deploy.active() and cm.deploy.stock == _stock(100 - 2 * each, 10), cm.deploy.stock)
 	# ---- the Workshop while it is out
 	scene.open_dock()
 	await _frames(1)
@@ -4883,9 +4893,10 @@ func _ten() -> void:
 		big["parts"][ty][0] = 30
 	dep.stock = big
 	var u1 := dk.upgrade("starter")
-	ck("0.10 upgrades: the Starter bay, paid for, frees 6 starter copies, not 4", u1["ok"] and u1["level"] == 1 and dk.starter_free() == 6 and dep.starter_free() == 6 and dep.stock["shards"] == 850 and dep.stock["parts"]["troop"][0] == 20, dep.stock)
-	t["deck"]["Frame Trooper"] = 6
-	ck("0.10 upgrades: and a team's first 6 Frame Troopers go free", dep.plan(t)["lines"][0]["free"] == 6 and dep.plan(t)["parts"] == _parts(0), dep.plan(t)["lines"])
+	# (0.36) the Starter bay frees the copies of more designs, the starter's 4 as before
+	ck("0.10 upgrades: the Starter bay, paid for, frees one more design's copies (0.36)", u1["ok"] and u1["level"] == 1 and dk.starter_free() == 4 and dep.starter_free() == 4 and dk.free_designs() == 1 and dep.stock["shards"] == 850 and dep.stock["parts"]["troop"][0] == 20, dep.stock)
+	t["deck"]["Frame Trooper"] = 4
+	ck("0.10 upgrades: and a team's 4 Frame Troopers go free", dep.plan(t)["lines"][0]["free"] == 4 and dep.plan(t)["parts"] == _parts(0), dep.plan(t)["lines"])
 	dk.upgrade("insurance")
 	dk.upgrade("scanner")
 	ck("0.10 upgrades: insurance keeps 10% of a wiped haul; the scanner sees 2 steps away; each raised one level, its next level dearer", dk.insurance() == 10 and dk.scan_range() == 2 and dk.level("scanner") == 1 and dk.next_cost("scanner") == {"shards": 400, "type": "equipment", "rarity": 1, "n": 6})
@@ -5032,7 +5043,7 @@ func _ten_scene() -> void:
 	dk.show_tab("upgrades")
 	var srow: Control = dk._rows[1]["row"]
 	ck("0.10 upgrades: four, each at level 0 of 3, with what it does and what the next level costs", dk.row_texts() == ["Exchange stock · level 0 of 3", "Starter bay · level 0 of 3", "Salvage insurance · level 0 of 3", "Long-range scanner · level 0 of 3"]
-		and _labels(srow).has("Level 1 · 150 shards, 10 Common Troop parts") and _labels(srow).any(func(l): return "Now: 4 free starter copies. Next: 6 free starter copies." in l), _labels(srow))
+		and _labels(srow).has("Level 1 · 150 shards, 10 Common Troop parts") and _labels(srow).any(func(l): return "Now: only the starter goes out free. Next: 1 design goes out free." in l), _labels(srow))
 	dk.act(["upgrade", "starter"])
 	ck("0.10 upgrades: one not paid for says what it needs", dk.note.text == "Needs 150 shards and 10 Common troop parts." and dock.level("starter") == 0, dk.note.text)
 	parts["parts"]["troop"][0] = 9
@@ -5040,7 +5051,7 @@ func _ten_scene() -> void:
 	dk.act(["upgrade", "starter"])
 	srow = dk._rows[1]["row"]
 	ck("0.10 upgrades: paid for, it is raised, and says what it does now", dock.level("starter") == 1 and dk.note.text == "Upgraded to level 1." and dk.row_texts()[1] == "Starter bay · level 1 of 3" and _labels(srow).has("Level 2 · 400 shards, 6 Uncommon Troop parts")
-		and _labels(srow).any(func(l): return "Now: 6 free starter copies. Next: 8 free starter copies." in l) and dock.stockpile()["shards"] == 126, [dk.note.text, _labels(srow)])
+		and _labels(srow).any(func(l): return "Now: 1 design goes out free. Next: 2 designs go out free." in l) and dock.stockpile()["shards"] == 126, [dk.note.text, _labels(srow)])
 	# ---- testing
 	dk.show_tab("stockpile")
 	var n0: int = dock.state["restocks"]
@@ -9723,6 +9734,117 @@ func _thirtyfive_scene() -> void:
 	dk.act(["teams"])
 	await _frames(2)
 	ck("0.35 dock: Build one now opens Strike Teams, on the walk-through", ts.visible and ed.visible and ed.guide == 0)
+	scene.queue_free()
+	await _frames(2)
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- (0.36) the audit's first stage
+func _thirtysix() -> void:
+	Kit.fresh()
+	Motion.reset()
+	ck("0.36 options: Developer is off in a new game", not Motion.dev)
+	Motion.set_dev(true)
+	Motion._read = false
+	Motion.dev = false
+	Motion.settings()
+	ck("0.36 options: and kept once set", Motion.dev)
+	Kit.fresh()
+	ck("0.36 words: the dock's glossary has the campaign's words, a line each", Glossary.WORDS.size() >= 10 and Glossary.text().split("\n").size() == Glossary.WORDS.size() and Glossary.text().begins_with("Aether: "))
+	# four copies of a card
+	var t := StrikeTeams.blank("Over")
+	t["deck"] = {"Test Drone": 7, "Test Snare": 3}
+	t["pouch"] = {"Test Spark Chip": 6, "basic|3": 12}
+	StrikeTeams.save_all([t])
+	var back: Dictionary = StrikeTeams.load_all()[0]
+	ck("0.36 copies: a team saved before the limit is trimmed to 4 of a card, Basic Chips aside", back["deck"] == {"Test Drone": 4, "Test Snare": 3} and back["pouch"] == {"Test Spark Chip": 4, "basic|3": 12}, back)
+	# waves and the early game
+	ck("0.36 waves: by Skull Level, 3 3 4 4 5 6 in a POI, one fewer in an ambush (2 at least)",
+		range(1, 7).map(func(k): return Deployment.waves_for(k, "poi")) == [3, 3, 4, 4, 5, 6] and range(1, 7).map(func(k): return Deployment.waves_for(k, "ambush")) == [2, 2, 3, 3, 4, 5])
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var r := Roster.new(x)
+	var small: Array = x.floors().filter(func(f): return Roster.hero_capacity(f) == 1)
+	ck("0.36 early: at Skull 1 or 2 two Heroes may enter a small floor; from Skull 3 its size says", not small.is_empty() and Roster.deploy_capacity(small[0], 1) == 2 and Roster.deploy_capacity(small[0], 2) == 2 and Roster.deploy_capacity(small[0], 3) == 1)
+	var f: FloorData = null
+	for fl in x.floors():
+		var probe := Battle.begin_team(fl, r, StrikeTeams.setup_for(Kit.team(), r, ["Test Warden"], "Test Warden", [], 3, 0), 3)
+		if probe.enemy_spawns().size() >= 2:
+			f = fl
+			break
+	ck("0.36 early: (a floor with two Enemy spawn tiles or more)", f != null)
+	if f != null:
+		var n := 0
+		var su := StrikeTeams.setup_for(Kit.team(), r, ["Test Warden"], "Test Warden", [], 3, 0)
+		su["deploy"] = {"district": f.district, "skull": 1, "kind": "ambush", "pending": [], "bounties": []}
+		var soft := Battle.begin_team(f, r, su, 5)
+		var su6 := su.duplicate(true)
+		su6["deploy"]["skull"] = 6
+		su6["deploy"]["kind"] = "poi"
+		var hard := Battle.begin_team(f, r, su6, 5)
+		var tiles := soft.enemy_spawns().size()
+		ck("0.36 waves: a fight at Skull 1 in an ambush has 2 waves; at Skull 6 in a POI, 6", soft.waves_total == 2 and hard.waves_total == 6 and Battle.begin_team(f, r, StrikeTeams.setup_for(Kit.team(), r, ["Test Warden"], "Test Warden", [], 3, 0), 5).waves_total == 6)
+		ck("0.36 early: at Skull 1 the spawn tiles take turns: half of them in the first wave", soft.enemies_left() == int(ceil(tiles / 2.0)) and hard.enemies_left() == tiles, [soft.enemies_left(), hard.enemies_left(), tiles])
+	# the Starter bay
+	var c := Campaign.new(x, r, x.floors(), 31)
+	var ws := c.workshop
+	c.progress.grant("ch:ch_test_threshold")
+	c.progress.grant("bp:Burst:1")
+	var d1 := _hornet(ws)
+	var d2 := _hornet(ws, "[[target enemy]] takes [[damage 4]] with [[Burst 2]].")
+	d2["name"] = "Big Hornet"
+	var id1 := ws.put(d1)
+	var id2 := ws.put(d2)
+	c.designs_changed()
+	var tm := Kit.field_team("Bay")
+	tm["deck"]["Hornet"] = 2
+	tm["deck"]["Big Hornet"] = 2
+	var p0 := c.deploy.plan(tm)
+	var w1 := (p0["lines"].filter(func(l): return l["name"] == "Hornet")[0]["cost"] as Array)
+	var w2 := (p0["lines"].filter(func(l): return l["name"] == "Big Hornet")[0]["cost"] as Array)
+	c.dock.state["upgrades"]["starter"] = 1
+	var p1 := c.deploy.plan(tm)
+	var dear: String = "Big Hornet" if w2[0] >= w1[0] else "Hornet"
+	var l1: Dictionary = p1["lines"].filter(func(l): return l["name"] == dear)[0]
+	ck("0.36 Starter bay: at level 1 the dearest design's copies go free; the other is paid for", id1 != "" and id2 != "" and l1["free"] == 2 and l1.get("bay") == true and p1["lines"].filter(func(l): return l.get("bay") == true).size() == 1
+		and p1["parts"][0] == p0["parts"][0] - (w2[0] if dear == "Big Hornet" else w1[0]), [p0["lines"], p1["lines"]])
+	Kit.fresh()
+
+
+func _thirtysix_scene() -> void:
+	Kit.fresh()
+	Motion.dev = false
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	await _frames(2)
+	Kit.keep([Kit.field_team()])
+	scene.open_dock()
+	await _frames(2)
+	var dk: DockScreen = scene.dock_screen
+	if dk.dialog != null:
+		dk.dialog.chosen.emit(0)
+		await _frames(1)
+	dk.show_tab("stockpile")
+	ck("0.36 dock: with Developer off, no Testing row", not dk.row_texts().has("Testing"), dk.row_texts())
+	Motion.dev = true
+	dk.show_tab("stockpile")
+	ck("0.36 dock: with it on, the Testing row is back", dk.row_texts().has("Testing"))
+	dk.show_help()
+	ck("0.36 dock: the ? offers Words", dk.dialog != null and dk.dialog.buttons.map(func(b): return b.text) == ["Close", "Words"])
+	dk.dialog.chosen.emit(1)
+	await _frames(1)
+	ck("0.36 dock: Words lists the campaign's words", dk.dialog != null and dk.dialog.title_label.text == "Words" and dk.dialog.text_label.text.begins_with("Aether: "))
+	dk.dialog.chosen.emit(0)
+	await _frames(1)
+	var ob := OptionsBox.new()
+	root.add_child(ob)
+	await _frames(1)
+	ck("0.36 options: a Developer switch, lit as it stands", ob.dev_btns.size() == 2 and ob.dev_btns[true].button_pressed)
+	ob.dev_btns[false].pressed.emit()
+	ck("0.36 options: and turned off from there", not Motion.dev and ob.dev_btns[false].button_pressed)
+	ob.queue_free()
 	scene.queue_free()
 	await _frames(2)
 	Kit.fresh()

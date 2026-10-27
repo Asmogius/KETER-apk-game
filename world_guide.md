@@ -67,7 +67,7 @@ shows its Heroes, the copies of your designs in its Deck, and what they cost.
 - **Every copy costs Troop parts**: the design's cost, once per copy in the
   Deck.
 - **The starter design**, Frame Trooper, comes with **4 free copies** every
-  deployment, or more with the dock's **Starter bay**. It's a plain design on
+  deployment; the dock's **Starter bay** frees the copies of more designs. It's a plain design on
   the General chassis, so you can always go out even with an empty stockpile.
 - **Pre-built copies** bought at the dock's Exchange go too, on top of the
   Deck. They're gone when the deployment ends.

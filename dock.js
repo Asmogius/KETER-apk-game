@@ -46,7 +46,7 @@
   var W=function(){ return window.KETER_WORLD; }, D=function(){ return window.KETER_DEPLOY; }, WS=function(){ return window.KETER_WORKSHOP; };
   var UPGRADES=[
     {id:"exchange", name:"Exchange stock", what:"More lots of rarer components, and more pre-built Troops and Heroes on offer at once."},
-    {id:"starter", name:"Starter bay", what:"More free starter copies every deployment."},
+    {id:"starter", name:"Starter bay", what:"The copies of more of your designs go out free every deployment."},
     {id:"insurance", name:"Salvage insurance", what:"Keep a share of the haul's shards and parts after a wipe."},
     {id:"scanner", name:"Long-range scanner", what:"See what tiles hold further from where the Strike Team stands."}];
   var KIND_LABEL={enemy:"Enemy", elite:"Elite", miniboss:"Mini-Boss", boss:"Boss"};
@@ -66,7 +66,7 @@
     craft:{shards:[12,30,70,170,360,780], parts:[1,1,2,2,3,4], noParts:2},
     starterStash:{"Hold the Line":2, "Reroute Power":2, "Aether Bolt":2, "Scavenge Parts":2, "Counterweight Fist":1, "Overpressure":1, "Surge Chip":2},
     rareOffer:3,
-    effect:{exchange:[1,2,3], starter:[6,8,10], insurance:[10,20,30], scanner:[2,3,4]},
+    effect:{exchange:[1,2,3], starter:[1,2,3], insurance:[10,20,30], scanner:[2,3,4]},
     cost:{exchange:[[150,"equipment",0,10],[400,"equipment",1,6],[900,"equipment",2,3]],
           starter:[[150,"troop",0,10],[400,"troop",1,6],[900,"troop",2,3]],
           insurance:[[150,"aether",0,10],[400,"aether",1,6],[900,"aether",2,3]],
@@ -395,7 +395,9 @@
     return {ok:true, level:s.upgrades[id]};
   }
   /* the effects the rest of the game asks for */
-  function starterFree(){ var base=W()?W().tables().starterFree:4; var e=effect("starter"); return e?Math.max(base,e):base; }
+  function starterFree(){ return W()?W().tables().starterFree:4; }
+  /* (v14.21) the Starter bay: how many of your designs' copies go out free (the dearest first) */
+  function freeDesigns(){ return effect("starter")||0; }
   function scanRange(){ return Math.max(1, effect("scanner")||1); }
   function insurance(){ return effect("insurance"); }
 
@@ -425,7 +427,7 @@
     inv:inv, owned:owned, addCard:addCard, waiting:waiting, cardOf:cardOf, itemKind:itemKind, prebuilts:prebuilts, preCost:preCost, bpPrice:bpPrice, itemPrice:itemPrice,
     restock:restock, stock:stock, seeStock:seeStock, buyParts:buyParts, sellParts:sellParts, buyItem:buyItem, buyCard:buyCard, sellCard:sellCard, buyPre:buyPre,
     combine:combine, swap:swap, bounties:bounties, bountyPay:bountyPay, claim:claim, postBounties:postBounties,
-    level:level, effect:effect, nextCost:nextCost, upgrade:upgrade, starterFree:starterFree, scanRange:scanRange, insurance:insurance,
+    level:level, effect:effect, nextCost:nextCost, upgrade:upgrade, starterFree:starterFree, freeDesigns:freeDesigns, scanRange:scanRange, insurance:insurance,
     deploymentEnded:deploymentEnded, _save:save, _saveInv:saveInv,
     LIMITED:LIMITED, isLimited:isLimited, craftCost:craftCost, craftText:craftText, craft:craft, rares:rares, beginStash:beginStash, pickRare:pickRare,
     heroCards:heroCards, isFree:isFree, owns:owns, ownedHeroes:ownedHeroes, heroRarity:heroRarity, heroPrice:heroPrice, recruitable:recruitable, recruit:recruit, unowned:unowned, heroDistrict:heroDistrict};
