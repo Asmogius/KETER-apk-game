@@ -180,6 +180,7 @@ static func common_cost(each: Array) -> bool:
 
 
 func plan(team: Dictionary, pack = null) -> Dictionary:
+	team = StrikeTeams.trim(team.duplicate(true))      # (0.36) 4 copies of a card at most, as a team is read
 	var reasons := []
 	var heroes := []
 	for h in team.get("heroes", []):
@@ -409,6 +410,7 @@ func needs_field_copy(team: Dictionary) -> bool:
 
 ## The Strike Team leaves the dock. Returns {ok, state} or {ok: false, reasons}.
 func start(team: Dictionary, pack = null) -> Dictionary:
+	team = StrikeTeams.trim(team.duplicate(true))      # (0.36) as plan() reads it
 	var why := reasons_against(team, pack)
 	if not why.is_empty():
 		return {"ok": false, "reasons": why}

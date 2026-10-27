@@ -824,8 +824,8 @@ if shutil.which("xvfb-run"):
     if ok41:
         px = Image.open(p41).convert("RGB").load()
         # (0.25: six tabs, Recruit among them, so the row starts further left)
-        ck("0.10: the tabs along the top (0.34: seven, Craft among them), the Stockpile's lit in cyan (0.11); its headings in cyan, the shards in pale yellow, and what it keeps listed", lit(px, 466, 1258, 30, 60) > 300 and count(p41, (375, 16, 495, 72), CYAN) > 80 and count(p41, (507, 16, 633, 72), CYAN) == 0 and count(p41, (20, 250, 170, 385), CYAN) > 220
-           and count(p41, (78, 302, 236, 322), LOOT, 12) > 100 and lit(px, 30, 200, 405, 425) > 60 and lit(px, 30, 200, 477, 497) > 80, (lit(px, 466, 1258, 30, 60), count(p41, (375, 16, 495, 72), CYAN), count(p41, (507, 16, 633, 72), CYAN), count(p41, (20, 250, 170, 385), CYAN), count(p41, (78, 302, 236, 322), LOOT, 12), lit(px, 30, 200, 405, 425), lit(px, 30, 200, 477, 497)))
+        ck("0.10: the tabs along the top (0.34: seven, Craft among them), the Stockpile's lit in cyan (0.11); its headings in cyan, the shards in pale yellow, and what it keeps listed", lit(px, 466, 1258, 30, 60) > 300 and count(p41, (375, 16, 495, 72), CYAN) > 80 and count(p41, (507, 16, 633, 72), CYAN) == 0 and count(p41, (20, 250, 170, 455), CYAN) > 220      # (0.37: the Colony Rank's row under the shards)
+           and count(p41, (78, 302, 236, 322), LOOT, 12) > 100 and lit(px, 30, 200, 477, 497) > 60 and lit(px, 30, 200, 549, 569) > 80, (lit(px, 466, 1258, 30, 60), count(p41, (375, 16, 495, 72), CYAN), count(p41, (507, 16, 633, 72), CYAN), count(p41, (20, 250, 170, 455), CYAN), count(p41, (78, 302, 236, 322), LOOT, 12), lit(px, 30, 200, 477, 497), lit(px, 30, 200, 549, 569)))
     p42 = pathlib.Path("/tmp/keter_game_exchange.png")
     ok42, log42 = shot(p42, "screen=dock", "stock=0:300", "dock=tab:exchange")
     ck("0.10: the Exchange renders", ok42 and "SCRIPT ERROR" not in log42, log42[-300:])
@@ -920,10 +920,11 @@ if shutil.which("xvfb-run"):
     if ok48:
         px = Image.open(p48).convert("RGB").load()
         # (0.15: and, from Home, the version and the export, with Look again)
-        ck("0.12: Speed, Screen shake and Sound, each with its choice lit in cyan, and Close; from Home, the version and the export, and Look again", count(p48, (290, 120, 990, 600), CYAN) > 300 and lit(px, 758, 930, 622, 676) > 50
-           and count(p48, (480, 552, 800, 605), DIM, 12) > 300 and lit(px, 350, 542, 622, 676) > 50, (count(p48, (290, 120, 990, 600), CYAN), lit(px, 758, 930, 622, 676), count(p48, (480, 552, 800, 605), DIM, 12), lit(px, 350, 542, 622, 676)))
+        # (0.36: in two columns, the buttons higher)
+        ck("0.12: Speed, Screen shake and Sound, each with its choice lit in cyan, and Close; from Home, the version and the export, and Look again", count(p48, (290, 120, 990, 600), CYAN) > 300 and lit(px, 758, 930, 530, 580) > 50
+           and count(p48, (480, 465, 800, 518), DIM, 12) > 300 and lit(px, 350, 542, 530, 580) > 50, (count(p48, (290, 120, 990, 600), CYAN), lit(px, 758, 930, 530, 580), count(p48, (480, 465, 800, 518), DIM, 12), lit(px, 350, 542, 530, 580)))
         # (0.18: and Atmosphere, Subtle lit, under Speed)
-        ck("0.18: Options has Atmosphere under Speed, Subtle lit", count(p48, (676, 206, 812, 256), CYAN) > 40 and count(p48, (526, 206, 662, 256), CYAN) < 10, (count(p48, (676, 206, 812, 256), CYAN), count(p48, (526, 206, 662, 256), CYAN)))
+        ck("0.18: Options has Atmosphere beside Speed (0.36), Subtle lit", count(p48, (932, 196, 1028, 242), CYAN) > 40 and count(p48, (818, 196, 914, 242), CYAN) < 10, (count(p48, (932, 196, 1028, 242), CYAN), count(p48, (818, 196, 914, 242), CYAN)))
     # each against the same moment before it fires: what is in the air is the difference
     def near_count(path, w, tol=20, box=(300, 70, 870, 690)):
         px = Image.open(path).convert("RGB").load()

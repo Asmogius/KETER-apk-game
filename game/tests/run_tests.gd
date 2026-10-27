@@ -3766,7 +3766,7 @@ func _eight() -> void:
 	ck("deploy: an ambush is one floor, in the tile's District at its Skull Level", sp != null and sp["kind"] == "ambush" and sp["count"] == 1 and sp["district"] == "3" and sp["skull"] == 1 and w.floor_named(sp["floor"]) != null and c.deploy.spec() == sp, sp)
 	ck("deploy: nothing else can be done until it is fought", not c.deploy.step_to("0,1")["moved"] and c.deploy.open_cache("0,2") != null if false else c.deploy.step_to("0,1")["why"] == "Finish what you started here first" and not c.deploy.home()["ok"])
 	var now: Dictionary = c.deploy.team_now()
-	ck("deploy: the team as it stands is the team that left", now["heroes"] == ["Test Warden", "Test Striker", "Quillon Vex"] and now["deck"]["Frame Trooper"] == 3 and now["actions"].has("Quillon Vex") and now["consumables"]["Test Stim"] == 2 and now["protos"] == ["Test Aegis Core"] and now["level"] == 2)
+	ck("deploy: the team as it stands is the team that left", now["heroes"] == ["Test Warden", "Test Striker", "Quillon Vex"] and now["deck"]["Frame Trooper"] == 3 and now["actions"].has("Quillon Vex") and now["consumables"]["Test Stim"] == 2 and now["protos"] == ["Test Aegis Core"] and now["level"] == 1)      # (0.37) out, it fights at the Colony Rank
 	var bag := Loot.bag()
 	bag["shards"] = 7
 	bag["parts"]["troop"][0] = 2
@@ -4135,7 +4135,7 @@ func _eight_scene() -> void:
 	var s: SetupScreen = scene.setup
 	var spec: Dictionary = cm.deploy.spec()
 	ck("0.8 fight: Fight opens its setup at who enters, on the floor that was drawn", s.visible and not ms.visible and s.mode == "deploy" and s.step == "heroes" and s.title.text == "Ambush  ·  Skull %d" % spec["skull"] and (s.the_floor().name == spec["floor"] or (ChunkGen.is_gen_key(spec["floor"]) and s.the_floor().name == cm.world.level(spec["floor"])["name"])) and s.the_floor().district == spec["district"] and s.back_btn.text == "Map" and s.steps() == ["heroes", "troops"], [s.title.text, s.step])
-	ck("0.8 fight: it is the Strike Team as it stands, and says what a fall costs", s.team()["heroes"] == ["Test Warden", "Test Striker", "Quillon Vex"] and s.heroes.size() == Roster.hero_capacity(s.the_floor()) and "sits out the rest of the deployment" in s.hint.text, s.hint.text)
+	ck("0.8 fight: it is the Strike Team as it stands, and says what a fall costs", s.team()["heroes"] == ["Test Warden", "Test Striker", "Quillon Vex"] and s.heroes.size() == Roster.deploy_capacity(s.the_floor(), spec["skull"]) and "sits out the rest of the deployment" in s.hint.text, s.hint.text)
 	s.back_btn.pressed.emit()
 	await _frames(3)
 	ck("0.8 fight: Map goes back, with the fight still waiting", ms.visible and not s.visible and cm.deploy.cur()["activity"] != null and cm.deploy.cur()["fights"] == 0)

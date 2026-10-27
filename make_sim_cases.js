@@ -76,7 +76,7 @@ const TAKEN = [
   /* attacking */ "simApplyAttack", "simConfirmAttack", "simBurstLive", "simBurstOf", "simBurstPool", "simBurstContinue", "simMoveTo",
   /* the Enemies */ "simEnemyAction", "simHurtsOwnSide", "simStepToward", "simStepAway", "simOneEnemy", "simWhyTarget", "simApplyEnemyAttack",
   /* the round */ "simEnemiesLeft", "simOutcome", "simRunPhase", "simEndOfRound", "simHalf", "simTurnEndTick",
-  /* waves */ "simEnemySpawnTiles", "simRevealFor", "simInstabilityPick", "simSpawnWave", "simNothingMoreComing", "simWaveStep", "simFoePool", "simEnemyWant",
+  /* waves */ "simEnemySpawnTiles", "simRevealFor", "simInstabilityPick", "simSpawnWave", "simWaves", "simSoftSkip", "simNothingMoreComing", "simWaveStep", "simFoePool", "simEnemyWant",
   /* Aether, Chips and cards */ "simAetherLabel", "simPhaseGenerate", "simPhaseChips", "simPhaseDraw", "simDrawPhase", "simCardCost", "simCostLabel",
   /* a Strike Team's fight */ "simRefCard", "simWizDeckCards", "simWizFinish", "simPlace",
   /* the Deck Builder's checks */ "normaliseLoadout", "loHeroes", "loDeckCards", "actionSlotsOf", "aetherCostOf", "pouchMinimum", "chipByKey", "pouchEntries", "pouchCount",
@@ -110,7 +110,10 @@ const stubs = `
 var R = window.KETER_RULES, SIM = {units:[], log:[]}, DICE = null, CARDS = [], WAVES_PER_FLOOR = 6;
 var SIM_WIZ = {}, SIM_DEP = null, LOADOUT = null;
 /* a deployment's fight tells the deployment how it went; here that is only kept, to be compared */
-var KETER_DEPLOY = { fightOver: function(res){ SIM._depRes = res; return {next:"map"}; } };
+var KETER_DEPLOY = { fightOver: function(res){ SIM._depRes = res; return {next:"map"}; },
+  /* (game 0.36) a deployment's waves, and its gentle start: deploy.js's own */
+  waves: function(skull, kind){ var W=[3,3,4,4,5,6], n=W[Math.max(1,Math.min(6,+skull||1))-1]; return kind==="ambush"?Math.max(2,n-1):n; },
+  soft: function(skull){ return (+skull||1)<=2; } };
 function simDeployResultHTML(){ return ""; }
 function simFoeCards(){ return CARDS; }
 function allCards(){ return CARDS; }
