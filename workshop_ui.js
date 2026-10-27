@@ -44,8 +44,11 @@
           (d.starter?'<i class="wsstarter">Starter · '+free+' free copies every deployment · copy it to make your own</i>':'')+
           (out?'<i class="wslock">Out on a deployment · changes wait until it comes home</i>':'')+
           '<i>'+esc(ch?ch.name:"(missing chassis)")+' · power '+cost.power+' / '+(ch?ch.powerCap:"?")+' · '+(c.ok?'<span class="wsok">fits</span>':'<span class="wsbad">does not fit</span>')+'</i>'+
-          '<i>One copy: '+costText(cost.parts)+' · you could pay for '+n+'</i>'+
+          /* (v14.22) a design costing only Common parts goes out free; and its Mark */
+          (cost.parts.every(function(x,r){ return r===0||!x; }) && localStorage.getItem("keter-test-paid-commons")!=="1"?'<i class="wsok">Free to take out: it costs only Common parts</i>':'<i>One copy: '+costText(cost.parts)+' · you could pay for '+n+'</i>')+
+          '<i>'+W().MK_NAME[W().mkOf(d)-1]+(W().mkOf(d)<3?' · Mk '+(W().mkOf(d)===1?'II':'III')+' for '+W().mkText(W().mkCost(d))+' Troop parts':' · the highest Mark')+'</i>'+
           '<div class="pxrow"><button class="ghost" data-wsopen="'+esc(d.id)+'">'+(W().locked(d.id)?'View':'Edit')+'</button><button class="ghost" data-wscopy="'+esc(d.id)+'">Copy</button>'+
+          (W().mkOf(d)<3 && !(window.KETER_DEPLOY&&window.KETER_DEPLOY.active())?'<button class="ghost" data-wsmk="'+esc(d.id)+'">Raise to '+W().MK_NAME[W().mkOf(d)]+'</button>':'')+
           (W().locked(d.id)?'':'<button class="ghost" data-wsdel="'+esc(d.id)+'">Delete</button>')+'</div></div>';
       }).join("")+'</div>':'<p class="pxnote">No designs yet. Start one on a chassis you have found.</p>');
   }
@@ -249,7 +252,10 @@
       if((a=t.getAttribute("data-wspreup"))){ var ps=W().prebuilts(), i=ps.map(function(x){ return x.id; }).indexOf(a);
         if(i>0){ var up=ps[i], dn=ps[i-1], o=up.order; up.order=dn.order; dn.order=o; if(up.order===dn.order) up.order=dn.order-1; W().put(up); W().put(dn); } draw(); return; }
       if((a=t.getAttribute("data-wsopen"))){ CUR=W().get(a); draw(); return; }
-      if((a=t.getAttribute("data-wscopy"))){ var c=W().get(a); c.id=null; delete c.starter; c.name=c.name+" copy"; W().put(c); draw(); return; }
+      if((a=t.getAttribute("data-wscopy"))){ var c=W().get(a); c.id=null; delete c.starter; delete c.mk; c.name=c.name+" copy"; W().put(c); draw(); return; }
+      /* (v14.22) raise it a Mark */
+      if((a=t.getAttribute("data-wsmk"))){ var dm=W().get(a), mc=W().mkCost(dm); if(!mc) return; var to=W().mkOf(dm)+1, g=W().MK[to-1];
+        if(confirm("Raise "+dm.name+" to "+W().MK_NAME[to-1]+"? +"+g.hp+" Health, +"+g.ac+" Armor Class"+(g.move?", +"+g.move+" Movement":"")+" in all, for "+W().mkText(mc)+" Troop parts.")){ var ur=W().upgrade(a); MSG=ur.ok?(dm.name+" raised to "+W().MK_NAME[ur.mk-1]+"."):ur.why; draw(); } return; }
       if((a=t.getAttribute("data-wsdel"))){ if(confirm("Delete this design? Decks that use it lose it.")){ W().remove(a); draw(); } return; }
       if((a=t.getAttribute("data-wsres"))){ var r=P().research(a); MSG=r.ok?("Researched "+a+" level "+r.level+" for "+r.price+" shards."):r.why; draw(); return; }
       if(id==="wsAll"){ P().setUnlockAll(!P().unlockAll()); draw(); return; }

@@ -256,6 +256,50 @@ func put(d: Dictionary) -> String:
 	return str(d["id"])
 
 
+# ---------------------------------------------------------------- (0.37) Mk II and Mk III
+## A design made tougher (Health, Armor Class, then Movement), paid in Troop
+## parts at the dock. The starter can be raised too; the cost of its copies
+## doesn't change.
+const MK := [{"hp": 0, "ac": 0, "move": 0}, {"hp": 3, "ac": 1, "move": 0}, {"hp": 6, "ac": 2, "move": 1}]
+const MK_COST := [null, [8, 4, 0, 0, 0, 0], [0, 6, 4, 0, 0, 0]]
+const MK_NAME := ["Mk I", "Mk II", "Mk III"]
+
+
+static func mk_of(d) -> int:
+	var v = Rules.num(d.get("mk"), 1) if d is Dictionary else 1
+	return clampi(int(v) if Rules.truthy(v) else 1, 1, 3)
+
+
+## What raising it a Mark costs, in Troop parts by rarity; null at Mk III.
+static func mk_cost(d) -> Variant:
+	var m := mk_of(d)
+	return null if m >= 3 else (MK_COST[m] as Array).duplicate()
+
+
+## Raises a design a Mark, paid out of this stockpile (changed in place).
+func upgrade(id, stock: Dictionary, team_out := false) -> Dictionary:
+	var d = designs.get(str(id))
+	if d == null and str(id) == STARTER["id"]:
+		d = starter()
+	if not (d is Dictionary) or Rules.truthy(d.get("prebuilt")):
+		return {"ok": false, "why": "No such design"}
+	if team_out:
+		return {"ok": false, "why": "The dock is closed while a Strike Team is out"}
+	var c = mk_cost(d)
+	if c == null:
+		return {"ok": false, "why": "Already Mk III"}
+	var st := Loot.norm(stock)
+	for r in 6:
+		if st["parts"]["troop"][r] < int(c[r]):
+			return {"ok": false, "why": "Needs %s Troop parts" % cost_text(c)}
+	for r in 6:
+		st["parts"]["troop"][r] -= int(c[r])
+	stock.merge(st, true)
+	d["mk"] = mk_of(d) + 1
+	designs[str(d["id"])] = d
+	return {"ok": true, "mk": d["mk"], "cost": c}
+
+
 func remove(id) -> bool:
 	if locked(id):
 		return false
@@ -528,11 +572,13 @@ func to_card(d: Dictionary) -> Dictionary:
 	var card := {"id": "WS-" + str(d["id"] if Rules.truthy(d.get("id")) else "").substr(3).to_upper(), "cardType": "troop",
 		"name": d["name"] if Rules.truthy(d.get("name")) else "Untitled design",
 		"affinities": [{"district": dist, "level": 0}] if dist != "" else [], "archetypes": [], "rarity": null, "level": 1,
-		"stats": {"hp": s.call(st.get("hp"), 12.0), "ac": s.call(st.get("ac"), 10.0), "int": s.call(st.get("int"), 10.0), "nrg": s.call(st.get("nrg"), 3.0), "move": s.call(st.get("move"), 4.0), "uslot": "1"},
+		"stats": {"hp": _plus(s.call(st.get("hp"), 12.0), MK[mk_of(d) - 1]["hp"]), "ac": _plus(s.call(st.get("ac"), 10.0), MK[mk_of(d) - 1]["ac"]), "int": s.call(st.get("int"), 10.0), "nrg": s.call(st.get("nrg"), 3.0), "move": _plus(s.call(st.get("move"), 4.0), MK[mk_of(d) - 1]["move"]), "uslot": "1"},
 		"aetherCost": {"generic": Rules.ints(Scoring.num(ae.get("generic"), 1.0)), "affinity": Rules.ints(Scoring.num(ae.get("affinity"), 0.0)), "affinity2": 0},
 		"combatRoles": (c["subtypes"] if c.get("subtypes") is Array else []).map(func(x): return str(x).to_lower()),
 		"entries": entries, "design": d.get("id"), "chassis": c["id"] if Rules.truthy(c.get("id")) else d.get("chassis"),
 		"chassisName": c["name"] if Rules.truthy(c.get("name")) else ""}
+	if mk_of(d) > 1:
+		card["mk"] = mk_of(d)
 	var art = look["art"] if look is Dictionary and Rules.truthy(look.get("art")) else d.get("pixelArt")
 	var token = look["token"] if look is Dictionary and Rules.truthy(look.get("token")) else d.get("pixelToken")
 	if Rules.truthy(art):
@@ -540,6 +586,11 @@ func to_card(d: Dictionary) -> Dictionary:
 	if Rules.truthy(token):
 		card["pixelToken"] = token
 	return card
+
+
+## A stat as text, raised by a Mark's bonus (as JavaScript adds a number to one).
+static func _plus(t: String, n: int) -> String:
+	return t if n == 0 else Scoring.text(Scoring.num(t, 0.0) + n)
 
 
 ## Your designs as Troop cards, each marked as yours.

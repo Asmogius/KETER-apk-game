@@ -25,7 +25,7 @@ with sync_playwright() as p:
     pg.on("pageerror",lambda e:errs.append(str(e)))
     pg.goto("http://127.0.0.1:9977/"); pg.wait_for_timeout(1800)
     E=pg.evaluate
-    ck("the Companion is 14.21", E("()=>document.documentElement.innerHTML.indexOf('14.21')>=0"))
+    ck("the Companion is 14.22", E("()=>document.documentElement.innerHTML.indexOf('14.22')>=0"))
     nz=E("""()=>{ var R=window.KETER_RULES||window.KETER_SIM_RULES||null; if(!R||!R.aetherFromHero) return null;
       return {neu:R.aetherFromHero({affinities:[{district:'neu',level:2}]}), d3:R.aetherFromHero({affinities:[{district:'3',level:2}]})}; }""")
     ck("(14.18) a Neutral Hero generates Neutral Aether; a District's, its District's", nz is not None and nz["neu"]=={"generic":2} and nz["d3"]=={"d3":2}, nz)

@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.36 tightens the campaign:
-4 copies of a card, shorter early fights, and the dock's testing tools put away; v0.35 rebalanced it.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.37 adds the Colony Rank and
+Mk II and Mk III designs; v0.36 brought 4 copies of a card and shorter early fights.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,21 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.37 (Companion 14.22): **a run that grows**.
+
+- **Colony Rank.** Coming home earns merits: 1, and 1 more for every second
+  Skull Level reached (Skull 4: 3 merits). 3, 7, 12, 18 and 25 merits make
+  Ranks 2 to 6. A Strike Team on a deployment fights at the Colony Rank's
+  Player Level, whatever its own says; its own is for practice. The dock's
+  Stockpile says the rank and what the next one needs.
+- **Mk II and Mk III.** Open a design in the Workshop and raise it a Mark
+  with Troop parts: Mk II (+3 Health, +1 Armor Class) for 8 Common and 4
+  Uncommon; Mk III (+6 Health, +2 Armor Class, +1 Movement in all) for 6
+  Uncommon and 4 Rare. The starter can be raised too. A Mark doesn't change
+  what a copy costs; a copy of the design starts at Mk I.
+- **The Workshop says which designs go out free** (those costing only
+  Common parts).
 
 New in 0.36 (Companion 14.21): **the first of the audit's improvements**.
 
@@ -695,7 +710,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-36_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-37_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -706,7 +721,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-36_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-37_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the

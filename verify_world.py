@@ -149,10 +149,13 @@ with sync_playwright() as p:
     ck("Troops must be designs: a Forge Troop stops it", r["ok"] is False and r["why"]==["Foundry Sentinel is a Forge Troop: Troops come only from the Workshop, unless Common"], r)
     r=E("""()=>{ var p=KETER_DEPLOY.plan(0); return {ok:p.ok, lines:p.lines, parts:p.parts, other:p.other, heroes:p.heroes}; }""")
     ck("the starter design: four copies free", r["ok"] and r["lines"][0]["free"]==4 and r["parts"]==[0]*6 and r["other"]==6, r)
-    r=E("""()=>{ var l=JSON.parse(localStorage.getItem('keter-app-loadouts')); l[0].deck.push('design|Frame Trooper','design|Frame Trooper'); localStorage.setItem('keter-app-loadouts',JSON.stringify(l));
+    # (v14.21: 4 copies of a card at most, so the copies paid for are another design's)
+    r=E("""()=>{ var W=KETER_WORKSHOP, d=W.blank('ch_test_general'); d.name='Plinker'; d.abilities[0].text='[[target enemy]] takes [[damage 2]].'; var id=W.put(d), each=W.cost(W.get(id)).parts[0];
+      var l=JSON.parse(localStorage.getItem('keter-app-loadouts')); l[0].deck.push('design|Plinker','design|Plinker'); localStorage.setItem('keter-app-loadouts',JSON.stringify(l));
       KETER_LOOT.resetStock(); var a=KETER_DEPLOY.plan(0); var st=KETER_LOOT.stock(); st.parts.troop[0]=20; KETER_LOOT.setStock(st); var b=KETER_DEPLOY.plan(0);
-      return {a:{ok:a.ok, afford:a.afford, parts:a.parts}, b:{ok:b.ok, parts:b.parts}}; }""")
-    ck("more copies cost Commons: two more Frame Troopers, 12", r["a"]["parts"][0]==12 and r["a"]["afford"] is False and r["a"]["ok"] is False, r)
+      return {each:each, a:{ok:a.ok, afford:a.afford, parts:a.parts}, b:{ok:b.ok, parts:b.parts}}; }""")
+    each=r["each"]
+    ck("more copies cost Commons: two of another design", each>0 and r["a"]["parts"][0]==2*each and r["a"]["afford"] is False and r["a"]["ok"] is False, r)
     ck("affordable with the parts in the stockpile", r["b"]["ok"], r)
     r=E("""()=>{ var W=KETER_WORKSHOP, d=W.blank('ch_test_general'); d.name='Broken'; d.abilities[0].text='[[target enemy]] takes [[damage 2]] [[Burst 4]].'; var id=W.put(d);
       var l=JSON.parse(localStorage.getItem('keter-app-loadouts')); l[0].deck.push('design|Broken'); localStorage.setItem('keter-app-loadouts',JSON.stringify(l));
@@ -161,7 +164,7 @@ with sync_playwright() as p:
     r=E("""()=>{ KETER_WORLD.resetState(); var s=KETER_DEPLOY.start(0); var st=KETER_LOOT.stock(), h=KETER_LOOT.history()[0];
       return {ok:s.ok, n:s.state.n, pos:s.state.pos, left:st.parts.troop[0], why:h.why, again:KETER_DEPLOY.plan(0).ok, lockD:KETER_DEPLOY.lockedDesign('ds_starter'),
         lockL:KETER_DEPLOY.lockedLoadout(JSON.parse(localStorage.getItem('keter-app-loadouts'))[0]), known:KETER_WORLD.known('1,0')}; }""")
-    ck("deploying pays for the copies, with a note", r["ok"] and r["left"]==8 and r["why"]=="Deployment 1 · copies paid", r)
+    ck("deploying pays for the copies, with a note", r["ok"] and r["left"]==20-2*each and r["why"]=="Deployment 1 · copies paid", r)
     ck("and leaves from the dock, seeing what is around it", r["pos"]=="0,0" and r["n"]==1 and r["known"], r)
     ck("one deployment at a time", r["again"] is False)
     ck("its designs and Strike Team are locked until it comes home", r["lockD"] and r["lockL"], r)
@@ -203,7 +206,7 @@ with sync_playwright() as p:
     ck("and back to the map", pg.locator("#simDepMap").count()==1)
     pg.locator("#simDepMap").click(); pg.wait_for_timeout(400)
     ck("Back to the map opens the World Map", E("()=>document.getElementById('v-world').classList.contains('on')"))
-    ck("the stockpile is untouched while out", E("()=>KETER_LOOT.stock().shards")==0 and E("()=>KETER_LOOT.stock().parts.troop[0]")==8)
+    ck("the stockpile is untouched while out", E("()=>KETER_LOOT.stock().shards")==0 and E("()=>KETER_LOOT.stock().parts.troop[0]")==20-2*each)
 
     # ================= a POI =================
     r=E("""()=>{ var k=T.find('poi',3); T.go(k); var sp=KETER_DEPLOY.enterPOI(k); return {k:k, sp:sp}; }""")
@@ -254,7 +257,7 @@ with sync_playwright() as p:
     r=E("""()=>{ simWizFinish(); T.close();
       var u=KETER_RULES.unitFromCard({name:'Frame Trooper 2', src:'Frame Trooper', cardType:'troop', stats:{hp:14}},'ally'); u.pos={q:99,r:99}; u.hp=0; u.down=true; SIM.units.push(u);
       var html=T.win(); var s=KETER_DEPLOY.cur(); return {html:html, lost:s.lost, left:KETER_DEPLOY.copiesLeft('ds_starter'), deck:KETER_DEPLOY.deckRefs().length, team:KETER_DEPLOY.team().heroes, act:s.activity}; }""")
-    ck("a Troop copy that goes down is gone for the rest of it", r["lost"]=={"ds_starter":1} and r["left"]==5 and r["deck"]==11 and "Copies lost" in r["html"], r)
+    ck("a Troop copy that goes down is gone for the rest of it", r["lost"]=={"ds_starter":1} and r["left"]==3 and r["deck"]==11 and "Copies lost" in r["html"], r)
     ck("won on the retry: the one-floor POI is cleared", r["act"] is None and E("(k)=>KETER_WORLD.isCleared(k)", lostpoi), r)
     ck("and the team fights on with who is left", r["team"]==["test|Test Striker"], r)
     E("()=>T.close()")
@@ -267,7 +270,7 @@ with sync_playwright() as p:
       var t=KETER_DEPLOY.cur(), said=t.log.filter(function(l){ return /A copy of/.test(l.text||String(l)); }).length;
       W.remove(spare);
       return {lost:t.lost, left:KETER_DEPLOY.copiesLeft('ds_starter'), said:said, act:t.activity}; }""")
-    ck("v13.6: the last copy can be lost, and no more; a Troop of a design the team didn't take costs nothing", r["lost"]=={"ds_starter":6} and r["left"]==0 and r["said"]==5 and r["act"] is None, r)
+    ck("v13.6: the last copy can be lost, and no more; a Troop of a design the team didn't take costs nothing", r["lost"]=={"ds_starter":4} and r["left"]==0 and r["said"]==3 and r["act"] is None, r)
     r=E("""()=>{ var k=T.find('poi',1); T.go(k); KETER_DEPLOY.enterPOI(k); T.fight(); var haul=KETER_LOOT.norm(KETER_DEPLOY.cur().haul); var h=T.lose();
       return {h:h, haul:haul.shards, active:KETER_DEPLOY.active(), completed:KETER_WORLD.state().completed, stock:KETER_LOOT.stock().shards, last:KETER_DEPLOY.last().result, lock:KETER_DEPLOY.lockedDesign('ds_starter')}; }""")
     ck("with no Hero left, it is a wipe: the haul is lost", "Deployment lost" in r["h"] and r["haul"]>0 and r["stock"]==0 and not r["active"] and r["last"]=="wipe", r)

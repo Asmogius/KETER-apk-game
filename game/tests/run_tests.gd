@@ -24,6 +24,14 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	if OS.get_cmdline_user_args().has("thirtyseven"):
+		_thirtyseven()
+		await _thirtyseven_scene()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("thirtysix"):
 		_thirtysix()
 		await _thirtysix_scene()
@@ -314,6 +322,7 @@ func _run() -> void:
 	_thirtyfour()
 	_thirtyfive()
 	_thirtysix()
+	_thirtyseven()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -348,6 +357,7 @@ func _run() -> void:
 	await _thirtyfour_scene()
 	await _thirtyfive_scene()
 	await _thirtysix_scene()
+	await _thirtyseven_scene()
 	Kit.fresh()
 	print("\nGAME PASS %d  FAIL %d" % [ok, bad])
 	Rules.hooks = {}              # the rules let go of the last battle
@@ -3970,7 +3980,7 @@ func _eight_scene() -> void:
 	await _frames(2)
 	var rows := dk.row_texts()
 	ck("0.8 dock: with nobody out, World Map opens the dock", dk.visible and not scene.home.visible and not ms.visible and dk.title.text == "The dock")
-	ck("0.8 dock: it lists the stockpile, what you have found, and the deployments", rows == ["Stockpile", "0 Aether shards", "Also kept here", "2 × Test Stim", "2 × Test Repair Kit", "2 × Test Sandbags", "1 × Test Aegis Core", "The stash is empty.", "No blueprints or chassis found yet.", "No deployments yet.", "Testing"] and dk.go_btn.text == "Deploy" and not dk.go_btn.disabled and dk.map_btn.visible, rows)
+	ck("0.8 dock: it lists the stockpile, what you have found, and the deployments", rows == ["Stockpile", "0 Aether shards", "Colony Rank 1", "Also kept here", "2 × Test Stim", "2 × Test Repair Kit", "2 × Test Sandbags", "1 × Test Aegis Core", "The stash is empty.", "No blueprints or chassis found yet.", "No deployments yet.", "Testing"] and dk.go_btn.text == "Deploy" and not dk.go_btn.disabled and dk.map_btn.visible, rows)
 	var qm_said: String = dk.keeper_line.text
 	ck("0.15 dock: QM-7 keeps it: its portrait, its name and one line of its own for the tab", dk.keeper.visible and dk.portrait.texture == Art.menu_piece("qm7") and qm_said != "" and (QM7.LINES["stockpile"] + QM7.LINES["anytime"]).has(qm_said)
 		and dk.go_btn.theme_type_variation == "MainButton" and not dk.hint.visible, qm_said)
@@ -9845,6 +9855,98 @@ func _thirtysix_scene() -> void:
 	ob.dev_btns[false].pressed.emit()
 	ck("0.36 options: and turned off from there", not Motion.dev and ob.dev_btns[false].button_pressed)
 	ob.queue_free()
+	scene.queue_free()
+	await _frames(2)
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- (0.37) Colony Rank, and Mk II and Mk III
+func _thirtyseven() -> void:
+	Kit.fresh()
+	ck("0.37 rank: merits 0, 3, 7, 12, 18, 25 reach Ranks 1 to 6", [0, 2, 3, 6, 7, 12, 18, 24, 25, 99].map(func(m): return Dock.rank_of(m)) == [1, 1, 2, 2, 3, 4, 5, 5, 6, 6])
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var r := Roster.new(x)
+	var c := Campaign.new(x, r, x.floors(), 41)
+	var dk := c.dock
+	ck("0.37 rank: a new run is Colony Rank 1, with no merits, 3 short of Rank 2", dk.rank() == 1 and dk.merits() == 0 and dk.to_next() == 3)
+	var o1 := dk.deployment_ended({"result": "home", "maxSkull": 3, "kills": [], "explored": false})
+	ck("0.37 rank: home from Skull 3 earns 2 merits (1, and 1 for every second Skull Level)", o1.get("merits") == 2 and not o1.has("rank") and dk.merits() == 2 and dk.rank() == 1, o1)
+	var o2 := dk.deployment_ended({"result": "home", "maxSkull": 4, "kills": [], "explored": false})
+	ck("0.37 rank: 3 more make Rank 2, and the dock's log says so", o2.get("merits") == 3 and o2.get("rank") == 2 and dk.rank() == 2 and dk.state["log"].any(func(l): return str(l["text"]).begins_with("Colony Rank 2: Strike Teams deploy at Player Level 2")), [o2, dk.state["log"]])
+	var o3 := dk.deployment_ended({"result": "wipe", "haul": Loot.bag(), "explored": false, "heroes": []})
+	ck("0.37 rank: a wipe earns nothing", not o3.has("merits") and dk.merits() == 5)
+	var back := Dock.tidy({"merits": "7"})
+	ck("0.37 rank: kept with the dock, and read back (a save from before has none)", back["merits"] == 7 and Dock.tidy({})["merits"] == 0)
+	var t := Kit.field_team("Ranked")
+	t["level"] = 6
+	var rich := Loot.bag()
+	rich["shards"] = 2000
+	for ty in ["troop", "equipment", "aether"]:
+		rich["parts"][ty] = [40, 40, 40, 40, 40, 40]
+	c.deploy.stock = rich
+	var go := c.deploy.start(t)
+	ck("0.37 rank: a team out fights at the Colony Rank's Player Level, whatever its own says", go["ok"] and int(c.deploy.team_now()["level"]) == 2, go.get("reasons"))
+	c.deploy.cur()["pos"] = c.world.dock()
+	c.deploy.cur()["steps"] = 1
+	c.deploy.home()
+	# Mk II and Mk III
+	var ws := c.workshop
+	var st := Loot.bag()
+	st["parts"]["troop"] = [7, 4, 0, 0, 0, 0]
+	var no := ws.upgrade("ds_starter", st)
+	ck("0.37 Mk: raising one needs its Troop parts, and says what", not no["ok"] and no["why"] == "Needs 8 Common · 4 Uncommon Troop parts" and Workshop.mk_of(ws.get_design("ds_starter")) == 1, no)
+	st["parts"]["troop"] = [10, 10, 4, 0, 0, 0]
+	var before: Dictionary = ws.to_card(ws.get_design("ds_starter"))["stats"]
+	var up := ws.upgrade("ds_starter", st)
+	var after: Dictionary = ws.to_card(ws.get_design("ds_starter"))["stats"]
+	ck("0.37 Mk: the starter raised to Mk II: +3 Health, +1 Armor Class; the parts are paid", up["ok"] and up["mk"] == 2 and int(after["hp"]) == int(before["hp"]) + 3 and int(after["ac"]) == int(before["ac"]) + 1 and after["move"] == before["move"]
+		and st["parts"]["troop"] == [2, 6, 4, 0, 0, 0] and ws.to_card(ws.get_design("ds_starter"))["mk"] == 2, [before, after, st])
+	var up3 := ws.upgrade("ds_starter", st)
+	var a3: Dictionary = ws.to_card(ws.get_design("ds_starter"))["stats"]
+	ck("0.37 Mk: and to Mk III: +6, +2 and +1 Movement in all, for 6 Uncommon and 4 Rare", up3["ok"] and up3["mk"] == 3 and int(a3["hp"]) == int(before["hp"]) + 6 and int(a3["ac"]) == int(before["ac"]) + 2 and int(a3["move"]) == int(before["move"]) + 1 and st["parts"]["troop"] == [2, 0, 0, 0, 0, 0], [a3, st])
+	ck("0.37 Mk: no higher than Mk III", ws.upgrade("ds_starter", rich)["why"] == "Already Mk III")
+	ck("0.37 Mk: not while a team is out", ws.upgrade("ds_starter", rich, true)["why"] == "The dock is closed while a Strike Team is out")
+	ck("0.37 Mk: the starter is still locked, and its copies cost the same", ws.locked("ds_starter") and ws.cost(ws.get_design("ds_starter"))["parts"] == [6, 0, 0, 0, 0, 0])
+	ck("0.37 Mk: a design at Mk I has none on its card", not ws.to_card(ws.blank("ch_test_general")).has("mk"))
+	Kit.fresh()
+
+
+func _thirtyseven_scene() -> void:
+	Kit.fresh()
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	await _frames(2)
+	Kit.keep([Kit.field_team()])
+	scene.open_dock()
+	await _frames(2)
+	var dk: DockScreen = scene.dock_screen
+	if dk.dialog != null:
+		dk.dialog.chosen.emit(0)
+		await _frames(1)
+	dk.show_tab("stockpile")
+	var at: int = dk.row_texts().find("Colony Rank 1")
+	ck("0.37 dock: the Stockpile says the Colony Rank, the Player Level it deploys at, and the merits to the next", at >= 0 and _labels(dk._rows[at]["row"]).any(func(l): return "Strike Teams deploy at Player Level 1 · 0 merits · 3 more for Rank 2" in l), _labels(dk._rows[maxi(at, 0)]["row"]) if at >= 0 else dk.row_texts())
+	scene.open_workshop()
+	await _frames(2)
+	var wsn: WorkshopScreen = scene.workshop_screen
+	var ed = wsn.editor
+	wsn.edit(scene.campaign.workshop.get_design("ds_starter"))
+	await _frames(1)
+	ck("0.37 Mk: the starter's editor offers Mk II", ed.mk_btn.visible and ed.mk_btn.text == "Mk II" and not ed.mk_btn.disabled)
+	var b := Loot.bag()
+	b["parts"]["troop"] = [8, 4, 0, 0, 0, 0]
+	scene.campaign.deploy.stock = b
+	ed.ask_upgrade()
+	ck("0.37 Mk: it asks first, with what it gives and costs", ed.dialog != null and ed.dialog.title_label.text == "Raise it to Mk II?" and "+3 Health, +1 Armor Class" in ed.dialog.text_label.text and ed.dialog.buttons[0].text == "Raise it", ed.dialog.text_label.text if ed.dialog != null else "")
+	ed.dialog.chosen.emit(0)
+	await _frames(1)
+	ck("0.37 Mk: raised, it offers Mk III, and the parts are spent", Workshop.mk_of(scene.campaign.workshop.get_design("ds_starter")) == 2 and ed.mk_btn.text == "Mk III" and Loot.count(scene.campaign.deploy.stock) == 0 and "Raised to Mk II" in ed.lock_label.text, ed.lock_label.text)
+	ed.copy()
+	await _frames(1)
+	ck("0.37 Mk: a copy starts at Mk I", Workshop.mk_of(ed.d) == 1 and ed.d.get("name") == "Frame Trooper copy")
 	scene.queue_free()
 	await _frames(2)
 	Kit.fresh()

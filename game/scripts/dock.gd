@@ -257,7 +257,7 @@ func carries_all() -> bool:
 
 # ---------------------------------------------------------------- the dock's own state
 static func blank() -> Dictionary:
-	return {"v": 1, "reach": 0, "upgrades": {"exchange": 0, "starter": 0, "insurance": 0, "scanner": 0}, "stock": null, "bounties": [], "rot": {"pre": 0, "items": 0}, "restocks": 0, "log": [], "heroes": {}}
+	return {"v": 1, "reach": 0, "upgrades": {"exchange": 0, "starter": 0, "insurance": 0, "scanner": 0}, "stock": null, "bounties": [], "rot": {"pre": 0, "items": 0}, "restocks": 0, "log": [], "heroes": {}, "merits": 0}
 
 
 ## A saved state with anything missing filled in (dock.js's state()).
@@ -281,6 +281,7 @@ static func tidy(s) -> Dictionary:
 		o["stock"] = null
 	if not o.has("restocks"):
 		o["restocks"] = 0
+	o["merits"] = maxi(0, _pi(o.get("merits")))
 	return o
 
 
@@ -982,8 +983,55 @@ func insurance():
 
 # ---------------------------------------------------------------- a deployment ends: reach, restock, bounties, insurance
 ## o: {result: "home" | "wipe" | ..., maxSkull, kills, haul, explored}.
+# ---------------------------------------------------------------- (0.37) Colony Rank
+## Merits are earned coming home (1, and 1 more for every second Skull Level
+## reached) and for clearing a District; the rank they reach is the Player
+## Level a Strike Team deploys at.
+const RANKS := [0, 3, 7, 12, 18, 25]
+
+
+static func rank_of(m: int) -> int:
+	var r := 1
+	for i in RANKS.size():
+		if m >= RANKS[i]:
+			r = i + 1
+	return r
+
+
+func merits() -> int:
+	return int(state.get("merits", 0))
+
+
+func rank() -> int:
+	return rank_of(merits())
+
+
+## Merits still wanted for the next rank (0 at the top).
+func to_next() -> int:
+	var r := rank()
+	return 0 if r >= 6 else RANKS[r] - merits()
+
+
+## Adds merits; returns the new rank if it rose, else 0.
+func add_merits(n: int) -> int:
+	var was := rank()
+	state["merits"] = merits() + n
+	var now := rank()
+	if now > was:
+		note("Colony Rank %d: Strike Teams deploy at Player Level %d." % [now, now])
+		return now
+	return 0
+
+
 func deployment_ended(o: Dictionary) -> Dictionary:
 	var out := {}
+	if o.get("result") == "home":
+		var msv := Scoring.plus(o.get("maxSkull"))
+		var m := 1 + int(floor((0.0 if is_nan(msv) else msv) / 2.0))
+		out["merits"] = m
+		var up := add_merits(m)
+		if up > 0:
+			out["rank"] = up
 	var ms := Scoring.plus(o.get("maxSkull"))
 	if o.get("result") == "home" and not is_nan(ms) and ms > float(state["reach"]):
 		state["reach"] = mini(6, int(ms))

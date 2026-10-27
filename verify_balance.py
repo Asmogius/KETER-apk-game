@@ -108,6 +108,15 @@ with sync_playwright() as p:
     ck("v14.21: waves by Skull Level, 3 3 4 4 5 6, one fewer in an ambush; Skull 1 and 2 are the gentle ones", r=={"poi":[3,3,4,4,5,6],"amb":[2,2,3,3,4,5],"soft":[True,True,False]}, r)
     r=E("""()=>{ var K=KETER_DOCK, s=K.state(); var a=K.freeDesigns(), f=K.starterFree(); s.upgrades.starter=2; K._save(s); return {a:a, f:f, b:K.freeDesigns(), f2:K.starterFree(), eff:K.tables().effect.starter}; }""")
     ck("v14.21: the Starter bay frees designs (1, 2, 3), and the starter keeps its 4", r=={"a":0,"f":4,"b":2,"f2":4,"eff":[1,2,3]}, r)
+    # ================= v14.22 =================
+    r=E("""()=>{ var K=KETER_DOCK; KETER_DEPLOY.abandon&&KETER_DEPLOY.active()&&KETER_DEPLOY.abandon(); var s=K.state(); s.merits=0; K._save(s);
+      var a=K.deploymentEnded({result:'home', maxSkull:3}), b=K.deploymentEnded({result:'home', maxSkull:4}), w=K.deploymentEnded({result:'wipe'});
+      return {ranks:[0,2,3,7,12,18,25].map(K.rankOf), a:a.merits, b:b.merits, up:b.rank, w:w.merits||0, m:K.merits(), r:K.rank(), next:K.toNext()}; }""")
+    ck("v14.22: Colony Rank: merits coming home (1, +1 every second Skull Level), none for a wipe; 3 7 12 18 25 make Ranks 2 to 6", r=={"ranks":[1,1,2,3,4,5,6],"a":2,"b":3,"up":2,"w":0,"m":5,"r":2,"next":2}, r)
+    r=E("""()=>{ var W=KETER_WORKSHOP, L=KETER_LOOT; var st=L.stock(); st.parts.troop=[8,10,4,0,0,0]; L.setStock(st);
+      var c0=W.toCard(W.get('ds_starter')).stats, a=W.upgrade('ds_starter'), c1=W.toCard(W.get('ds_starter')).stats, b=W.upgrade('ds_starter'), c2=W.toCard(W.get('ds_starter')).stats, no=W.upgrade('ds_starter');
+      return {a:a.mk, b:b.mk, no:no.why, hp:[+c0.hp,+c1.hp,+c2.hp], ac:[+c0.ac,+c1.ac,+c2.ac], mv:[+c0.move,+c2.move], left:L.stock().parts.troop.slice(0,3), card:W.toCard(W.get('ds_starter')).mk}; }""")
+    ck("v14.22: Mk II and Mk III: +3/+1, then +6/+2/+1 Movement, paid in Troop parts; no higher", r["a"]==2 and r["b"]==3 and r["no"]=="Already Mk III" and r["hp"][1]==r["hp"][0]+3 and r["hp"][2]==r["hp"][0]+6 and r["ac"][2]==r["ac"][0]+2 and r["mv"][1]==r["mv"][0]+1 and r["left"]==[0,0,0] and r["card"]==3, r)
     ck("no page errors", not errs, errs)
     b.close()
 print(f"\nBALANCE PASS {len(ok)}  FAIL {len(bad)}")

@@ -270,7 +270,7 @@ with sync_playwright() as p:
       var sc=[T.K.upgrade('scanner'),T.K.upgrade('scanner'),T.K.upgrade('scanner'),T.K.upgrade('scanner')];
       return {no:no.why, a:a, sh:st.shards, tc:st.parts.troop[0], free:free, pfree:pl.lines[0].free, sc:sc.map(function(x){ return x.ok; }), max:sc[3].why, scan:T.K.scanRange(), eq:T.L.stock().parts.equipment.slice(0,3)}; }""")
     ck("an upgrade needs its shards and parts", r["no"]=="Needs 150 shards and 10 Common troop parts", r)
-    ck("Starter bay 1: 6 free starter copies", r["a"]=={"ok":True,"level":1} and r["sh"]==1850 and r["tc"]==10 and r["free"]==6, r)
+    ck("Starter bay 1: one design's copies free (v14.21), the starter keeps its 4", r["a"]=={"ok":True,"level":1} and r["sh"]==1850 and r["tc"]==10 and r["free"]==4 and r["pfree"]==4, r)
     ck("a Strike Team with 4 starters still gets all 4 free", r["pfree"]==4, r)
     ck("three levels each: the scanner to 4 steps, paid in Equipment parts", r["sc"]==[True,True,True,False] and r["max"]=="Already at its highest level" and r["scan"]==4 and r["eq"]==[10,0,0], r)
     r=E("""()=>{ var W=T.W; W.resetState(); var m=W.map(), k=Object.keys(m.tiles).filter(function(x){ return W.dist(x,m.dock)===9 && W.isOpen(x); })[0]; W.stand(k);
@@ -316,7 +316,7 @@ with sync_playwright() as p:
     ck("the Bounties tab: each posted, and what it pays", "per Skull Level it fell at" in tx, tx[:300])
     pg.locator('[data-dktab="upgrades"]').click(); pg.wait_for_timeout(200)
     tx=E("()=>document.getElementById('dkBody').innerText")
-    ck("the Upgrades tab: level, now and next, and the cost", "Starter bay · level 0 of 3" in tx and "Now: 4 free starter copies" in tx and "Costs 150 shards and 10 Common Troop parts" in tx, tx[:400])
+    ck("the Upgrades tab: level, now and next, and the cost", "Starter bay · level 0 of 3" in tx and "Now: only the starter goes out free" in tx and "Costs 150 shards and 10 Common Troop parts" in tx, tx[:400])
     ck("no Dev tools for a player", pg.locator("#dkRestock").count()==0)
     pg.locator('[data-dktab="recruit"]').click(); pg.wait_for_timeout(200)
     tx=E("()=>document.getElementById('dkBody').innerText")

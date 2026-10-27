@@ -146,6 +146,20 @@ Turn parts you have into parts you need:
   Never rarer than your reach.
 - **Swap**: 2 of one part type make 1 of another part type, same rarity.
 
+## Colony Rank
+
+Coming home earns **merits**: 1, and 1 more for every second Skull Level the
+team reached (Skull 2 or 3: 2; Skull 4 or 5: 3; Skull 6: 4). A wipe earns
+none.
+
+| Rank | 1 | 2 | 3 | 4 | 5 | 6 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Merits | 0 | 3 | 7 | 12 | 18 | 25 |
+
+A Strike Team out on a deployment fights at the **Colony Rank's Player
+Level**: that many Chips come out of its Pouch each round. A Loadout's own
+Player Level is for practice.
+
 ## The Bounty Board
 
 Three bounties at a time: two **Enemies** and one **Elite, Mini-Boss or

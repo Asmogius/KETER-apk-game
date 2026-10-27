@@ -32,6 +32,7 @@ var name_label: Label
 var lock_label: Label
 var rename_btn: Button
 var copy_btn: Button
+var mk_btn: Button                     # (0.37) raise it a Mark
 var delete_btn: Button
 var list: TouchList
 var result: VBoxContainer
@@ -70,6 +71,8 @@ func _init() -> void:
 	top.add_child(rename_btn)
 	copy_btn = UI.button("Copy", func(): copy(), 110)
 	top.add_child(copy_btn)
+	mk_btn = UI.button("Mk II", func(): ask_upgrade(), 130)
+	top.add_child(mk_btn)
 	delete_btn = UI.button("Delete", func(): ask_delete(), 110)
 	top.add_child(delete_btn)
 	lock_label = UI.label("", 17, UI.GOLD, true)
@@ -141,8 +144,13 @@ func refresh() -> void:
 	name_label.text = str(d.get("name", "Untitled design"))
 	rename_btn.visible = not locked
 	delete_btn.visible = not locked
+	# (0.37) a saved design can be raised a Mark, the starter too, while the team is home
+	var mk := Workshop.mk_of(ws().get_design(d.get("id")) if Rules.truthy(d.get("id")) else d)
+	mk_btn.visible = Rules.truthy(d.get("id")) and ws().get_design(d["id"]) != null
+	mk_btn.text = Workshop.MK_NAME[mk] if mk < 3 else "Mk III"
+	mk_btn.disabled = mk >= 3 or campaign.deploy.active()
 	if Rules.truthy(d.get("starter")):
-		lock_label.text = "The built-in starter: every deployment brings a few free copies of it, so it can't be changed. Copy it to make your own."
+		lock_label.text = "The built-in starter: every deployment brings a few free copies of it, so it can't be changed; it can be raised a Mark. Copy it to make your own." + ((" " + note) if note != "" else "")
 	elif locked:
 		lock_label.text = "Out on a deployment: it can be changed again once the Strike Team is home. Copy it to change a copy."
 	else:
@@ -580,6 +588,7 @@ func copy() -> void:
 	c["id"] = null
 	c.erase("starter")
 	c.erase("saved")
+	c.erase("mk")                 # (0.37) a copy starts at Mk I
 	var base := str(d.get("name", "Design")) + " copy"
 	var want := base
 	var n := 2
@@ -592,6 +601,45 @@ func copy() -> void:
 	campaign.save()
 	changed.emit()
 	open(campaign, roster, ws().get_design(id))
+
+
+## (0.37) Raise it a Mark: what it costs, and what it gives.
+func ask_upgrade() -> void:
+	if dialog != null or not Rules.truthy(d.get("id")):
+		return
+	var cur = ws().get_design(d["id"])
+	var c = Workshop.mk_cost(cur)
+	if c == null:
+		return
+	var to := Workshop.mk_of(cur) + 1
+	var gain: Dictionary = Workshop.MK[to - 1]
+	var st := Loot.norm(campaign.deploy.stock)
+	var can := true
+	for r in 6:
+		if st["parts"]["troop"][r] < int(c[r]):
+			can = false
+	var text := "%s becomes %s: %s in all, against Mk I. It costs %s Troop parts; the stockpile holds %s." % [str(cur["name"]), Workshop.MK_NAME[to - 1],
+		"+%d Health, +%d Armor Class%s" % [gain["hp"], gain["ac"], (", +%d Movement" % gain["move"]) if gain["move"] > 0 else ""], Workshop.cost_text(c), Workshop.cost_text(st["parts"]["troop"])]
+	dialog = Dialog.new("Raise it to %s?" % Workshop.MK_NAME[to - 1], text + ("" if can else " That isn't enough yet."), ["Raise it", "Not now"] if can else ["OK"], UI.GOLD)
+	add_child(dialog)
+	dialog.chosen.connect(func(k):
+		Motion.pop_out(dialog, dialog.get_meta("box", null))
+		dialog = null
+		if k == 0 and can:
+			upgrade())
+
+
+func upgrade() -> void:
+	var r := ws().upgrade(d.get("id"), campaign.deploy.stock, campaign.deploy.active())
+	if r["ok"]:
+		campaign.designs_changed()
+		campaign.save()
+		changed.emit()
+		d = ws().get_design(d["id"])
+		note = "Raised to %s." % Workshop.MK_NAME[int(r["mk"]) - 1]
+	else:
+		note = str(r["why"]) + "."
+	refresh()
 
 
 func ask_delete() -> void:

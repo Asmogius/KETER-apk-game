@@ -361,7 +361,7 @@ func set_carrier(n: String) -> void:
 func _show_pouch(keep: bool) -> void:
 	var have := StrikeTeams.pouch_count(team, roster)
 	var need := StrikeTeams.pouch_minimum(team, roster)
-	hint.text = "The Pouch holds %d Chip%s. Each round, Chips equal to the Player Level (%d) are drawn into the Bank, where each generates its Aether every round after. %s" % [have, "" if have == 1 else "s", int(team["level"]),
+	hint.text = "The Pouch holds %d Chip%s. Each round, Chips equal to the Player Level (%d; on a deployment, your Colony Rank's) are drawn into the Bank, where each generates its Aether every round after. %s" % [have, "" if have == 1 else "s", int(team["level"]),
 		("The Deck's most expensive card costs %d, so the Pouch needs at least %d." % [need, need]) if need > 0 else "With no Deck yet, any number will do."]
 	var items := _gone_items(team["pouch"].keys(), func(nm): return {"count": int(Rules.num(team["pouch"].get(nm), 0))})
 	for d in StrikeTeams.DISTRICTS:

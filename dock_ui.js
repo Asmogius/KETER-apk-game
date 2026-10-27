@@ -64,6 +64,8 @@
       '<p class="pxnote">Home base between deployments: trade at the Exchange, reclaim parts, take bounties and improve the dock.</p>'+
       (closed?'<p class="wslockbar">The dock is closed while a Strike Team is out. You can look, but trading, reclaiming, upgrades and research wait until it’s home.</p>':'')+
       '<div class="dkstat"><b>'+fmt(st.shards)+'</b> shards · '+fmt(L().count(st))+' components · reach: '+(s.reach?'Skull '+s.reach+' ('+rar(reachR)+' at most)':'none yet — Commons only')+'</div>'+
+      /* (v14.22) the Colony Rank: the Player Level a team deploys at */
+      '<div class="dkstat dkrank">Colony Rank <b>'+X.rank(s)+'</b>: Strike Teams deploy at Player Level '+X.rank(s)+' · '+s.merits+' merit'+(s.merits===1?'':'s')+(X.rank(s)<6?' · '+X.toNext(s)+' more for Rank '+(X.rank(s)+1):' · the highest rank')+'</div>'+
       '<div class="pxrow"><button class="ghost" data-page="world">World Map</button><button class="ghost" data-page="workshop">Workshop</button><button class="ghost" data-page="loot">Stockpile</button></div>'+
       (MSG?'<p class="wsmsg">'+MSG+'</p>':'')+rareHTML()+
       '<div class="seg pxseg">'+tab("exchange","Exchange")+tab("recruit","Recruit")+tab("craft","Craft")+tab("reclaim","Reclaim")+tab("bounties","Bounties")+tab("upgrades","Upgrades")+'</div>'+

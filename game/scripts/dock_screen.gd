@@ -360,6 +360,10 @@ func _stockpile_rows() -> void:
 	_head("Stockpile", "", "Aether shards and components brought home. Troop parts pay for the copies of your designs as a Strike Team leaves; shards buy at the Exchange, and research blueprints in the Workshop.")
 	for l in campaign.stock_lines():
 		_row(l["text"], l.get("sub", ""), Color(l["colour"]), {}, false, "", str(l.get("icon", "")))
+	# (0.37) the Colony Rank: the Player Level a team deploys at
+	var dk0 := dock()
+	_row("Colony Rank %d" % dk0.rank(), "Strike Teams deploy at Player Level %d · %d merit%s%s" % [dk0.rank(), dk0.merits(), "" if dk0.merits() == 1 else "s",
+		(" · %d more for Rank %d" % [dk0.to_next(), dk0.rank() + 1]) if dk0.rank() < 6 else " · the highest rank"], UI.GOLD)
 	var kept := kept_lines()
 	if not kept.is_empty():
 		_head("Also kept here", "", "Consumables and Prototypes you own, packed for a deployment as it leaves; pre-built copies, which join the next one.")

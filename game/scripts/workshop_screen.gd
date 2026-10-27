@@ -180,15 +180,17 @@ func _head_row(text: String, sub := "") -> void:
 
 func _design_rows() -> void:
 	var out := campaign.deploy.active()
-	hint.text = "Design Troops on the chassis you have found, with the blueprints you own. A design is a Troop card: it goes into a Strike Team's Deck, and a deployment pays for its copies as it leaves." + (" The designs out on the deployment are locked until it is home." if out else "")
+	hint.text = "Design Troops on the chassis you have found, with the blueprints you own. A design is a Troop card: it goes into a Strike Team's Deck. A design that costs only Common parts goes out free; any other is paid for, copy by copy, as a team leaves. Open one to raise it to Mk II or Mk III with Troop parts." + (" The designs out on the deployment are locked until it is home." if out else "")
 	for d in ws().list():
 		var ch = ws().chassis_of(d)
 		var dd := Workshop.district_of(ch)
 		var chk := ws().check(d)
 		var cost := ws().cost(d)
 		var n := ws().affordable(d, campaign.deploy.stock)
-		var subs := [["%s · power %d of %s · %s" % [str(ch.get("name")) if ch != null else "(its chassis is missing)", cost["power"], Scoring.text(chk["cap"]), "fits" if chk["ok"] else "doesn't fit"], UI.PALE if chk["ok"] else UI.SOFT_RED],
-			["One copy: %s Troop parts · you could pay for %d" % [Workshop.cost_text(cost["parts"]), n]]]
+		# (0.37) a design that costs only Common parts goes out free; and its Mark
+		var free := Deployment.common_cost(cost["parts"])
+		var subs := [["%s%s · power %d of %s · %s" % [Workshop.MK_NAME[Workshop.mk_of(d) - 1] + " · ", str(ch.get("name")) if ch != null else "(its chassis is missing)", cost["power"], Scoring.text(chk["cap"]), "fits" if chk["ok"] else "doesn't fit"], UI.PALE if chk["ok"] else UI.SOFT_RED],
+			["Free to take out: it costs only Common parts" if free else "One copy: %s Troop parts · you could pay for %d" % [Workshop.cost_text(cost["parts"]), n], UI.GREEN if free else UI.PALE]]
 		var tag := ""
 		if Rules.truthy(d.get("starter")):
 			subs.append(["Starter · %d free copies every deployment · copy it to make your own" % campaign.deploy.starter_free(), UI.GOLD])

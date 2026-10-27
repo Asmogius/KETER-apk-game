@@ -73,6 +73,24 @@
     d.saved=new Date().toISOString(); m[d.id]=clone(d); return write(STORE,m)?d.id:null;
   }
   function remove(id){ if(locked(id)) return false; var m=all(); delete m[id]; return write(STORE,m); }
+  /* (v14.22) Mk II and Mk III: a design made tougher (Health, Armor Class, then Movement), paid in
+     Troop parts at the dock. The starter can be raised too; the cost of its copies doesn't change. */
+  var MK=[{hp:0,ac:0,move:0},{hp:3,ac:1,move:0},{hp:6,ac:2,move:1}], MK_COST=[null,[8,4,0,0,0,0],[0,6,4,0,0,0]], MK_NAME=["Mk I","Mk II","Mk III"];
+  function mkOf(d){ var n=parseInt(d&&d.mk,10)||1; return Math.max(1,Math.min(3,n)); }
+  function mkCost(d){ var m=mkOf(d); return m>=3?null:MK_COST[m].slice(); }
+  function mkText(c){ var R=window.KETER_LOOT.RARITIES; return c.map(function(n,r){ return n?n+" "+R[r].label:""; }).filter(Boolean).join(" · "); }
+  function upgrade(id){
+    var m=all(), d=m[id]; if(!d || d.prebuilt) return {ok:false, why:"No such design"};
+    if(window.KETER_DEPLOY && window.KETER_DEPLOY.active()) return {ok:false, why:"The dock is closed while a Strike Team is out"};
+    var c=mkCost(d); if(!c) return {ok:false, why:"Already Mk III"};
+    var L=window.KETER_LOOT, st=L.stock();
+    if(c.some(function(n,r){ return st.parts.troop[r]<n; })) return {ok:false, why:"Needs "+mkText(c)+" Troop parts"};
+    c.forEach(function(n,r){ st.parts.troop[r]-=n; }); L.setStock(st);
+    d.mk=mkOf(d)+1; m[id]=d; write(STORE,m);
+    try{ var h=JSON.parse(localStorage.getItem("keter-app-stockpile-log")||"[]"), bag=L.bag(); c.forEach(function(n,r){ bag.parts.troop[r]=-n; });
+      h.unshift({t:new Date().toISOString(), why:d.name+" raised to "+MK_NAME[d.mk-1], bag:bag}); localStorage.setItem("keter-app-stockpile-log",JSON.stringify(h.slice(0,30))); }catch(e){}
+    return {ok:true, mk:d.mk, cost:c};
+  }
   function chassisOf(d){ return d && CH() ? CH().get(d.chassis) : null; }
   /* an attack's numbers start at the role's baseline, within the chassis's maximums */
   function blankAbility(ch, kind){
@@ -189,7 +207,8 @@
     var look=null; try{ look=window.KETER_SKINS?window.KETER_SKINS.picsOfDesign(d):null; }catch(e){}
     return {id:"WS-"+String(d.id||"").slice(3).toUpperCase(), cardType:"troop", name:d.name||"Untitled design",
       affinities:dist?[{district:dist, level:0}]:[], archetypes:[], rarity:null, level:1,
-      stats:{hp:String(num(st.hp,12)), ac:String(num(st.ac,10)), int:String(num(st.int,10)), nrg:String(num(st.nrg,3)), move:String(num(st.move,4)), uslot:"1"},
+      stats:{hp:String(num(st.hp,12)+MK[mkOf(d)-1].hp), ac:String(num(st.ac,10)+MK[mkOf(d)-1].ac), int:String(num(st.int,10)), nrg:String(num(st.nrg,3)), move:String(num(st.move,4)+MK[mkOf(d)-1].move), uslot:"1"},
+      mk:mkOf(d)>1?mkOf(d):undefined,
       aetherCost:{generic:num(ch.aether&&ch.aether.generic,1), affinity:num(ch.aether&&ch.aether.affinity,0), affinity2:0},
       combatRoles:(ch.subtypes||[]).map(function(x){ return String(x).toLowerCase(); }),
       entries:(d.abilities||[]).map(function(a){
@@ -206,7 +225,7 @@
   /* pre-built Troops as cards: for deployments and fights only, never the Deck Builder */
   function prebuiltCards(){ return prebuilts().map(function(d){ var c=toCard(d); c._src="prebuilt"; c._design=d.id; c.prebuilt=true; return c; }); }
 
-  window.KETER_WORKSHOP={PROJECTILES:PROJECTILES, STORE:STORE, WS_KEY:WS_KEY, DEFAULTS:DEFAULTS, ROLES:ROLES, tables:tables, saveTables:saveTables, resetTables:resetTables,
+  window.KETER_WORKSHOP={MK:MK, MK_COST:MK_COST, MK_NAME:MK_NAME, mkOf:mkOf, mkCost:mkCost, mkText:mkText, upgrade:upgrade, PROJECTILES:PROJECTILES, STORE:STORE, WS_KEY:WS_KEY, DEFAULTS:DEFAULTS, ROLES:ROLES, tables:tables, saveTables:saveTables, resetTables:resetTables,
     STARTER:STARTER, locked:locked, list:list, prebuilts:prebuilts, prebuiltCards:prebuiltCards, get:get, put:put, remove:remove, blank:blank, blankAbility:blankAbility, chassisOf:chassisOf, maxOf:maxOf, bestHit:bestHit, leastOf:leastOf, fieldsFor:fieldsFor, isAttack:isAttack,
     abilityPower:abilityPower, power:power, check:check, cost:cost, affordable:affordable, toCard:toCard, cards:cards};
 })();

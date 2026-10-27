@@ -193,7 +193,7 @@
   function team(){
     var s=cur(); if(!s) return null; var hs=heroRefs(s), acts={};
     hs.forEach(function(r){ if(s.lo.actions[r]) acts[r]=s.lo.actions[r]; });
-    return {name:s.lo.name+" · deployed", level:s.lo.level, heroes:hs, deck:deckRefs(s), actions:acts, pouch:clone(s.lo.pouch||{}), deployed:true, pack:clone(s.pack||{cons:{},protos:{}})};
+    return {name:s.lo.name+" · deployed", level:K()&&K().rank?K().rank():s.lo.level, heroes:hs, deck:deckRefs(s), actions:acts, pouch:clone(s.lo.pouch||{}), deployed:true, pack:clone(s.pack||{cons:{},protos:{}})};
   }
   function copiesLeft(id, live){ var s=live||cur(); if(!s) return 0; return Math.max(0,((s.copies||{})[id]||0)+((s.pre||{})[id]||0)-(s.lost[id]||0)); }
 

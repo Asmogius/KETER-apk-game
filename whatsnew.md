@@ -6,6 +6,14 @@ the Change Log.
 
 <!-- NEWEST ENTRY GOES BELOW THIS LINE -->
 
+## v14.22 — Colony Rank, Mk II and Mk III
+
+Alongside game 0.37.
+
+- **Colony Rank**: coming home earns merits (1, and 1 more for every second Skull Level reached); 3, 7, 12, 18 and 25 merits make Ranks 2 to 6. On a deployment a team fights at the rank's Player Level; a Loadout's own Player Level is for practice. The Dock shows the rank under the stockpile.
+- **Mk II and Mk III**: the Workshop raises a design a Mark with Troop parts (+3 Health and +1 Armor Class; then +6, +2 and +1 Movement in all). The starter too. A copy starts at Mk I.
+- The Workshop marks the designs that go out free (costing only Common parts).
+
 ## v14.21 — Four of a card, shorter early fights
 
 Alongside game 0.36.

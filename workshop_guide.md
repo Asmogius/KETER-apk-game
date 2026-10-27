@@ -224,6 +224,20 @@ Designs can be changed only at the dock. A design that's out on a deployment
 opens read-only, marked **Out on a deployment**, until the Strike Team comes
 home.
 
+## Mk II and Mk III
+
+A saved design can be **raised a Mark** with Troop parts, from the Designs
+tab (the game: open the design, then **Mk II**). The starter can be raised
+too; its copies stay free.
+
+| Mark | In all, against Mk I | Costs |
+| --- | --- | --- |
+| Mk II | +3 Health, +1 Armor Class | 8 Common and 4 Uncommon Troop parts |
+| Mk III | +6 Health, +2 Armor Class, +1 Movement | 6 Uncommon and 4 Rare Troop parts |
+
+A Mark doesn't change what a copy costs. A copy of the design starts at Mk I.
+Not while a Strike Team is out.
+
 ## Designs are cards
 
 Every design is a real Troop card:

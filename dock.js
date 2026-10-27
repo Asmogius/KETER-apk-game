@@ -127,8 +127,8 @@
     if(keep.length) d.items=keep; if(JSON.stringify(t.free)!==JSON.stringify(DEFAULTS.free)) d.free=t.free; if(Object.keys(d).length) write(TAB_KEY,d); }
 
   /* ---- the dock's own state ---- */
-  function blank(){ return {v:1, reach:0, upgrades:{exchange:0, starter:0, insurance:0, scanner:0}, stock:null, bounties:[], rot:{pre:0, items:0}, restocks:0, log:[], heroes:{}}; }
-  function state(){ var s=read(KEY,null)||blank(); s.upgrades=s.upgrades||{}; UPGRADES.forEach(function(u){ s.upgrades[u.id]=parseInt(s.upgrades[u.id],10)||0; }); s.rot=s.rot||{pre:0,items:0}; s.bounties=s.bounties||[]; s.log=s.log||[]; s.reach=+s.reach||0;
+  function blank(){ return {v:1, reach:0, upgrades:{exchange:0, starter:0, insurance:0, scanner:0}, stock:null, bounties:[], rot:{pre:0, items:0}, restocks:0, log:[], heroes:{}, merits:0}; }
+  function state(){ var s=read(KEY,null)||blank(); s.upgrades=s.upgrades||{}; UPGRADES.forEach(function(u){ s.upgrades[u.id]=parseInt(s.upgrades[u.id],10)||0; }); s.rot=s.rot||{pre:0,items:0}; s.bounties=s.bounties||[]; s.log=s.log||[]; s.reach=+s.reach||0; s.merits=Math.max(0,parseInt(s.merits,10)||0);
     if(!s.heroes || typeof s.heroes!=="object" || Array.isArray(s.heroes)) s.heroes={}; return s; }
   function save(s){ return write(KEY,s); }
   function reset(){ try{ localStorage.removeItem(KEY); localStorage.removeItem(INV_KEY); }catch(e){} }
@@ -402,8 +402,18 @@
   function insurance(){ return effect("insurance"); }
 
   /* ---- a deployment ends: reach, restock, bounties, insurance ---- */
+  /* (v14.22) Colony Rank: merits earned coming home (1, and 1 more for every second Skull Level
+     reached) and (Stage C) for clearing a District; the rank is the Player Level a team deploys at */
+  var RANKS=[0,3,7,12,18,25];
+  function rankOf(m){ var r=1; RANKS.forEach(function(t,i){ if(m>=t) r=i+1; }); return r; }
+  function rank(s){ return rankOf((s||state()).merits); }
+  function merits(s){ return (s||state()).merits; }
+  function toNext(s){ s=s||state(); var r=rankOf(s.merits); return r>=6?0:RANKS[r]-s.merits; }
+  function addMerits(s, n, why){ var was=rankOf(s.merits); s.merits+=n; var now=rankOf(s.merits);
+    if(now>was) note(s, "Colony Rank "+now+": Strike Teams deploy at Player Level "+now+"."); return now>was?now:0; }
   function deploymentEnded(o){
     o=o||{}; var s=state(), out={};
+    if(o.result==="home"){ var m=1+Math.floor((+o.maxSkull||0)/2); out.merits=m; var up=addMerits(s, m, "home"); if(up) out.rank=up; }
     if(o.result==="home" && +o.maxSkull>s.reach){ s.reach=Math.min(6,+o.maxSkull); out.reach=s.reach; note(s, "Reach extended to Skull Level "+s.reach+"."); }
     /* (v14.14) a wipe loses the recruited Heroes who went out with it; the free ones come back */
     if(o.result==="wipe" && Array.isArray(o.heroes)){
@@ -428,7 +438,7 @@
     restock:restock, stock:stock, seeStock:seeStock, buyParts:buyParts, sellParts:sellParts, buyItem:buyItem, buyCard:buyCard, sellCard:sellCard, buyPre:buyPre,
     combine:combine, swap:swap, bounties:bounties, bountyPay:bountyPay, claim:claim, postBounties:postBounties,
     level:level, effect:effect, nextCost:nextCost, upgrade:upgrade, starterFree:starterFree, freeDesigns:freeDesigns, scanRange:scanRange, insurance:insurance,
-    deploymentEnded:deploymentEnded, _save:save, _saveInv:saveInv,
+    deploymentEnded:deploymentEnded, RANKS:RANKS, rank:rank, rankOf:rankOf, merits:merits, toNext:toNext, addMerits:addMerits, _save:save, _saveInv:saveInv,
     LIMITED:LIMITED, isLimited:isLimited, craftCost:craftCost, craftText:craftText, craft:craft, rares:rares, beginStash:beginStash, pickRare:pickRare,
     heroCards:heroCards, isFree:isFree, owns:owns, ownedHeroes:ownedHeroes, heroRarity:heroRarity, heroPrice:heroPrice, recruitable:recruitable, recruit:recruit, unowned:unowned, heroDistrict:heroDistrict};
 })();

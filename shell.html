@@ -10849,7 +10849,9 @@ function renderLoadout(body){
     '<div class="dkfield"><label>Loadout name</label>'+
       '<input id="loName" value="'+esc(lo.name||"")+'"></div>'+
     '<div class="dkfield"><label>Player Level</label>'+
-      '<input id="loLevel" type="number" min="1" max="6" value="'+esc(lvl)+'"></div>';
+      '<input id="loLevel" type="number" min="1" max="6" value="'+esc(lvl)+'"></div>'+
+    /* (v14.22) a deployment uses the Colony Rank instead */
+    '<div class="dknote" style="margin:0 12px 6px;font-size:11px;color:var(--dim);">For practice. On a deployment the team fights at your Colony Rank'+(window.KETER_DOCK&&KETER_DOCK.rank?' ('+KETER_DOCK.rank()+')':'')+'.</div>';
   html+=pingHTML(pingsForLoadout(lo).filter(function(p){ return p[3]; }));
   html+='<div class="dksec">Heroes '+heroes.length+" of 3</div>";
   if(!heroes.length){

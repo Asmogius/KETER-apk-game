@@ -527,6 +527,9 @@ func team_now() -> Variant:
 	var pp = c["pack"]["protos"]
 	t["protos"] = pp.keys().filter(func(k): return int(pp[k]) > 0) if pp is Dictionary else pp.duplicate()
 	t["deployed"] = true
+	# (0.37) a team out fights at the Colony Rank's Player Level
+	if dock != null:
+		t["level"] = dock.rank()
 	return t
 
 
