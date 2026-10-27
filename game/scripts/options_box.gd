@@ -16,6 +16,7 @@ var shake_btns := {}           # true/false -> Button
 var buzz_btns := {}            # (0.33) true/false -> Button
 var sound_btns := {}
 var dev_btns := {}             # (0.36) the Developer switch
+var music_btns := {}           # (0.39) the music: Off, Low, High
 var close_btn: Button
 var look_btn: Button
 var again_btn: Button                 # (0.15) Look again (from Home)
@@ -61,6 +62,8 @@ func _init() -> void:
 		[[true, "On"], [false, "Off"]], buzz_btns, func(k): Motion.set_buzz(k)))
 	grid.add_child(_row("Sound", "Retro blips for shots, hits, cards and buttons.",
 		[[true, "On"], [false, "Off"]], sound_btns, func(k): Motion.set_sound(k)))
+	grid.add_child(_row("Music", "Chiptune loops for Home, the map and fights.",
+		[["off", "Off"], ["low", "Low"], ["high", "High"]], music_btns, func(k): Motion.set_music(k)))
 	grid.add_child(_row("Developer", "The dock's testing buttons: restock, reach, reset.",
 		[[true, "On"], [false, "Off"]], dev_btns, func(k): Motion.set_dev(k)))
 	about = Look.read("", UI.DIM, true)
@@ -129,6 +132,8 @@ func _show() -> void:
 		buzz_btns[k].set_pressed_no_signal(k == Motion.buzz)
 	for k in dev_btns:
 		dev_btns[k].set_pressed_no_signal(k == Motion.dev)
+	for k in music_btns:
+		music_btns[k].set_pressed_no_signal(k == Motion.music)
 
 
 func _ready() -> void:

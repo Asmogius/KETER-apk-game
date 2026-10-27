@@ -132,6 +132,9 @@ var hand_btn: Button
 var cons_btn: Button
 var chips_btn: Button
 var piles_btn: Button
+var hand_strip: HandStrip               # (0.39) the hand, always in sight
+var hero_strip: HeroStrip               # (0.39) your Heroes' Health and Energy
+var coach: Coach = null                 # (0.39) the first deployment fight's field guide
 var home_note := ""           # what the home screen has to say about the export
 var log_panel: LogPanel
 var dialog: Dialog = null
@@ -179,6 +182,7 @@ func _ready() -> void:
 		SaveSlots.start()
 	sound = Sound.new()
 	add_child(sound)
+	add_child(Music.new())                 # (0.39) the music
 	get_tree().node_added.connect(_on_node_added)
 	board = Board.new()
 	add_child(board)
@@ -470,6 +474,9 @@ func _leave_battle() -> void:
 	if neon != null:
 		neon.queue_free()
 		neon = null
+	if coach != null:
+		coach.queue_free()          # (0.39) unread, it waits for the next deployment fight
+		coach = null
 	_close_dialog()
 	_close_sheet()
 	_close_x()
@@ -490,6 +497,8 @@ func _leave_battle() -> void:
 	cons_btn.visible = false
 	chips_btn.visible = false
 	piles_btn.visible = false
+	hand_strip.visible = false
+	hero_strip.visible = false
 	floor_label.text = ""
 	round_label.text = ""
 	info.text = ""
@@ -595,7 +604,14 @@ func reload_cards() -> void:
 		studio_screen.roster = roster
 
 
+## (0.39) The music for this screen.
+func _music(n: String) -> void:
+	if Music.host != null and is_instance_valid(Music.host):
+		Music.host.want(n)
+
+
 func show_home() -> void:
+	_music("home")
 	if forge_screen != null and _sandbox_tools().any(func(p): return p[1].visible):
 		_remember_sandbox()
 	_turn()
@@ -677,6 +693,7 @@ func open_world() -> void:
 
 
 func open_dock() -> void:
+	_music("map")
 	if campaign == null:
 		return
 	_turn()
@@ -702,6 +719,7 @@ func open_workshop() -> void:
 
 ## The map, with the Strike Team where it stands (or nobody out, to look around).
 func show_map() -> void:
+	_music("map")
 	if campaign == null:
 		return
 	_turn()
@@ -789,6 +807,9 @@ func _on_deploy_start(_team: Dictionary, team_setup: Dictionary, seed = null) ->
 	map_view.visible = false
 	board.visible = true
 	show_battle(Battle.begin_team(setup.deploy_floor, roster, team_setup, seed))
+	# (0.39) the first deployment fight: QM-7's field guide, beside the board
+	if not Motion.coached:
+		show_coach()
 
 
 func _on_start(fi: int, hero_cards: Array, troop_cards: Array) -> void:
@@ -832,6 +853,9 @@ func start_battle(fi: int, hero_cards: Array, troop_cards: Array, seed = null) -
 
 ## Puts a battle on the board, ready to play.
 func show_battle(fight: Battle) -> void:
+	# (0.39) a fight's loop, or a Boss's on a Boss floor
+	var bossy := fight.floor_data != null and (str(fight.floor_data.raw.get("type", "")) + str(fight.floor_data.raw.get("poiType", ""))).to_lower().contains("boss")
+	_music("boss" if bossy else "fight")
 	_turn(true)
 	_close_dialog()
 	battle = fight
@@ -944,8 +968,10 @@ func _update_bar() -> void:
 		cons_btn.text = "Consumables %d" % battle.consumables.filter(func(c): return not Rules.truthy(c.get("used"))).size()
 		chips_btn.text = "Chips %d" % range(battle.bank.size()).filter(func(i): return battle.chip_text(battle.bank[i]) != "" and not Rules.truthy(battle.bank[i].get("spent"))).size()
 		piles_btn.text = "Deck %d  \u00b7  Discard %d" % [battle.deck.size(), battle.discard.size()]
+		hand_strip.show_hand(battle, roster)
 		if hand_tray.visible:
 			_fill_tray(hand_tray.kind)
+	hero_strip.show_heroes(battle, selected_id)
 	_layout_info()
 
 
@@ -2038,6 +2064,30 @@ func run_enemy_phase() -> void:
 		show_result()
 		return
 	_say("Round %d: your turn. Energy is refilled.%s" % [battle.round, ("  " + said) if said != "" else ""])
+	# (0.39) the camera comes back to your Units for your turn (not waited for)
+	var mine: Array = battle.side_units("ally").filter(func(u): return not Rules.truthy(u.get("down")) and u.get("pos") is Dictionary)
+	if not mine.is_empty():
+		var mid := Vector2.ZERO
+		for u in mine:
+			mid += Board.at(Battle.tile_of(u))
+		_follow_point(mid / mine.size())
+
+
+## (0.39) QM-7's field guide, at the right of the board under the bar.
+func show_coach() -> void:
+	if coach != null:
+		return
+	coach = Coach.new()
+	coach.anchor_left = 1.0
+	coach.anchor_right = 1.0
+	coach.offset_left = -450
+	coach.offset_right = -14
+	coach.offset_top = BAR_H + 14
+	coach.finished.connect(func():
+		if coach != null:
+			coach.queue_free()
+			coach = null)
+	ui.add_child(coach)
 
 
 ## The round turns over. The Enemies' turn ends (held shots lapse, hazards
@@ -2949,6 +2999,8 @@ func _layout_info() -> void:
 	cons_btn.visible = show and _has_consumables()
 	chips_btn.visible = show and _has_effect_chips()
 	piles_btn.visible = show
+	hand_strip.visible = show
+	hero_strip.visible = battle != null and not log_panel.visible
 	var x := 12.0
 	for pair in [[hand_btn, HAND_W], [cons_btn, CONS_W], [chips_btn, CHIPS_W]]:
 		var b: Button = pair[0]
@@ -3058,20 +3110,20 @@ func _build_ui() -> void:
 	aether_btn.add_child(aether_gems)
 	row.add_child(aether_btn)
 	# (an icon as the others are: as words and an icon, its icon was squeezed out)
-	undo_btn = _icon_button("bar_undo", "Undo", undo_move)
+	undo_btn = _icon_button("bar_undo", "Undo", undo_move, "Undo")
 	row.add_child(undo_btn)
-	auto_btn = _icon_button("bar_auto", "Auto: off", toggle_auto)
+	auto_btn = _icon_button("bar_auto", "Auto: off", toggle_auto, "Auto")
 	auto_btn.toggle_mode = true
 	row.add_child(auto_btn)
 	# (0.12) the speed, and Options
-	speed_btn = _icon_button("", "Speed and Options", open_options)
+	speed_btn = _icon_button("", "Speed and Options", open_options, "Speed")
 	row.add_child(speed_btn)
 	_show_speed()
-	log_btn = _icon_button("bar_log", "Log", toggle_log)
+	log_btn = _icon_button("bar_log", "Log", toggle_log, "Log")
 	row.add_child(log_btn)
-	fit_btn = _icon_button("bar_fit", "Fit", _fit)
+	fit_btn = _icon_button("bar_fit", "Fit", _fit, "Fit")
 	row.add_child(fit_btn)
-	new_btn = _icon_button("bar_leave", "Leave", ask_leave)
+	new_btn = _icon_button("bar_leave", "Leave", ask_leave, "Leave")
 	row.add_child(new_btn)
 	next_btn = _button("End turn", next_round)
 	next_btn.theme_type_variation = "MainButton"
@@ -3140,6 +3192,28 @@ func _build_ui() -> void:
 	piles_btn.pressed.connect(func(): toggle_tray("discard"))
 	piles_btn.visible = false
 	ui.add_child(piles_btn)
+	# (0.39) the hand as small cards over the piles, and the Heroes down the left
+	hand_strip = HandStrip.new()
+	hand_strip.anchor_top = 1.0
+	hand_strip.anchor_bottom = 1.0
+	hand_strip.offset_left = 12
+	hand_strip.offset_top = -108 - HandStrip.MINI.y
+	hand_strip.offset_bottom = -108
+	hand_strip.visible = false
+	hand_strip.tapped.connect(func(i):
+		if not busy and not walking and play.is_empty():
+			read_hand_card(i))
+	ui.add_child(hand_strip)
+	hero_strip = HeroStrip.new()
+	hero_strip.position = Vector2(12, BAR_H + 36)
+	hero_strip.visible = false
+	hero_strip.tapped.connect(func(id):
+		if battle == null or busy or walking:
+			return
+		var hu = battle.unit_by_id(id)
+		if hu != null and not Rules.truthy(hu.get("down")) and battle.pvp == 0:
+			select(hu))
+	ui.add_child(hero_strip)
 
 	# the phase the round is in, across the top of the board
 	banner = PanelContainer.new()
@@ -3292,11 +3366,17 @@ func _build_ui() -> void:
 
 
 ## (0.14) A button that is only an icon; its name is in its tooltip.
-func _icon_button(icon_id: String, name: String, fn: Callable) -> Button:
+func _icon_button(icon_id: String, name: String, fn: Callable, word := "") -> Button:
 	var b := _button("", fn)
 	b.theme_type_variation = "IconButton"
 	b.tooltip_text = name
 	b.custom_minimum_size = Vector2(56, 52)
+	# (0.39) a word under the icon, so it says what it is
+	if word != "":
+		b.text = word
+		b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+		b.add_theme_font_size_override("font_size", Look.fs(13))
+		b.custom_minimum_size = Vector2(60, 60)
 	if icon_id != "":
 		b.icon = Art.icon2(icon_id)
 	b.expand_icon = true
@@ -3399,7 +3479,7 @@ func _fit() -> void:
 	var r := board.extent()
 	var vp := get_viewport_rect().size
 	# below the board: the bottom line, and in a Strike Team's fight the Hand button
-	var foot := 84.0 if (battle != null and battle.with_cards) else 48.0
+	var foot := (84.0 + HandStrip.MINI.y + 24.0) if (battle != null and battle.with_cards) else 48.0      # (0.39) and the hand's strip
 	var room := Vector2(vp.x, vp.y - BAR_H - foot)
 	var z := clampf(minf(room.x / maxf(r.size.x, 1.0), room.y / maxf(r.size.y, 1.0)) * 0.92, ZOOM_MIN, ZOOM_MAX)
 	z = step_below(z)

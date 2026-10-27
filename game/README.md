@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.38 gives the campaign a goal:
-clear the six Districts by beating their Cores; v0.37 brought the Colony Rank and Mk II and Mk III designs.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.39 brings music, a clearer fight
+and map, and a field guide for the first fight; v0.38 gave the campaign a goal: clear the six Districts.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,26 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.39 (Companion 14.23): **the fight and the map, clearer; and music**.
+
+- **Your hand, always in sight**: a strip of small cards along the bottom of
+  a Strike Team's fight, each faded if it can't be played now. Tap one to
+  read it and Play it. The Hand tray is still there for the full cards.
+- **Your Heroes down the left**, each with its Health as a bar and its
+  Energy. Tap one to select it.
+- **The bar's buttons say what they are**: Undo, Auto, Speed, Log, Fit and
+  Leave each have a word under the icon.
+- **The camera comes back to your Units** when your turn begins.
+- **QM-7's field guide**: the first deployment fight has five short pages
+  beside the board (your Heroes, Aether, your hand, waves, End turn). Read
+  or skipped, it isn't shown again.
+- **Music**: the game makes its own chiptune loops (Home, the World Map and
+  the dock, a fight, and a Boss's floor), as it makes its sounds. Options'
+  Music: Off, Low (as it starts) or High.
+- **A clearer World Map**: the ground is a little quieter, ground not yet
+  seen darker and with nothing standing on it, and what a tile holds glows
+  in its colour until it is cleared.
 
 New in 0.38 (Companion 14.23): **a goal: clear the Districts**.
 
@@ -725,7 +745,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-38_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-39_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -736,7 +756,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-38_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-39_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the

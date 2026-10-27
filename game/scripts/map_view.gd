@@ -23,7 +23,8 @@ const INK := Color("#0e0c0c")
 const TEAM := Color("#73efe8")
 const STEP_TIME := 0.14          # seconds a step takes to show
 const ART_SCALE := 2.0           # what stands on the map: at twice its pixels, as in a fight
-const UNKNOWN := 0.55            # how bright ground not yet seen is
+const UNKNOWN := 0.42            # how bright ground not yet seen is (0.39: darker, so what is known stands out)
+const GROUND := 0.86             # (0.39) how bright the ground is drawn
 const PROP_SHARE := 5            # one empty tile in this many has something standing on it
 const APRON := Vector2(32, 18)   # where the leader stands at the dock: before the Hangar, right of its door
 
@@ -284,7 +285,8 @@ func _draw() -> void:
 			if not grounds.has(d):
 				grounds[d] = Art.map_ground(d)
 			var seen: bool = k == dock or world.known(k) or not known_any
-			var f := (1.0 - 0.07 * (sk - 1)) * (1.0 if seen else dim)
+			# (0.39) the ground a little quieter, so what stands on it reads first
+			var f := (1.0 - 0.07 * (sk - 1)) * (1.0 if seen else dim) * GROUND
 			var g = pick_from(grounds[d], k)
 			if g != null:
 				_ground(g, c, f)
@@ -293,8 +295,8 @@ func _draw() -> void:
 				draw_colored_polygon(Hex.corners(c, s), Color(col.r * f, col.g * f, col.b * f))
 			if not seen:
 				_scanlines(c)
-			# a District's things, on one empty tile in five
-			if k != dock and world.content_at(k) == null and d != "" and _hash(k + "p") % PROP_SHARE == 0:
+			# a District's things, on one empty tile in five (0.39: only where the team has seen, so the unknown stays calm)
+			if seen and k != dock and world.content_at(k) == null and d != "" and _hash(k + "p") % PROP_SHARE == 0:
 				if not things.has(d):
 					things[d] = Art.map_props(d)
 				var pr = pick_from(things[d], k)
@@ -375,10 +377,14 @@ func _icon(kind: String, c: Vector2, alpha: float, k := 1.0) -> void:
 		draw_texture_rect(tex, Rect2(c.x - w / 2.0, c.y - SIZE, w, 2.0 * SIZE), false, Color(1, 1, 1, alpha))
 		return
 	# (k: larger when the map is far off, so it can still be read)
+	var rim: Color = ic["plate"]
+	# (0.39) a soft glow round what is still there to be had, so it stands out from the ground
+	if alpha >= 1.0:
+		draw_colored_polygon(Hex.corners(c, 34.0 * k), Color(rim, 0.16))
+		draw_colored_polygon(Hex.corners(c, 27.0 * k), Color(rim, 0.22))
 	var pts := Hex.corners(c, 20.0 * k)
 	draw_colored_polygon(pts, Color("#14121d", 0.92 * alpha))
 	pts.append(pts[0])
-	var rim: Color = ic["plate"]
 	draw_polyline(pts, Color(rim, alpha), 2.0 * k)
 	var ts := tex.get_size() * ART_SCALE * k
 	draw_texture_rect(tex, Rect2(c - ts / 2.0, ts), false, Color(1, 1, 1, alpha))

@@ -435,6 +435,8 @@ func _run() -> void:
 				scene.toggle_log()
 			elif t == "hand":
 				scene.toggle_hand()
+			elif t == "coach":
+				scene.show_coach()          # (0.39) the field guide
 			elif t.begins_with("card:"):
 				scene.read_hand_card(int(t.substr(5)))
 			elif t == "bank":

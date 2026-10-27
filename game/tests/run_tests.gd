@@ -24,6 +24,13 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	if OS.get_cmdline_user_args().has("thirtynine"):
+		await _thirtynine_scene()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("thirtyeight"):
 		_thirtyeight()
 		await _thirtyeight_scene()
@@ -368,6 +375,7 @@ func _run() -> void:
 	await _thirtysix_scene()
 	await _thirtyseven_scene()
 	await _thirtyeight_scene()
+	await _thirtynine_scene()
 	Kit.fresh()
 	print("\nGAME PASS %d  FAIL %d" % [ok, bad])
 	Rules.hooks = {}              # the rules let go of the last battle
@@ -6408,7 +6416,8 @@ func _fourteen_scene() -> void:
 	# ---- the bar
 	var bar_btns: Array = [scene.aether_btn, scene.undo_btn, scene.auto_btn, scene.speed_btn, scene.log_btn, scene.fit_btn, scene.new_btn, scene.next_btn]
 	ck("0.14 bar: End turn is the one gold button", scene.next_btn.theme_type_variation == "MainButton" and bar_btns.filter(func(b): return b.theme_type_variation == "MainButton").size() == 1)
-	ck("0.14 bar: Undo, Auto, Log, Fit and Leave are icons, each named in its tooltip", [[scene.undo_btn, "Undo"], [scene.auto_btn, "Auto: off"], [scene.log_btn, "Log"], [scene.fit_btn, "Fit"], [scene.new_btn, "Leave"]].all(func(p): return p[0].icon != null and p[0].text == "" and p[0].tooltip_text == p[1] and p[0].theme_type_variation == "IconButton"),
+	# (0.39) each with a word under its icon
+	ck("0.14 bar: Undo, Auto, Log, Fit and Leave are icons, each named in its tooltip", [[scene.undo_btn, "Undo", "Undo"], [scene.auto_btn, "Auto: off", "Auto"], [scene.log_btn, "Log", "Log"], [scene.fit_btn, "Fit", "Fit"], [scene.new_btn, "Leave", "Leave"]].all(func(p): return p[0].icon != null and p[0].text == p[2] and p[0].tooltip_text == p[1] and p[0].theme_type_variation == "IconButton"),
 		[scene.auto_btn.tooltip_text, scene.log_btn.tooltip_text])
 	ck("0.14 bar: where you are reads in VT323, the round in Jersey 10", scene.floor_label.get_theme_font("font") == Look.body() and scene.round_label.get_theme_font("font") == Look.font() and scene.round_label.text == "Round %d" % bt.round)
 	bt.aether = {"generic": 2, "d3": 3}
@@ -10037,6 +10046,76 @@ func _thirtyeight_scene() -> void:
 	scene.show_home()
 	await _frames(1)
 	ck("0.38 home: and counts a District cleared", "1 of 6 Districts cleared" in scene.home.world_sub.text, scene.home.world_sub.text)
+	scene.queue_free()
+	await _frames(2)
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- (0.39) the fight's screen, and the field guide
+func _thirtynine_scene() -> void:
+	Kit.fresh()
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	await _frames(2)
+	var t := Kit.team()
+	var fi := 0
+	scene.start_team_battle(fi, t, StrikeTeams.setup_for(t, scene.roster, ["Test Warden", "Test Striker"], "Test Warden", [], 3, 0), 7)
+	await _frames(3)
+	var b: Battle = scene.battle
+	ck("0.39 fight: the hand is in sight along the bottom, a small card each", scene.hand_strip.visible and scene.hand_strip.count() == b.hand.size() and b.hand.size() > 0, [scene.hand_strip.count(), b.hand.size()])
+	var heroes: Array = b.side_units("ally").filter(func(u): return str(u.get("cardType", "")).to_lower().contains("hero"))
+	ck("0.39 fight: the Heroes down the left, with their Health and Energy", scene.hero_strip.visible and scene.hero_strip.get_child_count() == heroes.size()
+		and _labels(scene.hero_strip).any(func(l): return l.begins_with("Health %d/" % int(heroes[0]["hp"]))), _labels(scene.hero_strip))
+	ck("0.39 fight: the bar's buttons say what they are", scene.auto_btn.text == "Auto" and scene.log_btn.text == "Log" and scene.fit_btn.text == "Fit" and scene.new_btn.text == "Leave" and scene.speed_btn.text == "Speed")
+	scene.hand_strip.tapped.emit(0)
+	await _frames(1)
+	ck("0.39 fight: a card in the strip, tapped, is read in full", scene.sheet != null)
+	scene._close_sheet()
+	await _frames(1)
+	scene.hero_strip.tapped.emit(str(heroes[0]["id"]))
+	await _frames(1)
+	ck("0.39 fight: a Hero in the strip, tapped, is selected", scene.selected_id == str(heroes[0]["id"]))
+	scene.toggle_hand()
+	await _frames(1)
+	ck("0.39 fight: with the Hand tray open, the strip stands aside", not scene.hand_strip.visible)
+	scene.toggle_hand()
+	await _frames(1)
+	# the field guide
+	Motion.coached = false
+	scene.show_coach()
+	await _frames(1)
+	var co: Coach = scene.coach
+	ck("0.39 guide: QM-7's field guide, page 1 of 5", co != null and co.count.text == "1 of 5" and "Your Heroes" in co.title.text)
+	for i in 4:
+		co.next_btn.pressed.emit()
+	ck("0.39 guide: Next turns the pages, to Got it", co.page == 4 and co.next_btn.text == "Got it")
+	co.next_btn.pressed.emit()
+	await _frames(1)
+	ck("0.39 guide: read, it is put away and not shown again", scene.coach == null and Motion.coached)
+	Motion.coached = false
+	scene.show_coach()
+	scene.coach.skip_btn.pressed.emit()
+	await _frames(1)
+	ck("0.39 guide: Skip puts it away too", scene.coach == null and Motion.coached)
+	# the music
+	var loop := Music.make("fight")
+	ck("0.39 music: a fight's loop is made, 4 bars at its tempo, and repeats", loop.loop_mode == AudioStreamWAV.LOOP_FORWARD and loop.mix_rate == Music.RATE
+		and abs(loop.data.size() / 2.0 / Music.RATE - 4 * 4 * 60.0 / Music.TRACKS["fight"]["bpm"]) < 0.01, loop.data.size())
+	ck("0.39 music: the four loops", Music.TRACKS.keys() == ["home", "map", "fight", "boss"])
+	Motion.set_music("high")
+	Motion._read = false
+	Motion.music = "low"
+	Motion.settings()
+	ck("0.39 music: Options keeps the level chosen", Motion.music == "high")
+	var ob := OptionsBox.new()
+	root.add_child(ob)
+	await _frames(1)
+	ck("0.39 options: Music, Off, Low or High, lit as it stands", ob.music_btns.size() == 3 and ob.music_btns["high"].button_pressed)
+	ob.music_btns["off"].pressed.emit()
+	ck("0.39 options: and set from there", Motion.music == "off")
+	ob.queue_free()
 	scene.queue_free()
 	await _frames(2)
 	Kit.fresh()
