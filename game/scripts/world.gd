@@ -37,7 +37,7 @@ var floors: Array = []        # [{key, name, district, skull, type, size, test, 
 var chunks: Array = []        # (0.20) the battlefield chunks among the export's floors, as the Sandbox saves them
 ## What you know of it: {known, stood, cleared: {tile: deployment number}, completed}.
 ## It is the Campaign's to save; this class only reads and changes it.
-var state := {"known": {}, "stood": {}, "cleared": {}, "completed": 0}
+var state := {"known": {}, "stood": {}, "cleared": {}, "completed": 0, "districts": {}}
 var loot: Loot                # the stream every roll comes from
 
 
