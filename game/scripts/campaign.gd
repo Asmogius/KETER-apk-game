@@ -129,8 +129,10 @@ func load_saved() -> void:
 		if was_out:
 			deploy.recall()
 		var done: int = world.state["completed"]
+		var districts = world.state.get("districts", {})
 		world.state = World.blank_state()
 		world.state["completed"] = done
+		world.state["districts"] = districts          # (0.38) a District cleared stays so, on any map
 		if world.exists():
 			note = (note + " " if note != "" else "") + "This export has a different World Map, so exploration starts again. Your stockpile and what you have found are kept." + (" The Strike Team that was out has been brought home with its haul." if was_out else "")
 		elif was_out:

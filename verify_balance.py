@@ -117,6 +117,15 @@ with sync_playwright() as p:
       var c0=W.toCard(W.get('ds_starter')).stats, a=W.upgrade('ds_starter'), c1=W.toCard(W.get('ds_starter')).stats, b=W.upgrade('ds_starter'), c2=W.toCard(W.get('ds_starter')).stats, no=W.upgrade('ds_starter');
       return {a:a.mk, b:b.mk, no:no.why, hp:[+c0.hp,+c1.hp,+c2.hp], ac:[+c0.ac,+c1.ac,+c2.ac], mv:[+c0.move,+c2.move], left:L.stock().parts.troop.slice(0,3), card:W.toCard(W.get('ds_starter')).mk}; }""")
     ck("v14.22: Mk II and Mk III: +3/+1, then +6/+2/+1 Movement, paid in Troop parts; no higher", r["a"]==2 and r["b"]==3 and r["no"]=="Already Mk III" and r["hp"][1]==r["hp"][0]+3 and r["hp"][2]==r["hp"][0]+6 and r["ac"][2]==r["ac"][0]+2 and r["mv"][1]==r["mv"][0]+1 and r["left"]==[0,0,0] and r["card"]==3, r)
+    # ================= v14.23 =================
+    r=E("""()=>{ var W=KETER_WORLD; W.resetState(); var c=W.cores(), ks=Object.keys(c), m=W.map(), far=true;
+      ks.forEach(function(k){ Object.keys(m.tiles).forEach(function(t){ if(String(m.tiles[t].d)===c[k] && W.dist(t,m.dock)>W.dist(k,m.dock)) far=false; }); });
+      var k1=W.coreOf('1'), cn=W.contentAt(k1); var a=W.instability(); W.clearDistrict('1',1); W.clearDistrict('2',1);
+      for(var i=0;i<6;i++) W.endDeployment();
+      return {ds:ks.map(function(k){ return c[k]; }).sort(), far:far, cn:cn, a:a, b:W.instability(), cleared:W.isCleared(k1), list:W.districtsCleared()}; }""")
+    ck("v14.23: a Core for each District at its far edge, a POI; clearing it lasts, and brings Instability", r["ds"]==["1","2","3","4","5","6"] and r["far"] and r["cn"]["core"]=="1" and r["cn"]["name"]=="District 1 Core" and r["a"]==0 and r["b"]==6 and r["cleared"] and r["list"]==["1","2"], r)
+    r=E("()=>{ var W=KETER_WORLD; W.newMap(77); var l=W.districtsCleared(); W.resetState(); return l; }")
+    ck("v14.23: a District cleared stays so on a new map", r==["1","2"], r)
     ck("no page errors", not errs, errs)
     b.close()
 print(f"\nBALANCE PASS {len(ok)}  FAIL {len(bad)}")

@@ -6,6 +6,15 @@ the Change Log.
 
 <!-- NEWEST ENTRY GOES BELOW THIS LINE -->
 
+## v14.23 — Clear the Districts
+
+Alongside game 0.38.
+
+- **Each District has a Core** (★), its tile farthest from the dock: a POI of three floors, the last a Boss's where one fits.
+- **Beat it to clear the District for good**: 5 merits for the Colony Rank, and the Core never comes back.
+- **Dimensional Instability arrives**: 3% in a deployment's fights for every District cleared, 15% at most.
+- The World Map says how many of the six are cleared. Clear them all and the colony is safe.
+
 ## v14.22 — Colony Rank, Mk II and Mk III
 
 Alongside game 0.37.

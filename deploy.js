@@ -216,11 +216,12 @@
     var d=W().districtOf(k), sk=W().skullOf(k), c=W().contentAt(k), fl;
     if(kind==="poi"){
       if(c && c.unique){ fl=(c.unique.floors||[]).filter(function(f){ return W().floors().some(function(x){ return x.key===f; }); }); if(!fl.length) fl=W().drawFloors(d, sk, W().floorCount(sk), {tile:k}); }
-      else fl=W().drawFloors(d, sk, W().floorCount(sk), {tile:k});
+      /* (v14.23) a District Core: three floors, the last a Boss's where one fits */
+      else fl=W().drawFloors(d, sk, c&&c.core?3:W().floorCount(sk), {tile:k});
     } else fl=W().drawFloors(d, sk, 1, {ambush:true, tile:k});
     if(!fl.length) return null;
     s.activity={kind:kind, tile:k, district:d, skull:sk, floors:fl, index:0, name:kind==="poi"?(c&&c.name||"POI"):"Ambush",
-      type:kind==="poi"?(c&&c.type||""):"", unique:c&&c.unique?c.unique.id:null, tileAmbush:!!opts.tileAmbush, fromEvent:!!opts.fromEvent};
+      type:kind==="poi"?(c&&c.type||""):"", unique:c&&c.unique?c.unique.id:null, core:kind==="poi"&&c&&c.core?c.core:null, tileAmbush:!!opts.tileAmbush, fromEvent:!!opts.fromEvent};
     note(s, kind==="poi" ? "Entered "+s.activity.name+" ("+fl.length+" floor"+(fl.length===1?"":"s")+")." : "Ambushed"+(opts.fromEvent?" after an event":"")+".");
     save(s); return spec();
   }
@@ -229,7 +230,7 @@
   function spec(){
     var s=cur(); if(!s||!s.activity) return null; var a=s.activity;
     return {floor:a.floors[a.index], district:a.district, skull:a.skull, kind:a.kind, index:a.index, count:a.floors.length,
-      name:a.name, type:a.type, tile:a.tile, n:s.n, pending:s.items.slice()};
+      name:a.name, type:a.type, tile:a.tile, n:s.n, pending:s.items.slice(), instability:W().instability?W().instability():0, core:a.core||null};
   }
   function heroNames(s, refs){ var all=cards(); return refs.map(function(r){ var c=resolve(r,all); return c?c.name:String(r).split("|").slice(1).join("|"); }); }
 
@@ -269,6 +270,12 @@
         var fin=finalReward(a, s); s.haul=L().add(s.haul, fin.bag);
         fin.items.forEach(function(it){ s.items.push(it); P().name(it); });
         W().clear(a.tile, s.n); s.activity=null; out.poiDone=true; out.final=fin; note(s, a.name+" cleared.");
+        /* (v14.23) a District Core beaten clears its District for good: 5 merits, and Instability rises */
+        if(a.core && W().clearDistrict(a.core, s.n)){
+          out.district=a.core; note(s, "District "+a.core+" is cleared.");
+          if(K()){ var ds=K().state(), up=K().addMerits(ds, 5, "district"); K()._save(ds); out.merits=5; if(up) out.rank=up; }
+          if(W().districtsCleared().length>=6){ out.won=true; note(s, "Every District is cleared: the colony is safe."); }
+        }
       } else {
         if(a.tileAmbush) W().clear(a.tile, s.n);
         s.activity=null; note(s, "The ambush is beaten.");

@@ -583,7 +583,8 @@ func begin(kind: String, k, opts: Dictionary = {}) -> Variant:
 			if fl.is_empty():
 				fl = world.draw_floors(d, sk, world.floor_count(sk), false, tile)
 		else:
-			fl = world.draw_floors(d, sk, world.floor_count(sk), false, tile)
+			# (0.38) a District Core: three floors, the last a Boss's where one fits
+			fl = world.draw_floors(d, sk, 3 if content != null and Rules.truthy(content.get("core")) else world.floor_count(sk), false, tile)
 	else:
 		fl = world.draw_floors(d, sk, 1, true, tile)
 	if fl.is_empty():
@@ -592,6 +593,7 @@ func begin(kind: String, k, opts: Dictionary = {}) -> Variant:
 	c["activity"] = {"kind": kind, "tile": tile, "district": d, "skull": sk, "floors": fl, "index": 0, "name": poi_name if kind == "poi" else "Ambush",
 		"type": (str(content["type"]) if content != null and Rules.truthy(content.get("type")) else "") if kind == "poi" else "",
 		"unique": content["unique"].get("id") if content != null and content.get("unique") is Dictionary else null,
+		"core": content["core"] if kind == "poi" and content != null and Rules.truthy(content.get("core")) else null,
 		"tileAmbush": Rules.truthy(opts.get("tileAmbush")), "fromEvent": Rules.truthy(opts.get("fromEvent"))}
 	if kind == "poi":
 		note("Entered %s (%d floor%s)." % [c["activity"]["name"], fl.size(), "" if fl.size() == 1 else "s"])
@@ -616,7 +618,8 @@ func spec() -> Variant:
 		return null
 	var a: Dictionary = c["activity"]
 	return {"floor": a["floors"][a["index"]], "district": a["district"], "skull": a["skull"], "kind": a["kind"], "index": a["index"], "count": a["floors"].size(),
-		"name": a["name"], "type": a["type"], "tile": a["tile"], "n": c["n"], "pending": c["items"].duplicate()}
+		"name": a["name"], "type": a["type"], "tile": a["tile"], "n": c["n"], "pending": c["items"].duplicate(),
+		"instability": world.instability(), "core": a.get("core")}
 
 
 ## A fight is over. res: {winner ("ally", "escape", anything else is lost),
@@ -688,6 +691,18 @@ func fight_over(res: Dictionary) -> Dictionary:
 			out["poiDone"] = true
 			out["final"] = fin
 			note("%s cleared." % a["name"])
+			# (0.38) a District Core beaten clears its District for good: 5 merits, and Instability rises
+			if Rules.truthy(a.get("core")) and world.clear_district(a["core"], int(c["n"])):
+				out["district"] = str(a["core"])
+				note("District %s is cleared." % a["core"])
+				if dock != null:
+					var up := dock.add_merits(5)
+					out["merits"] = 5
+					if up > 0:
+						out["rank"] = up
+				if world.districts_cleared().size() >= 6:
+					out["won"] = true
+					note("Every District is cleared: the colony is safe.")
 		else:
 			if Rules.truthy(a.get("tileAmbush")):
 				world.clear(a["tile"], int(c["n"]))

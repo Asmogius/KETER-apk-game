@@ -24,6 +24,14 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	if OS.get_cmdline_user_args().has("thirtyeight"):
+		_thirtyeight()
+		await _thirtyeight_scene()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("thirtyseven"):
 		_thirtyseven()
 		await _thirtyseven_scene()
@@ -323,6 +331,7 @@ func _run() -> void:
 	_thirtyfive()
 	_thirtysix()
 	_thirtyseven()
+	_thirtyeight()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -358,6 +367,7 @@ func _run() -> void:
 	await _thirtyfive_scene()
 	await _thirtysix_scene()
 	await _thirtyseven_scene()
+	await _thirtyeight_scene()
 	Kit.fresh()
 	print("\nGAME PASS %d  FAIL %d" % [ok, bad])
 	Rules.hooks = {}              # the rules let go of the last battle
@@ -9947,6 +9957,86 @@ func _thirtyseven_scene() -> void:
 	ed.copy()
 	await _frames(1)
 	ck("0.37 Mk: a copy starts at Mk I", Workshop.mk_of(ed.d) == 1 and ed.d.get("name") == "Frame Trooper copy")
+	scene.queue_free()
+	await _frames(2)
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- (0.38) the District Cores
+func _thirtyeight() -> void:
+	Kit.fresh()
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var r := Roster.new(x)
+	var c := Campaign.new(x, r, x.floors(), 51)
+	var w := c.world
+	var cores := w.cores()
+	var ds: Array = cores.values()
+	ds.sort()
+	ck("0.38 cores: one for each District", ds == ["1", "2", "3", "4", "5", "6"], cores)
+	var far_ok := true
+	for k in cores:
+		var d: String = cores[k]
+		for t in w.map["tiles"]:
+			if str(w.map["tiles"][t].get("d", "")) == d and World.dist(str(t), w.dock()) > World.dist(str(k), w.dock()):
+				far_ok = false
+	ck("0.38 cores: each at its District's far edge", far_ok)
+	var k1: String = w.core_of("1")
+	var cn = w.content_at(k1)
+	ck("0.38 cores: what it holds: a POI, its District's Core", cn != null and cn["kind"] == "poi" and cn["core"] == "1" and cn["name"] == "District 1 Core" and cn["type"] == "District Core" and w.available(k1), cn)
+	ck("0.38 cores: nothing cleared yet, and no Instability", w.districts_cleared().is_empty() and w.instability() == 0)
+	# beaten on a deployment
+	var t := Kit.field_team("Core Run")
+	var rich := Loot.bag()
+	rich["shards"] = 3000
+	for ty in ["troop", "equipment", "aether"]:
+		rich["parts"][ty] = [40, 40, 40, 40, 40, 40]
+	c.deploy.stock = rich
+	ck("0.38 cores: (a team out)", c.deploy.start(t)["ok"])
+	c.deploy.cur()["pos"] = k1
+	var sp = c.deploy.enter_poi(k1)
+	ck("0.38 cores: entered, three floors, at the tile's Skull Level, and the fight knows it is a Core", sp != null and sp["count"] == 3 and sp["core"] == "1" and sp["instability"] == 0 and sp["skull"] == w.skull_of(k1), sp)
+	var merits0 := c.dock.merits()
+	var out := {}
+	for i in 3:
+		out = c.deploy.fight_over({"winner": "ally", "haul": Loot.bag(), "reward": Loot.bag(), "items": [], "heroesDown": [], "troopsLost": [], "consUsed": [], "kills": []})
+	ck("0.38 cores: beaten, the District is cleared, for 5 merits, and the deployment says so", out.get("poiDone") == true and out.get("district") == "1" and out.get("merits") == 5 and c.dock.merits() == merits0 + 5
+		and w.districts_cleared() == ["1"] and w.instability() == 3 and c.deploy.cur()["log"].any(func(l): return str(l["text"]) == "District 1 is cleared."), out)
+	for n in 6:
+		w.end_deployment()
+	ck("0.38 cores: a cleared Core stays cleared, however many deployments go by", w.is_cleared(k1) and not w.available(k1))
+	ck("0.38 cores: and the next fight there has Instability", c.deploy.ambush(c.deploy.cur()["pos"], {}) != null and int(c.deploy.spec()["instability"]) == 3)
+	c.deploy.fight_over({"winner": "ally", "haul": Loot.bag(), "reward": Loot.bag(), "items": [], "heroesDown": [], "troopsLost": [], "consUsed": [], "kills": []})
+	# all six
+	for d in ["2", "3", "4", "5"]:
+		w.clear_district(d)
+	ck("0.38 instability: 3% a District, 15% at most", w.instability() == 15 and not w.clear_district("2"))
+	var k6: String = w.core_of("6")
+	c.deploy.cur()["pos"] = k6
+	c.deploy.enter_poi(k6)
+	for i in 3:
+		out = c.deploy.fight_over({"winner": "ally", "haul": Loot.bag(), "reward": Loot.bag(), "items": [], "heroesDown": [], "troopsLost": [], "consUsed": [], "kills": []})
+	ck("0.38 won: the sixth District cleared, the colony is safe", out.get("district") == "6" and out.get("won") == true and w.districts_cleared().size() == 6, out)
+	var back := World.tidy(w.state.duplicate(true))
+	ck("0.38 kept: the Districts cleared are saved with the World Map's state, and read back", back["districts"].size() == 6 and World.tidy({})["districts"] == {})
+	Kit.fresh()
+
+
+func _thirtyeight_scene() -> void:
+	Kit.fresh()
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	await _frames(2)
+	Kit.keep([Kit.field_team()])
+	scene.show_home()
+	await _frames(1)
+	ck("0.38 home: Play says how far the campaign has come", "0 of 6 Districts cleared" in scene.home.world_sub.text, scene.home.world_sub.text)
+	scene.campaign.world.clear_district("3")
+	scene.show_home()
+	await _frames(1)
+	ck("0.38 home: and counts a District cleared", "1 of 6 Districts cleared" in scene.home.world_sub.text, scene.home.world_sub.text)
 	scene.queue_free()
 	await _frames(2)
 	Kit.fresh()

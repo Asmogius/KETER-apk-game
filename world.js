@@ -170,7 +170,10 @@
     if(!m || !m.tiles){ m=generate(); write(MAP_KEY,m); }
     CACHE=m; return m;
   }
-  function setMap(m, keepState){ CACHE=null; write(MAP_KEY,m); CACHE=m; if(!keepState) resetState(); return m; }
+  function setMap(m, keepState){ CACHE=null; CORES=null; write(MAP_KEY,m); CACHE=m;
+    /* (v14.23) a District cleared stays so, on any map */
+    if(!keepState){ var dd=peekDistricts(); resetState(); if(Object.keys(dd).length){ var s=blankState(); s.districts=clone(dd); saveState(s); } }
+    return m; }
   function newMap(seed){ return setMap(generate(seed), false); }
   function tile(k){ return map().tiles[k]||null; }
   function isOpen(k){ return !!map().tiles[k]; }
@@ -185,8 +188,9 @@
   function poiTypeOf(k){ var t=tile(k); return (t&&t.t) || POI_TYPES[hashStr(k+":"+map().seed)%POI_TYPES.length]; }
 
   /* ---- the player's knowledge of it ---- */
-  function blankState(){ return {v:1, known:{}, stood:{}, cleared:{}, completed:0}; }
-  function state(){ var s=read(STATE_KEY,null); s=s?clone(s):blankState(); s.known=s.known||{}; s.stood=s.stood||{}; s.cleared=s.cleared||{}; s.completed=+s.completed||0; return s; }
+  function blankState(){ return {v:1, known:{}, stood:{}, cleared:{}, completed:0, districts:{}}; }
+  function state(){ var s=read(STATE_KEY,null); s=s?clone(s):blankState(); s.known=s.known||{}; s.stood=s.stood||{}; s.cleared=s.cleared||{}; s.completed=+s.completed||0;
+    if(!s.districts || typeof s.districts!=="object" || Array.isArray(s.districts)) s.districts={}; return s; }
   /* for reading only: no copy */
   function peek(){ var s=read(STATE_KEY,null)||blankState(); return {known:s.known||{}, cleared:s.cleared||{}, completed:+s.completed||0}; }
   function saveState(s){ return write(STATE_KEY,s); }
@@ -209,16 +213,43 @@
   function uniqueList(){ var u=read(UQ_KEY,[]); return Array.isArray(u)?u:[]; }
   function saveUniques(u){ return write(UQ_KEY,u); }
   function uniqueAt(k){ var l=uniqueList(); for(var i=0;i<l.length;i++) if(l[i]&&l[i].tile===k) return l[i]; return null; }
+  /* (v14.23) Each District's Core: its tile farthest from the dock (the first by name of those
+     equally far), never a Unique POI's. Beaten, it clears the District for good. */
+  var CORES=null, CORES_ID=null;
+  function cores(){
+    var m=map(), ul=uniqueList(), id=m.seed+":"+Object.keys(m.tiles).length+":"+ul.map(function(u){ return u&&u.tile; }).join(",");
+    if(CORES && CORES_ID===id) return CORES;
+    var taken={}; ul.forEach(function(u){ if(u&&u.tile) taken[u.tile]=1; });
+    var best={}, out={};
+    Object.keys(m.tiles).forEach(function(k){
+      var d=String(m.tiles[k].d||""); if(!d || k===m.dock || taken[k]) return;
+      var dd=dist(k,m.dock), b=best[d];
+      if(!b || dd>b.d || (dd===b.d && k<b.k)) best[d]={k:k, d:dd};
+    });
+    Object.keys(best).forEach(function(d){ out[best[d].k]=d; });
+    CORES=out; CORES_ID=id; return out;
+  }
+  function coreAt(k){ return cores()[k]||""; }
+  function coreOf(d){ var c=cores(), ks=Object.keys(c); for(var i=0;i<ks.length;i++) if(c[ks[i]]===String(d)) return ks[i]; return null; }
+  function districtsCleared(){ return Object.keys(peekDistricts()).sort(); }
+  function peekDistricts(){ var s=read(STATE_KEY,null)||{}; return (s.districts && typeof s.districts==="object" && !Array.isArray(s.districts))?s.districts:{}; }
+  function isDistrictCleared(d){ return !!peekDistricts()[String(d)]; }
+  function clearDistrict(d, n){ var s=state(); if(s.districts[String(d)]) return false; s.districts[String(d)]=n||(s.completed+1); saveState(s); return true; }
+  /* Dimensional Instability: 3% a District cleared, 15% at most */
+  function instability(){ return Math.min(15, 3*districtsCleared().length); }
   function contentAt(k){
     var t=tile(k); if(!t) return null;
     var u=uniqueAt(k);
     if(u) return {kind:"poi", unique:u, type:u.type||"Unique POI", name:u.name||"Unique POI"};
+    var cd=coreAt(k);
+    if(cd) return {kind:"poi", core:cd, type:"District Core", name:"District "+cd+" Core"};
     if(!t.c) return null;
     if(t.c==="poi") return {kind:"poi", type:poiTypeOf(k), name:poiTypeOf(k)};
     return {kind:t.c, name:KIND_LABEL[t.c]||t.c};
   }
   /* cleared in deployment N comes back once N + respawn deployments have ended */
   function isCleared(k){
+    var cd=coreAt(k); if(cd && isDistrictCleared(cd)) return true;      /* a District cleared stays so */
     var s=peek(), c=s.cleared[k]; if(!c) return false;
     tables(); return s.completed < c + TCACHE.respawn;
   }
@@ -402,9 +433,9 @@
     generate:generate, map:map, setMap:setMap, newMap:newMap, tile:tile, isOpen:isOpen, skullOf:skullOf, districtOf:districtOf,
     ambushChance:ambushChance, poiTypeOf:poiTypeOf, reach:reach,
     state:state, saveState:saveState, resetState:resetState, stand:stand, known:known, knownCount:knownCount,
-    uniques:uniques, saveUniques:saveUniques, uniqueAt:uniqueAt, contentAt:contentAt, isCleared:isCleared, clear:clear, available:available, backIn:backIn, endDeployment:endDeployment,
+    uniques:uniques, saveUniques:saveUniques, uniqueAt:uniqueAt, contentAt:contentAt, cores:cores, coreAt:coreAt, coreOf:coreOf, districtsCleared:districtsCleared, isDistrictCleared:isDistrictCleared, clearDistrict:clearDistrict, instability:instability, isCleared:isCleared, clear:clear, available:available, backIn:backIn, endDeployment:endDeployment,
     path:path, pathRisk:pathRisk, floors:floors, chunks:chunks, level:level, drawFloors:drawFloors, floorCount:floorCount, floorSkull:floorSkull, districtNum:districtNum,
     toLevel:toLevel, saveToSandbox:saveToSandbox, fromLevel:fromLevel, sandboxMaps:sandboxMaps, useSandbox:useSandbox, sandboxNewer:sandboxNewer,
     DEFAULT_EVENTS:DEFAULT_EVENTS, events:events, saveEvents:saveEvents, resetEvents:resetEvents, eventFor:eventFor,
-    _flush:function(){ CACHE=null; }};
+    _flush:function(){ CACHE=null; CORES=null; }};
 })();

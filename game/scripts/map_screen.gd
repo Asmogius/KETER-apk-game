@@ -339,13 +339,17 @@ func _fill_panel_now() -> void:
 			what = "Unknown: stand next to it to see what it holds"
 		elif content == null:
 			what = "Empty"
+		elif Rules.truthy(content.get("core")):
+			what = "%s: beat it to clear the District" % str(content["name"])
 		elif content.get("unique") is Dictionary:
 			what = "Unique POI: %s%s" % [str(content["name"]), (" (%s)" % str(content["type"])) if Rules.truthy(content.get("type")) and content["name"] != content["type"] else ""]
 		elif content["kind"] == "poi":
 			what = "POI: " + str(content["name"])
 		else:
 			what = str(content["name"])
-	if kn and content != null and not dock and w.is_cleared(k):
+	if kn and content != null and not dock and Rules.truthy(content.get("core")) and w.is_district_cleared(content["core"]):
+		what = "%s  ·  the District is cleared" % str(content["name"])
+	elif kn and content != null and not dock and w.is_cleared(k):
 		var back := maxi(0, w.back_in(k) - (1 if c != null else 0))
 		what += "  ·  cleared, back after " + (plural(back, "more deployment") if back > 0 else "this deployment")
 	_line("Skull %d%s  ·  %s" % [sk, " (set)" if Rules.truthy(t.get("s")) else "", what], UI.TEXT, 18)
@@ -388,7 +392,9 @@ func _here(k: String) -> void:
 		return
 	match content["kind"]:
 		"poi":
-			var n: int = w.floor_count(w.skull_of(k))
+			var n: int = 3 if Rules.truthy(content.get("core")) else w.floor_count(w.skull_of(k))
+			if Rules.truthy(content.get("core")):
+				_line("The heart of District %s: %s, the last a Boss's. Beat it to clear the District for good: 5 merits, and Dimensional Instability rises." % [str(content["core"]), plural(n, "floor")], UI.GOLD)
 			if content.get("unique") is Dictionary and content["unique"].get("floors") is Array:
 				var own: int = content["unique"]["floors"].filter(func(f): return w.floor_named(f) != null).size()
 				n = own if own > 0 else n

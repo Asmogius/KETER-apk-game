@@ -52,7 +52,9 @@
   function statusHTML(){
     var s=cur(), st=W().state();
     if(!s){
-      var last=D().last(), h='<div class="wldstat"><p><b>At the dock.</b> '+plural(st.completed,"deployment")+' so far.</p>';
+      var last=D().last(), dc=W().districtsCleared?W().districtsCleared().length:0, h='<div class="wldstat"><p><b>At the dock.</b> '+plural(st.completed,"deployment")+' so far.</p>'+
+        /* (v14.23) how far the campaign has come */
+        '<p class="wldgoal">'+(dc>=6?'The colony is safe: every District cleared.':dc+' of 6 Districts cleared. Beat a District\'s Core (★, at its far edge) to clear it.')+'</p>';
       if(last && last.result==="wipe") h+='<p class="wldbad">Deployment '+last.n+' was wiped out: its haul was lost.</p>';
       else if(last && last.result==="home") h+='<p class="wldok">Deployment '+last.n+' came home.</p>';
       var wait=K()?K().waiting():{}, nw=Object.keys(wait).reduce(function(a,id){ return a+(wait[id]||0); },0);
@@ -156,8 +158,10 @@
     if(EVOUT && EVOUT.tile===k) return evOutHTML(EVOUT);
     if(!c || !W().available(k)) return '<p class="wldnote">The Strike Team is here.</p>';
     if(c.kind==="poi"){
-      var n=c.unique?(c.unique.floors||[]).length||W().floorCount(W().skullOf(k)):W().floorCount(W().skullOf(k));
-      return '<p>'+esc(c.name)+': '+plural(n,"floor")+', fought in order, with a reward at the end. Once inside, the only way out early is an Emergency Exit.</p><div class="pxrow"><button class="ghost primary" id="wlEnter">Enter</button></div>';
+      var n=c.core?3:c.unique?(c.unique.floors||[]).length||W().floorCount(W().skullOf(k)):W().floorCount(W().skullOf(k));
+      /* (v14.23) a District Core */
+      return (c.core?'<p class="wldok"><b>The heart of District '+esc(c.core)+'.</b> Beat it to clear the District for good: 5 merits, and Dimensional Instability rises.</p>':'')+
+        '<p>'+esc(c.name)+': '+plural(n,"floor")+', fought in order, with a reward at the end. Once inside, the only way out early is an Emergency Exit.</p><div class="pxrow"><button class="ghost primary" id="wlEnter">Enter</button></div>';
     }
     if(c.kind==="cache") return '<p>A cache, unguarded.</p><div class="pxrow"><button class="ghost primary" id="wlCache">Open it</button></div>';
     if(c.kind==="event"){
@@ -274,8 +278,8 @@
       stand.forEach(function(e){
         var p=e.p;
         if(e.thing){ var sp=sq(e.thing); g.drawImage(sp, p.x-e.thing.w/2*2*K, p.y+(10-(e.thing.h-4)*2)*K, e.thing.w*2*K, e.thing.h*2*K); return; }
-        var c=e.c, dock=e.dock, kind=dock?"dock":c.unique?"unique":c.kind;
-        var gl=dock?"⌂":c.unique?"★":{poi:"◆",ambush:"!",cache:"▣",event:"?"}[c.kind]||"";
+        var c=e.c, dock=e.dock, kind=dock?"dock":(c.unique||c.core)?"unique":c.kind;
+        var gl=dock?"⌂":(c.unique||c.core)?"★":{poi:"◆",ambush:"!",cache:"▣",event:"?"}[c.kind]||"";
         g.globalAlpha=(!dock && W().isCleared(e.k))?0.3:1;
         var icon=art?pick("map.icon."+kind,e.k):null, sp2=sq(icon);
         if(icon && !sp2) g.drawImage(A.tileSprite(icon,H), p.x-SQ3*s/2, p.y-s, SQ3*s, 2*s);

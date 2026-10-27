@@ -615,7 +615,11 @@ func show_home() -> void:
 	var world_line := ""
 	if campaign != null:
 		world_line = campaign.note if campaign.note != "" else campaign.status_line()
-	home.show_state(roster != null, home_note, source_text, StrikeTeams.load_all().size() if roster != null else 0, world_line, campaign != null and campaign.deploy.active())
+	var goal := ""
+	if campaign != null and campaign.world.exists():
+		var cleared := campaign.world.districts_cleared().size()
+		goal = "the colony is safe: every District cleared" if cleared >= 6 else "%d of 6 Districts cleared" % cleared
+	home.show_state(roster != null, home_note, source_text, StrikeTeams.load_all().size() if roster != null else 0, world_line, campaign != null and campaign.deploy.active(), goal)
 
 
 ## Setting up a fight: "team" for a Strike Team's Battle, "quick" for the free pick.
@@ -2359,6 +2363,11 @@ func deploy_result_lines() -> Array:
 	if Rules.truthy(o.get("poiDone")) and o.get("final") is Dictionary:
 		var fin: Dictionary = o["final"]
 		out.append("%s cleared. Its reward: %s%s." % [str(o.get("name", "The POI")), t.text(fin["bag"]), ("; and " + ", ".join(fin["items"].map(named))) if not fin["items"].is_empty() else ""])
+	# (0.38) a District Core beaten
+	if Rules.truthy(o.get("district")):
+		out.append("District %s is cleared, for good: %d merits for the Colony Rank, and from now on Dimensional Instability is %d%% in a deployment's fights." % [str(o["district"]), int(o.get("merits", 0)), campaign.world.instability()])
+	if Rules.truthy(o.get("won")):
+		out.append("Every District is cleared: the colony is safe. The run goes on, if you want it to.")
 	match str(o.get("next", "map")):
 		"floor": out.append("Floor %d of %d cleared. The only way out is onward, or an Emergency Exit." % [int(o["floor"]) - 1, int(o["count"])])
 		"retry": out.append("The haul is safe while a Hero stands. %s can try this fight again." % _list(o.get("reserves", [])))

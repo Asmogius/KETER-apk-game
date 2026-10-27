@@ -3595,7 +3595,7 @@ function simDeployFight(spec){
   Object.keys(pk.cons||{}).slice(0,3).forEach(function(nm){ if(pk.cons[nm]>0) cons[nm]=pk.cons[nm]; });
   Object.assign(SIM_WIZ, {step:"heroes", loadout:0, heroes:(lo.heroes||[]).slice(0,simHeroCapacity()), leader:(lo.heroes||[])[0]||null,
     enemyMode:"auto", foes:{}, protos:Object.keys(pk.protos||{}).filter(function(nm){ return pk.protos[nm]>0; }), cons:cons, startTroops:[], actions:JSON.parse(JSON.stringify(lo.actions||{})),
-    pouch:JSON.parse(JSON.stringify(lo.pouch||{})), waveTimer:3, districts:0, instability:0, filters:{}});
+    pouch:JSON.parse(JSON.stringify(lo.pouch||{})), waveTimer:3, districts:0, instability:+spec.instability||0, filters:{}});      /* (v14.23) Instability by the Districts cleared */
   simSave(); renderSim();
   simWizRender();
   return true;

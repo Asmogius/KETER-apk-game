@@ -338,7 +338,8 @@ func _draw() -> void:
 		var content = world.content_at(k)
 		if content == null or not world.known(k):
 			continue
-		var kind := "unique" if content.get("unique") is Dictionary else str(content["kind"])
+		# (0.38) a District Core wears the Unique POI's star
+		var kind := "unique" if content.get("unique") is Dictionary or Rules.truthy(content.get("core")) else str(content["kind"])
 		stand.append({"y": c.y + 0.25, "icon": kind, "c": c, "cleared": world.is_cleared(k)})
 	stand.sort_custom(func(a, b): return a["y"] < b["y"])
 	for e in stand:

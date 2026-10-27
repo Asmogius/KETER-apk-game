@@ -788,7 +788,7 @@ func start() -> void:
 			for k in troops.get(n, 0):
 				starters.append(n)
 		if mode == "deploy":
-			deploy_start_requested.emit(team(), StrikeTeams.setup_for(team(), roster, heroes, leader, starters, 3, 0))
+			deploy_start_requested.emit(team(), StrikeTeams.setup_for(team(), roster, heroes, leader, starters, 3, int(deploy_spec.get("instability", 0))))      # (0.38) Instability by the Districts cleared
 		else:
 			team_start_requested.emit(floor_i, team(), StrikeTeams.setup_for(team(), roster, heroes, leader, starters, wave_timer, districts_cleared * 3))
 		return

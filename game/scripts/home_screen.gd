@@ -178,10 +178,11 @@ func show_practice(on: bool) -> void:
 
 
 ## With content: what there is to fight with. Without: why not, and what to do.
-func show_state(ready: bool, message: String, from: String, teams: int, world_line := "", out := false) -> void:
+## (0.38) goal: how far the campaign has come ("2 of 6 Districts cleared"), under Play.
+func show_state(ready: bool, message: String, from: String, teams: int, world_line := "", out := false, goal := "") -> void:
 	world_btn.disabled = not ready
 	world_btn.text = "Continue" if out else "Play"
-	world_sub.text = "A Strike Team is out: carry on where it stands" if out else "Deploy a Strike Team, explore, and come home"
+	world_sub.text = ("A Strike Team is out: carry on where it stands" if out else "Deploy a Strike Team, explore, and come home") + (("  ·  " + goal) if goal != "" else "")
 	practice_btn.disabled = not ready
 	battle_btn.disabled = not ready
 	quick_btn.disabled = not ready

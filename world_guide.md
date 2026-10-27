@@ -180,6 +180,17 @@ Clear the last floor and the POI gives its **final reward**:
 - **A 30% chance** of a Consumable or a Prototype card (v14.9) of the
   District, no rarer than the Skull Level allows.
 
+## District Cores (v14.23)
+
+Each District has a **Core** (★): its tile farthest from the dock. It is a
+POI of **three floors**, the last a Boss's where one fits, at the tile's Skull
+Level. Beat it and the **District is cleared for good**: 5 merits for the
+Colony Rank, and the Core never comes back, on this map or another.
+
+Every District cleared brings **Dimensional Instability** to a deployment's
+fights: 3% of it each, 15% at most, sending Elites and Mini-Bosses in place of
+ordinary Enemies. Clear all six and the colony is safe.
+
 ## Ambushes, Caches and Events
 
 - **An Ambush** is one fight on one floor: a Small battlefield grown from

@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.37 adds the Colony Rank and
-Mk II and Mk III designs; v0.36 brought 4 copies of a card and shorter early fights.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.38 gives the campaign a goal:
+clear the six Districts by beating their Cores; v0.37 brought the Colony Rank and Mk II and Mk III designs.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,21 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.38 (Companion 14.23): **a goal: clear the Districts**.
+
+- **Each District has a Core**: its tile farthest from the dock, marked
+  with the Unique POI's star. It is a POI of three floors, the last a
+  Boss's where one fits, at the tile's Skull Level.
+- **Beat it and the District is cleared, for good**: 5 merits for the
+  Colony Rank, and the Core never comes back. A District stays cleared on
+  any map.
+- **Dimensional Instability arrives**: a deployment's fights have 3% of it
+  for every District cleared (15% at most), sending Elites and Mini-Bosses
+  in place of ordinary Enemies.
+- **Home says how far the campaign has come** under Play ("2 of 6 Districts
+  cleared"). Clear all six and the colony is safe; the run goes on if you
+  want it to.
 
 New in 0.37 (Companion 14.22): **a run that grows**.
 
@@ -710,7 +725,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-37_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-38_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -721,7 +736,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-37_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-38_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the
@@ -1419,8 +1434,8 @@ Enemy spawn has a 3% chance (15% at most) of bringing an Elite, two times in
 three, or a Mini-Boss, in place of the Enemy that was drawn, whatever the
 tile's level. Nothing in the game counts cleared Districts yet, so for a
 practice Battle you say how many as you set it up, on the last step. It
-starts at 0 every time. **A deployment's fights have none** until Districts
-can be cleared.
+starts at 0 every time. **A deployment's fights have 3% for every District
+cleared** (0.38), 15% at most.
 
 The Elite or Mini-Boss comes from the floor's own District. If the District
 has none of the kind rolled, the Enemy that was drawn arrives after all, and

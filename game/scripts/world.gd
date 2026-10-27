@@ -84,13 +84,13 @@ func exists() -> bool:
 
 
 static func blank_state() -> Dictionary:
-	return {"known": {}, "stood": {}, "cleared": {}, "completed": 0}
+	return {"known": {}, "stood": {}, "cleared": {}, "completed": 0, "districts": {}}
 
 
 static func tidy(s) -> Dictionary:
 	var out := blank_state()
 	if s is Dictionary:
-		for k in ["known", "stood", "cleared"]:
+		for k in ["known", "stood", "cleared", "districts"]:
 			if s.get(k) is Dictionary:
 				out[k] = s[k]
 		var n = Rules.num(s.get("completed"), 0)
@@ -243,6 +243,79 @@ func unique_at(k) -> Variant:
 	return null
 
 
+# ---------------------------------------------------------------- (0.38) the District Cores
+var _cores := {}
+var _cores_id := ""
+
+
+## Each District's Core: its tile farthest from the dock (the first by name of
+## those equally far), never a Unique POI's. {tile: district}
+func cores() -> Dictionary:
+	var tiles: Dictionary = map.get("tiles", {})
+	var taken := {}
+	var ids := []
+	for u in uniques:
+		if u is Dictionary and Rules.truthy(u.get("tile")):
+			taken[str(u["tile"])] = true
+			ids.append(str(u["tile"]))
+	var id := "%s:%d:%s" % [str(map.get("seed", "")), tiles.size(), ",".join(ids)]
+	if id == _cores_id:
+		return _cores
+	var best := {}
+	var dk := dock()
+	for k in tiles:
+		var d := str(tiles[k].get("d", "")) if tiles[k] is Dictionary else ""
+		if d == "" or str(k) == dk or taken.has(str(k)):
+			continue
+		var dd := dist(str(k), dk)
+		var b = best.get(d)
+		if b == null or dd > b["d"] or (dd == b["d"] and str(k) < b["k"]):
+			best[d] = {"k": str(k), "d": dd}
+	var out := {}
+	for d in best:
+		out[best[d]["k"]] = d
+	_cores = out
+	_cores_id = id
+	return out
+
+
+func core_at(k) -> String:
+	return str(cores().get(str(k), ""))
+
+
+func core_of(d) -> Variant:
+	var c := cores()
+	for k in c:
+		if c[k] == str(d):
+			return k
+	return null
+
+
+func districts_cleared() -> Array:
+	var out: Array = state.get("districts", {}).keys().map(func(k): return str(k))
+	out.sort()
+	return out
+
+
+func is_district_cleared(d) -> bool:
+	return state.get("districts", {}).has(str(d))
+
+
+## Clears a District for good. Whether it wasn't already.
+func clear_district(d, n := 0) -> bool:
+	if not (state.get("districts") is Dictionary):
+		state["districts"] = {}
+	if state["districts"].has(str(d)):
+		return false
+	state["districts"][str(d)] = n if n > 0 else int(state["completed"]) + 1
+	return true
+
+
+## Dimensional Instability on a deployment: 3% a District cleared, 15% at most.
+func instability() -> int:
+	return mini(15, 3 * districts_cleared().size())
+
+
 ## {kind, name, type, unique} or null: a POI, an Ambush, a Cache, an Event, or the dock.
 func content_at(k) -> Variant:
 	var t = tile(k)
@@ -251,6 +324,9 @@ func content_at(k) -> Variant:
 	var u = unique_at(k)
 	if u != null:
 		return {"kind": "poi", "unique": u, "type": u["type"] if Rules.truthy(u.get("type")) else "Unique POI", "name": u["name"] if Rules.truthy(u.get("name")) else "Unique POI"}
+	var cd := core_at(k)
+	if cd != "":
+		return {"kind": "poi", "core": cd, "type": "District Core", "name": "District %s Core" % cd}
 	if not Rules.truthy(t.get("c")):
 		return null
 	if t["c"] == "poi":
@@ -265,6 +341,9 @@ func respawn() -> int:
 
 ## Cleared in deployment N, it comes back once N + respawn deployments have ended.
 func is_cleared(k) -> bool:
+	var cd := core_at(k)
+	if cd != "" and is_district_cleared(cd):
+		return true                      # a District cleared stays so
 	var c = Rules.num(state["cleared"].get(str(k)), 0)
 	if not Rules.truthy(c):
 		return false
