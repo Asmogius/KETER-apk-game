@@ -655,7 +655,7 @@ if shutil.which("xvfb-run"):
     if ok18:
         px = Image.open(p18).convert("RGB").load()
         # (0.14: Auto is an icon, lit in cyan while it is on, beside the speed button)
-        ck("the switch is lit, beside the speed button (0.12); End turn is there", count(p18, (793, 8, 851, 58), CYAN) > 40 and end_turn(p18) > 300 and lit(px, 862, 910, 14, 50) > 8, (count(p18, (793, 8, 851, 58), CYAN), end_turn(p18), lit(px, 862, 910, 14, 50)))
+        ck("the switch is lit, beside the speed button (0.12); End turn is there", count(p18, (775, 5, 834, 66), CYAN) > 40 and end_turn(p18) > 300 and lit(px, 850, 895, 14, 40) > 8, (count(p18, (775, 5, 834, 66), CYAN), end_turn(p18), lit(px, 850, 895, 14, 40)))      # (0.39: the buttons wider, with their words)
     p19 = pathlib.Path("/tmp/keter_game_behaviors.png")
     ok19, log19 = shot(p19, "mode=team", "floor=TEST · Corridor", "place=a1:-2,0", "taps=-2,0;beh;bk:decisive;bk:wary;wait:10")
     ck("the Behavior picker renders", ok19 and "SCRIPT ERROR" not in log19, log19[-300:])
@@ -921,10 +921,10 @@ if shutil.which("xvfb-run"):
         px = Image.open(p48).convert("RGB").load()
         # (0.15: and, from Home, the version and the export, with Look again)
         # (0.36: in two columns, the buttons higher)
-        ck("0.12: Speed, Screen shake and Sound, each with its choice lit in cyan, and Close; from Home, the version and the export, and Look again", count(p48, (290, 120, 990, 600), CYAN) > 300 and lit(px, 758, 930, 530, 580) > 50
-           and count(p48, (480, 465, 800, 518), DIM, 12) > 300 and lit(px, 350, 542, 530, 580) > 50, (count(p48, (290, 120, 990, 600), CYAN), lit(px, 758, 930, 530, 580), count(p48, (480, 465, 800, 518), DIM, 12), lit(px, 350, 542, 530, 580)))
+        ck("0.12: Speed, Screen shake and Sound, each with its choice lit in cyan, and Close; from Home, the version and the export, and Look again", count(p48, (290, 120, 990, 600), CYAN) > 300 and lit(px, 758, 930, 575, 625) > 50
+           and count(p48, (480, 510, 800, 563), DIM, 12) > 300 and lit(px, 350, 542, 575, 625) > 50, (count(p48, (290, 120, 990, 600), CYAN), lit(px, 758, 930, 575, 625), count(p48, (480, 510, 800, 563), DIM, 12), lit(px, 350, 542, 575, 625)))      # (0.39: a row more, Music)
         # (0.18: and Atmosphere, Subtle lit, under Speed)
-        ck("0.18: Options has Atmosphere beside Speed (0.36), Subtle lit", count(p48, (932, 196, 1028, 242), CYAN) > 40 and count(p48, (818, 196, 914, 242), CYAN) < 10, (count(p48, (932, 196, 1028, 242), CYAN), count(p48, (818, 196, 914, 242), CYAN)))
+        ck("0.18: Options has Atmosphere beside Speed (0.36), Subtle lit", count(p48, (932, 150, 1028, 196), CYAN) > 40 and count(p48, (818, 150, 914, 196), CYAN) < 10, (count(p48, (932, 150, 1028, 196), CYAN), count(p48, (818, 150, 914, 196), CYAN)))
     # each against the same moment before it fires: what is in the air is the difference
     def near_count(path, w, tol=20, box=(300, 70, 870, 690)):
         px = Image.open(path).convert("RGB").load()
