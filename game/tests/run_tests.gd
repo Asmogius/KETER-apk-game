@@ -4494,19 +4494,19 @@ func _nine() -> void:
 	p.state["bp"]["Burst"] = 1
 	# ---- leaving the dock
 	var t := Kit.field_team()
-	t["deck"]["Frame Trooper"] = 6
+	t["deck"]["Frame Trooper"] = 4      # (0.36: 4 of a card at most, all of them free)
 	t["deck"]["Hornet"] = 2
 	var each: int = ws.cost(d)["parts"][0]
 	var pl := c.deploy.plan(t)
-	ck("0.9 leaving: each copy is paid for, the starter's first 4 free", pl["fits"] and not pl["afford"] and pl["lines"].size() == 2 and pl["lines"][0]["name"] == "Frame Trooper" and pl["lines"][0]["free"] == 4 and pl["lines"][0]["cost"] == _parts(12)
-		and pl["lines"][1]["name"] == "Hornet" and pl["lines"][1]["cost"] == _parts(2 * each) and pl["parts"] == _parts(12 + 2 * each), pl)
+	ck("0.9 leaving: each copy is paid for, the starter's 4 free", pl["fits"] and not pl["afford"] and pl["lines"].size() == 2 and pl["lines"][0]["name"] == "Frame Trooper" and pl["lines"][0]["free"] == 4 and pl["lines"][0]["cost"] == _parts(0)
+		and pl["lines"][1]["name"] == "Hornet" and pl["lines"][1]["cost"] == _parts(2 * each) and pl["parts"] == _parts(2 * each), pl)
 	c.deploy.stock = _stock(10, 3)
 	var why := c.deploy.reasons_against(t)
-	ck("0.9 leaving: a stockpile that can't pay says so, and it doesn't leave", why == ["The stockpile can't pay for its copies: they cost %d Common, and it holds 10 Common." % (12 + 2 * each)] and not c.deploy.start(t)["ok"] and not c.deploy.active() and c.deploy.stock == _stock(10, 3), why)
+	ck("0.9 leaving: a stockpile that can't pay says so, and it doesn't leave", why == ["The stockpile can't pay for its copies: they cost %d Common, and it holds 10 Common." % (2 * each)] and not c.deploy.start(t)["ok"] and not c.deploy.active() and c.deploy.stock == _stock(10, 3), why)
 	c.deploy.stock = _stock(100, 3)
 	var go := c.deploy.start(t)
 	var cur: Dictionary = c.deploy.cur() if c.deploy.active() else {}
-	ck("0.9 leaving: one that can pays as it leaves, and what was paid is kept", go["ok"] and c.deploy.stock == _stock(100 - 12 - 2 * each, 3) and cur["paid"] == _parts(12 + 2 * each) and cur["copies"] == {"ds_starter": 6, id: 2}, c.deploy.stock)
+	ck("0.9 leaving: one that can pays as it leaves, and what was paid is kept", go["ok"] and c.deploy.stock == _stock(100 - 2 * each, 3) and cur["paid"] == _parts(2 * each) and cur["copies"] == {"ds_starter": 4, id: 2}, c.deploy.stock)
 	ck("0.9 out: its designs are locked while it is out", ws.locked(id) and c.deploy.locked_design(id) and ws.put(ws.get_design(id)) == "" and not ws.remove(id) and not c.deploy.locked_design("ds_none"))
 	ck("0.9 out: and research waits", not p.research("Burst", _stock(0, 500), c.deploy.active())["ok"])
 	c.world.tables["ambushStep"] = 100
@@ -4518,7 +4518,7 @@ func _nine() -> void:
 	c.world.tables["ambushStep"] = 0
 	c.deploy.step_to("0,0")
 	var home := c.deploy.home()
-	ck("0.9 home: the copies aren't paid back, and its designs can be changed again", home["ok"] and c.deploy.stock == _stock(100 - 12 - 2 * each, 3) and not ws.locked(id) and ws.put(ws.get_design(id)) == id, c.deploy.stock)
+	ck("0.9 home: the copies aren't paid back, and its designs can be changed again", home["ok"] and c.deploy.stock == _stock(100 - 2 * each, 3) and not ws.locked(id) and ws.put(ws.get_design(id)) == id, c.deploy.stock)
 	# ---- teams made before 0.9
 	var old := Kit.old_team()
 	why = c.deploy.reasons_against(old)
@@ -4526,7 +4526,7 @@ func _nine() -> void:
 	var field := c.deploy.field_copy(old, "Field")
 	ck("0.9 field copy: it takes the Forge Troops out and puts the starter's free copies in, the rest as it was", field["name"] == "Field" and not field["deck"].has("Foundry Sentinel") and field["deck"].get("Test Drone") == 3 and field["deck"].get("Frame Trooper") == 4 and field["deck"].get("Test Rally") == old["deck"]["Test Rally"]
 		and field["heroes"] == old["heroes"] and field["consumables"] == old["consumables"] and c.deploy.reasons_against(field).is_empty() and not c.deploy.needs_field_copy(field) and old["deck"].has("Foundry Sentinel"), field["deck"])
-	ck("0.9 field copy: a team that has the starter keeps its count", c.deploy.field_copy(t, "F2")["deck"].get("Frame Trooper") == 6)
+	ck("0.9 field copy: a team that has the starter keeps its count", c.deploy.field_copy(t, "F2")["deck"].get("Frame Trooper") == 4)
 	# a design of the Companion's that hasn't been copied in
 	var comp := ws.to_card(_hornet(ws))
 	comp["name"] = "Companion Wasp"
