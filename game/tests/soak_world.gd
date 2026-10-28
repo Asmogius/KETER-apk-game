@@ -30,7 +30,7 @@ var x: KeterExport
 var r: Roster
 var floors: Array[FloorData] = []
 var seen := {"deployments": 0, "steps": 0, "ambush": 0, "tile_ambush": 0, "poi": 0, "poi_done": 0, "floor": 0, "cache": 0, "event": 0, "event_fight": 0, "check_won": 0, "check_failed": 0,
-	"fights": 0, "won": 0, "lost": 0, "retry": 0, "wipe": 0, "escape": 0, "home": 0, "items": 0, "items_home": 0, "troops_lost": 0, "heroes_down": 0, "cons_used": 0,
+	"fights": 0, "won": 0, "lost": 0, "retry": 0, "withdraw": 0, "wipe": 0, "escape": 0, "home": 0, "items": 0, "items_home": 0, "troops_lost": 0, "heroes_down": 0, "cons_used": 0,
 	"refused": 0, "refused_leave": 0, "paid": 0, "designs": 0, "design_copies": 0, "designs_fought": 0, "saves": 0, "respawned": 0, "rounds": 0, "screen_deployments": 0, "screen_fights": 0, "screen_walks": 0, "screen_boxes": 0, "lose_from_event": 0,
 	"bought": 0, "pre_bought": 0, "pre_out": 0, "upgraded": 0, "packed": 0, "pack_home": 0, "pack_lost": 0, "bounties_posted": 0, "bounty_fights": 0, "bounties_paid": 0, "insured": 0, "restocks": 0, "reach": 0, "screen_bought": 0, "screen_dock_taps": 0}
 var packed_at_start := {}              # (0.10: what the deployment out now packed at the dock)
@@ -664,7 +664,8 @@ func _engine(want: int) -> void:
 				_sound(c, when + ", after the fight")
 				if rng.randf() < 0.25:
 					_round_trip(c, when)
-				if out.get("next") == "retry" and rng.randf() < 0.15:
+				var roll := rng.randf()
+				if out.get("next") == "retry" and roll < 0.15:
 					# given up
 					var held: Dictionary = c.deploy.stock.duplicate(true)
 					var haul_g: Dictionary = Loot.norm(c.deploy.cur()["haul"])
@@ -672,6 +673,17 @@ func _engine(want: int) -> void:
 					seen["wipe"] += 1
 					if c.deploy.active() or c.deploy.stock != _after_wipe(c, held, wo, haul_g, when):
 						_bad("%s: giving up left the team out, or banked something" % when)
+				elif out.get("next") == "retry" and roll < 0.5:
+					# (0.41) withdrawn: the haul and the Heroes down as they were, the place left as it was
+					var a_w: Dictionary = c.deploy.cur()["activity"]
+					var haul_w: Dictionary = Loot.norm(c.deploy.cur()["haul"])
+					var out_w: Array = c.deploy.cur()["heroesOut"].duplicate()
+					var wd := c.deploy.withdraw()
+					seen["withdraw"] += 1
+					if not wd["ok"] or c.deploy.cur()["activity"] != null or Loot.norm(c.deploy.cur()["haul"]) != haul_w or c.deploy.cur()["heroesOut"] != out_w or c.deploy.withdraw()["ok"]:
+						_bad("%s: withdrawing didn't go back to the map with the haul, once" % when)
+					if a_w["kind"] == "poi" and w.is_cleared(a_w["tile"]):
+						_bad("%s: withdrawing cleared the POI" % when)
 				continue
 			var here: String = cur["pos"]
 			var content = w.content_at(here) if w.available(here) else null
@@ -872,7 +884,8 @@ func _screen_true(when: String) -> void:
 	if cur != null and ms.status_label.text != ms.status_text():
 		_bad("%s: the bar's count is stale" % when)
 	var ids: Array = ms.actions().map(func(a): return a["id"])
-	if cur != null and cur["activity"] != null and ids != ["fight"]:
+	# (0.41) and Withdraw, after a lost fight with a Hero standing
+	if cur != null and cur["activity"] != null and ids != (["fight", "withdraw"] if cm.deploy.can_withdraw() else ["fight"]):
 		_bad("%s: a fight waits and the panel offers %s" % [when, str(ids)])
 	if cur == null and (ids.has("walk") or ids.has("fight") or ids.has("home") or ids.has("enter") or ids.has("cache") or ids.has("choose")):
 		_bad("%s: nobody is out and the panel offers %s" % [when, str(ids)])
@@ -976,15 +989,24 @@ func _screen_fight(when: String) -> void:
 				_bad("%s: Next floor didn't set the next one up" % when)
 			s.back_btn.pressed.emit()       # back to the map; the next floor waits there
 		"retry":
-			if labels.slice(0, 2) != ["Retry with reserves", "Give up: lose the haul"]:
+			if labels.slice(0, 3) != ["Retry with reserves", "Withdraw: back to the map with the haul", "Give up: lose the haul"]:
 				_bad("%s: a fight to try again, and the box offers %s" % [when, str(labels)])
-			if rng.randf() < 0.25:
-				scene.dialog.buttons[1].pressed.emit()
+			var roll := rng.randf()
+			if roll < 0.25:
+				scene.dialog.buttons[2].pressed.emit()
 				await process_frame
 				if scene.dialog == null or scene.dialog.title_label.text != "Deployment lost" or cm.deploy.active():
 					_bad("%s: giving up didn't end the deployment" % when)
 				else:
 					scene.dialog.buttons[0].pressed.emit()
+			elif roll < 0.45:
+				# (0.41) withdrawn: back on the map, the team still out, nothing waiting
+				var haul_w: Dictionary = Loot.norm(cm.deploy.cur()["haul"])
+				scene.dialog.buttons[1].pressed.emit()
+				await process_frame
+				if not cm.deploy.active() or cm.deploy.cur()["activity"] != null or Loot.norm(cm.deploy.cur()["haul"]) != haul_w:
+					_bad("%s: withdrawing didn't leave the team on the map with its haul" % when)
+				seen["withdraw"] += 1
 			else:
 				scene.dialog.buttons[0].pressed.emit()
 				await process_frame
@@ -1205,8 +1227,8 @@ func _run() -> void:
 		print("FAIL " + w)
 	print("(%d deployments: %d steps, %d ambushes on the way and %d on their own tiles, %d POIs entered and %d cleared (%d next floors), %d Caches, %d Events (%d checks won, %d failed, %d into a fight))" % [
 		seen["deployments"], seen["steps"], seen["ambush"], seen["tile_ambush"], seen["poi"], seen["poi_done"], seen["floor"], seen["cache"], seen["event"], seen["check_won"], seen["check_failed"], seen["event_fight"]])
-	print("(%d fights in %d rounds: %d won, %d lost; %d tried again, %d wipes, %d Emergency Exits; %d Heroes down, %d Troops lost, %d Consumables used; %d blueprints and chassis found, %d brought home; %d came home)" % [
-		seen["fights"], seen["rounds"], seen["won"], seen["lost"], seen["retry"], seen["wipe"], seen["escape"], seen["heroes_down"], seen["troops_lost"], seen["cons_used"], seen["items"], seen["items_home"], seen["home"]])
+	print("(%d fights in %d rounds: %d won, %d lost; %d tried again, %d withdrawn from, %d wipes, %d Emergency Exits; %d Heroes down, %d Troops lost, %d Consumables used; %d blueprints and chassis found, %d brought home; %d came home)" % [
+		seen["fights"], seen["rounds"], seen["won"], seen["lost"], seen["retry"], seen["withdraw"], seen["wipe"], seen["escape"], seen["heroes_down"], seen["troops_lost"], seen["cons_used"], seen["items"], seen["items_home"], seen["home"]])
 	print("(0.9: %d designs made with the builder; %d of their copies went out, %d into fights; %d Troop parts paid for copies; %d teams sent back for what they couldn't pay)" % [seen["designs"], seen["design_copies"], seen["designs_fought"], seen["paid"], seen["refused_leave"]])
 	print("(0.10: %d Consumables and Prototypes bought, %d pre-built copies bought and %d taken out, %d upgrades; %d packed, %d back to the dock unused, %d lost with a wipe; %d bounties posted when teams left, %d fights with one, %d paid; insurance kept something %d times; %d restocks, the reach extended %d times; %d bought through the screen, and %d taps at the dock by a random hand)" % [
 		seen["bought"], seen["pre_bought"], seen["pre_out"], seen["upgraded"], seen["packed"], seen["pack_home"], seen["pack_lost"], seen["bounties_posted"], seen["bounty_fights"], seen["bounties_paid"], seen["insured"], seen["restocks"], seen["reach"], seen["screen_bought"], seen["screen_dock_taps"]])
