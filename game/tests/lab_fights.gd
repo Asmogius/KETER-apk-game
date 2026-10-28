@@ -259,12 +259,19 @@ func fight(r: Roster, t: Dictionary, skull: int, kind: String, f: FloorData, lef
 			_steer(b)
 		if b.settle():
 			break
-		for id in b.auto_queue():
-			var u = b.unit_by_id(id)
-			if u != null and not Rules.truthy(u.get("down")) and b.enemies_left() > 0:
+		# as the game's Auto (0.40): one that arrives meanwhile takes its turn too
+		var line := b.auto_queue()
+		var at := 0
+		while not b.settle():
+			if at >= line.size():
+				var more := b.auto_queue().filter(func(i): return not line.has(i))
+				if more.is_empty():
+					break
+				line.append_array(more)
+			var u = b.unit_by_id(line[at])
+			at += 1
+			if u != null and not Rules.truthy(u.get("down")) and not b.has_acted(u) and b.enemies_left() > 0:
 				b.auto_turn(u)
-			if b.settle():
-				break
 		if b.settle():
 			break
 		for id in b.enemy_queue():

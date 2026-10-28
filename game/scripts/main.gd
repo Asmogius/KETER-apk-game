@@ -1967,27 +1967,35 @@ func run_auto_phase() -> bool:
 	fast = false
 	_update_bar()
 	_say("Auto: %d of your Units take%s their turn%s. Tap the board to hurry them." % [queue.size(), "s" if queue.size() == 1 else "", "" if queue.size() == 1 else "s"])
-	for id in queue:
-		var u = battle.unit_by_id(id)
-		if u == null or Rules.truthy(u.get("down")) or battle.has_acted(u):
-			continue
-		if battle.enemies_left() == 0:
-			break
-		Behaviors.apply(u)
-		board.mark_units(battle, "", {}, id)
-		await _follow(Battle.tile_of(u))
-		await _wait(0.25)
-		# its whole turn is decided here; the beats play it back as it went
-		var beats := battle.auto_turn(u)
-		for beat in beats:
-			await _play_beat(beat, id)
-		if beats.is_empty():
-			await _wait(0.15)
-		board.refresh_units(battle, "", {}, id)
-		_update_bar()
-		await _show_halts()
-		if battle.settle():
-			break
+	# (0.40) a Unit that arrives meanwhile (a Troop another put down) takes its turn too
+	var seen := {}
+	var stop := false
+	while not queue.is_empty() and not stop:
+		for id in queue:
+			seen[id] = true
+			var u = battle.unit_by_id(id)
+			if u == null or Rules.truthy(u.get("down")) or battle.has_acted(u):
+				continue
+			if battle.enemies_left() == 0:
+				stop = true
+				break
+			Behaviors.apply(u)
+			board.mark_units(battle, "", {}, id)
+			await _follow(Battle.tile_of(u))
+			await _wait(0.25)
+			# its whole turn is decided here; the beats play it back as it went
+			var beats := battle.auto_turn(u)
+			for beat in beats:
+				await _play_beat(beat, id)
+			if beats.is_empty():
+				await _wait(0.15)
+			board.refresh_units(battle, "", {}, id)
+			_update_bar()
+			await _show_halts()
+			if battle.settle():
+				stop = true
+				break
+		queue = battle.auto_queue().filter(func(i): return not seen.has(i))
 	board.refresh_units(battle)
 	auto_phase = false
 	busy = false

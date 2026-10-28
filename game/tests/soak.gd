@@ -391,7 +391,16 @@ func _run() -> void:
 				break
 			if auto_round:
 				var line := b.auto_queue()
-				for id in line:
+				# (0.40) as the game's Auto does: one that arrives meanwhile takes its turn too
+				var at := 0
+				while true:
+					if at >= line.size():
+						var more := b.auto_queue().filter(func(i): return not line.has(i))
+						if more.is_empty():
+							break
+						line.append_array(more)
+					var id = line[at]
+					at += 1
 					var au = b.unit_by_id(id)
 					if _down(au) or b.has_acted(au) or b.enemies_left() == 0:
 						continue
@@ -417,6 +426,8 @@ func _run() -> void:
 						break
 				if not b.over and not b.auto_queue().is_empty() and b.enemies_left() > 0:
 					wrong.append("Auto left %d Units that hadn't had a turn" % b.auto_queue().size())
+					if OS.get_environment("SOAK_WHY") != "":
+						print("LEFT: ", b.auto_queue().map(func(i): return [i, b.unit_by_id(i)["name"], line.has(i)]))
 			if b.settle():
 				break
 			for id in b.enemy_queue():

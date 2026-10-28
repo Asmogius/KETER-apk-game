@@ -16,7 +16,7 @@ Alongside game 0.40. Measured first: a stand-in player fought thousands of fight
 - **Waves by Skull Level: 3, 3, 4, 3, 4, 5** (were 3, 3, 4, 4, 5, 6), one fewer in an ambush.
 - **The Deck reshuffles** when it runs out: the cards played so far, but not Troops', go back in.
 - **Gentler Skull 4–6 Enemies**: Arachnabot 28 Health; the Titans 39–48 Health, AC one lower at Skull 6, about a third less damage.
-- **Smarter Auto and Enemies**: a Unit that can't reach its chosen target attacks another in reach; and none gives a target a status it already has (it closes in instead).
+- **Smarter Auto and Enemies**: a Unit that can't reach its chosen target attacks another in reach; and none gives a target a status it already has (it closes in instead). Auto also takes the turn of a Unit that arrives while it runs.
 
 ## v14.23 — Clear the Districts
 

@@ -33,6 +33,8 @@ almost none could be won. These are the changes it measured.
   after its move attacks another one in reach instead of doing nothing; and
   none uses an Action that would only give its target a status it already
   has (an Arachnabot closes in to Pounce instead of Rooting the Rooted).
+  Auto also takes the turn of a Unit that arrives while it runs (a Troop
+  another put down), before the Enemies go.
 
 New in 0.39 (Companion 14.23): **the fight and the map, clearer; and music**.
 

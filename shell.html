@@ -2838,6 +2838,8 @@ function simAutoAllies(done){
   var mine=SIM.units.filter(function(u){ return u.side==="ally" && !u.down; });
   var i=0;
   function step(){
+    /* (v14.24) one that arrived meanwhile (a Troop another put down) takes its turn too */
+    if(i>=mine.length){ mine=mine.concat(SIM.units.filter(function(u){ return u.side==="ally" && !u.down && mine.indexOf(u)<0; })); }
     if(i>=mine.length){ if(done) done(); return; }
     var u=mine[i++];
     if(u.down) return step();

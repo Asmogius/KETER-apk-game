@@ -546,7 +546,15 @@ func _team_begin(cfg: Dictionary, seed) -> Battle:
 ## Auto: each of your Units still standing takes its turn by itself. (simAutoAllies)
 func _auto_all(b: Battle) -> void:
 	var mine := b.units.filter(func(u): return u["side"] == "ally" and not Rules.truthy(u.get("down")))
-	for u in mine:
+	var i := 0
+	while true:
+		# (0.40) one that arrived meanwhile takes its turn too (simAutoAllies)
+		if i >= mine.size():
+			mine.append_array(b.units.filter(func(u): return u["side"] == "ally" and not Rules.truthy(u.get("down")) and not mine.has(u)))
+		if i >= mine.size():
+			break
+		var u: Dictionary = mine[i]
+		i += 1
 		if not Rules.truthy(u.get("down")):
 			b.auto_turn(u)
 
