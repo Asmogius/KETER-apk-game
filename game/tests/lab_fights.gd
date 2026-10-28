@@ -25,6 +25,8 @@ var played := 0
 var all_floors: Array = []
 var inst := 0
 var district := "3"
+var tune := {}              # the what-if switches (see tune=)
+var lab_roster: Roster = null
 var show_log := false
 
 
@@ -33,7 +35,7 @@ func _initialize() -> void:
 
 
 func _args() -> Dictionary:
-	var o := {"export": "", "skull": "1", "kind": "ambush", "bot": "careful", "n": "20", "seed": "1", "out": "", "stage": "", "inst": "0", "district": "3"}
+	var o := {"export": "", "skull": "1", "kind": "ambush", "bot": "careful", "n": "20", "seed": "1", "out": "", "stage": "", "inst": "0", "district": "3", "tune": ""}
 	for a in OS.get_cmdline_user_args():
 		var kv := str(a).split("=", true, 1)
 		if kv.size() == 2:
@@ -69,6 +71,12 @@ func _run() -> void:
 	bot = str(o["bot"])
 	inst = int(o["inst"])
 	district = str(o["district"])
+	for part in str(o["tune"]).split(",", false):
+		var kv := part.split(":")
+		tune[kv[0]] = float(kv[1]) if kv.size() > 1 else 1.0
+	lab_roster = r
+	if tune.has("notest"):
+		r.cards = r.cards.filter(func(c): return not (str(c.get("_src", "")) == "test" and str(c.get("cardType", "")).to_lower() in ["enemy", "elite", "miniboss", "boss"]))
 	show_log = o.get("log", "") == "1"
 	rng.seed = int(o["seed"])
 	all_floors = x.floors()
@@ -168,7 +176,7 @@ func run(c: Campaign, r: Roster, t0: Dictionary, skull: int, kind: String, stage
 	var t: Dictionary = t0.duplicate(true)
 	var count := 1 if kind == "ambush" else (3 if kind == "core" else c.world.floor_count(skull))
 	var keys: Array = c.world.draw_floors(district, skull, count, kind == "ambush", str(rng.randi()))
-	var out := {"skull": skull, "kind": kind, "bot": bot, "stage": stage, "level": int(t["level"]), "inst": inst, "district": district,
+	var out := {"skull": skull, "kind": kind, "bot": bot, "stage": stage, "level": int(t["level"]), "inst": inst, "district": district, "tune": tune,
 		"floors": keys.size(), "cleared": 0, "fights": 0, "retries": 0, "heroes_down": 0, "won": false, "fight": []}
 	var heroes_out := []
 	var i := 0
@@ -223,8 +231,19 @@ func fight(r: Roster, t: Dictionary, skull: int, kind: String, f: FloorData, lef
 	var su := StrikeTeams.setup_for(t, r, entering, entering[0], starters, 3, inst)
 	su["deploy"] = {"district": district, "skull": skull, "kind": "ambush" if kind == "ambush" else "poi", "pending": [], "bounties": []}
 	var b := Battle.begin_team(f, r, su, rng.randi())
+	if tune.has("mix"):
+		_mix_pile(b, r)
+	if tune.has("waves"):
+		b.waves_total = maxi(1, b.waves_total + int(tune["waves"]))
+	_tune_foes(b)
 	played = 0
 	while not b.settle() and b.round <= 40:
+		_tune_foes(b)
+		if tune.has("reshuffle") and b.deck.is_empty() and not b.discard.is_empty():
+			var back: Array = b.discard.filter(func(c): return c is Dictionary and str(c.get("type", "")) != "troop")
+			b.discard = b.discard.filter(func(c): return not back.has(c))
+			back.shuffle()
+			b.deck = back
 		_my_turn(b)
 		if b.settle():
 			break
@@ -248,6 +267,7 @@ func fight(r: Roster, t: Dictionary, skull: int, kind: String, f: FloorData, lef
 				break
 		if not b.over:
 			b.end_round()
+			_tune_foes(b)
 	if show_log:
 		print("---- %s, skull %d, %s: %s in round %d" % [f.name, skull, kind, b.winner if b.over else "unsettled", b.round])
 		for l in b.log:
@@ -262,6 +282,54 @@ func fight(r: Roster, t: Dictionary, skull: int, kind: String, f: FloorData, lef
 		"down": heroes.filter(func(u): return Rules.truthy(u.get("down"))).size(), "waves": b.waves_total, "wave": b.wave,
 		"foes": foes.size(), "foes_left": b.enemies_left(), "elite": foes.filter(func(u): return str(u.get("cardType", "")).to_lower() in ["elite", "miniboss", "boss"]).size(),
 		"played": played, "floor": str(f.name), "hp": snappedf(_hp_of(heroes), 0.01), "deck_left": b.deck.size(), "hand_left": b.hand.size()}}
+
+
+## The what-if switches on the Enemies as they arrive (each once).
+func _tune_foes(b: Battle) -> void:
+	if not tune.keys().any(func(k): return str(k).begins_with("hp") or str(k).begins_with("ac") or str(k).begins_with("dmg")):
+		return
+	for u in b.units:
+		if u["side"] != "enemy" or u.has("_lab"):
+			continue
+		u["_lab"] = true
+		var card = lab_roster.card_named(str(u["src"] if Rules.truthy(u.get("src")) else u["name"])) if lab_roster != null else null
+		var lv := Roster.foe_level(card) if card is Dictionary else 0
+		var hp = _knob("hp", lv)
+		if hp != null:
+			var mx := maxi(1, int(ceil(float(Rules.num(u.get("hpMax"), 1)) * float(hp) / 100.0)))
+			u["hpMax"] = mx
+			u["hp"] = mini(int(Rules.num(u.get("hp"), mx)), mx)
+		var ac = _knob("ac", lv)
+		if ac != null:
+			u["ac"] = maxi(0, int(Rules.num(u.get("ac"), 10)) + int(ac))
+			if u.has("integrity"):
+				u["integrity"] = maxi(0, int(Rules.num(u.get("integrity"), 10)) + int(ac))
+		var dmg = _knob("dmg", lv)
+		if dmg != null:
+			for a in u.get("actions", []):
+				var d = Rules.num(a.get("dmg"), null)
+				if d != null and d > 0 and not a.has("_lab"):       # once, even were the Action shared
+					a["_lab"] = true
+					a["dmg"] = maxi(1, int(round(float(d) * float(dmg) / 100.0)))
+
+
+## A what-if for an Enemy of this Skull Level: "hp5:50" for those of level 5, "hp:50" for all.
+func _knob(name: String, lv: int) -> Variant:
+	if tune.has(name + str(lv)):
+		return tune[name + str(lv)]
+	return tune.get(name)
+
+
+## mix: each Enemy in the pile is, one time in two, one drawn a level lower.
+func _mix_pile(b: Battle, r: Roster) -> void:
+	for e in b.enemy_pile:
+		var lv := int(e["level"])
+		if lv <= 1 or rng.randf() < 0.5:
+			continue
+		var pool := r.foe_pool(lv - 1, district)
+		if not pool.is_empty():
+			e["name"] = str(pool[rng.randi() % pool.size()]["name"])
+			e["level"] = lv          # it still answers to the tile's level
 
 
 ## What is left of the Heroes' health, all told (0 to 1).
