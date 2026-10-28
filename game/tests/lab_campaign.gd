@@ -35,7 +35,8 @@
 ## home with its haul, instead of trying again until it is wiped out;
 ## cores=2,3,4,5,6,6 puts the Cores of Districts 1 to 6 at those Skull Levels
 ## instead of all at Skull 6, and the player goes for one as soon as its aim
-## reaches the Core's Skull Level.
+## reaches the Core's Skull Level. bold=1 is a bolder player: one trip home
+## that cleared a POI at its aim raises the aim, with Heroes down or not.
 ##   godot --headless --path . --script res://tests/lab_campaign.gd -- export=<zip> bot=<careful|casual> seed=<n> most=<deployments> out=<file> [d3floors=1]
 extends SceneTree
 
@@ -60,6 +61,7 @@ var keepheroes := false              # (what-if) a wipe keeps the recruited Hero
 var keepcards := false               # (what-if) and the cards taken
 var retreat := false                 # (what-if) a lost fight: give the place up and go home
 var retreating := false
+var bold := false                    # (what-if player) one trip home that cleared a POI at its aim raises the aim
 var core_skulls := []                # (what-if) the Skull Level of each District's Core
 
 
@@ -68,7 +70,7 @@ func _initialize() -> void:
 
 
 func _args() -> Dictionary:
-	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": "", "d3floors": "0", "keepheroes": "0", "keepcards": "0", "retreat": "0", "cores": ""}
+	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": "", "d3floors": "0", "keepheroes": "0", "keepcards": "0", "retreat": "0", "cores": "", "bold": "0"}
 	for a in OS.get_cmdline_user_args():
 		var kv := str(a).split("=", true, 1)
 		if kv.size() == 2:
@@ -95,6 +97,7 @@ func _run() -> void:
 	keepheroes = str(o["keepheroes"]) == "1"
 	keepcards = str(o["keepcards"]) == "1"
 	retreat = str(o["retreat"]) == "1"
+	bold = str(o["bold"]) == "1"
 	core_skulls = Array(str(o["cores"]).replace(";", ",").split(",", false)).map(func(v): return int(v))      # (";" between them, from balance_lab.py)
 	rng.seed = int(o["seed"])
 	player = LabPlayer.new(bot, rng)
@@ -104,7 +107,7 @@ func _run() -> void:
 		_move_cores(c.world)
 	out_file = FileAccess.open(str(o["out"]), FileAccess.WRITE)
 	var most := int(o["most"])
-	var run := {"seed": int(o["seed"]), "bot": bot, "d3floors": d3floors, "keepheroes": keepheroes, "keepcards": keepcards, "retreat": retreat, "cores": core_skulls, "deployments": 0, "wipes": 0, "first_district": 0, "all_districts": 0,
+	var run := {"seed": int(o["seed"]), "bot": bot, "d3floors": d3floors, "keepheroes": keepheroes, "keepcards": keepcards, "retreat": retreat, "bold": bold, "cores": core_skulls, "deployments": 0, "wipes": 0, "first_district": 0, "all_districts": 0,
 		"rank_at": {}, "districts_at": [], "comfort_at": {}, "error": ""}
 	for n in range(1, most + 1):
 		var line := _deployment(c, n)
@@ -395,9 +398,9 @@ func _deployment(c: Campaign, n: int) -> Dictionary:
 		result = "home"
 		haul = h["haul"]
 		# two clean trips at its aim, and it aims a Skull Level higher
-		if lost_none and tally["poi_skulls"].any(func(k): return int(k) >= target):
+		if (lost_none or bold) and tally["poi_skulls"].any(func(k): return int(k) >= target):
 			clean += 1
-			if clean >= 2 and comfort < 6:
+			if clean >= (1 if bold else 2) and comfort < 6:
 				comfort = mini(6, target)
 				clean = 0
 		elif not lost_none:
