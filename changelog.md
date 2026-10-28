@@ -2,6 +2,12 @@
 
 <!-- NEWEST REVISION GOES BELOW THIS LINE -->
 
+## Revision 16.5 (Companion 14.26, game 0.42)
+
+One rule from the campaign lab, which found Elites and Mini-Bosses turning Skull 3 POIs into walls once three Districts were cleared.
+
+- **No Dimensional Instability below Skull 4.** Instability reaches only fights at Skull Level 4 and above (the POI's or the ambush's). A fight at Skull 1 to 3 has none, however many Districts are cleared. From Skull 4 it is as before: 3% for every District cleared, 15% at most.
+
 ## Revision 16.4 (Companion 14.24, game 0.40)
 
 Three rules from the balance lab, which found long fights running out of cards and Units standing idle.

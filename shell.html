@@ -3212,6 +3212,9 @@ function simInstabilityPick(){
   var district=String(SIM.deploy ? (SIM.deploy.district||"") : ((SIM.map&&SIM.map.district)||""));
   var dOf=function(c){ return String((c.affinities&&c.affinities[0]||{}).district||""); };
   var pool=simFoeCards().filter(function(c){ return c.cardType===want && (!district || dOf(c)===district); });
+  /* (v14.26) on a deployment, the test set's only when the export has no others (as its Enemies, v14.24) */
+  var real=pool.filter(function(c){ return !simIsTest(c); });
+  if(SIM.deploy && real.length) pool=real;
   if(!pool.length){
     SIM.log.push({t:Date.now(), text:"Dimensional instability stirs, but "+(district?"District "+district:"this place")+
       " has no "+(want==="elite"?"Elite":"Mini-Boss")+" to send: an ordinary Enemy arrives"});
@@ -7413,7 +7416,7 @@ try{ window.SIM=SIM; window.simSelect=simSelect; window.simMoveTo=simMoveTo;
       window.SIM_EV=SIM_EV; window.simEmit=simEmit; window.simFlushEvents=simFlushEvents; window.simApplyContinuous=simApplyContinuous;
       /* v12.6 */
       window.simFindLoot=simFindLoot; window.simSalvage=simSalvage; window.simSettleLoot=simSettleLoot;
-      window.simDeployFight=simDeployFight; window.simDeployResultHTML=simDeployResultHTML; window.simFoePool=simFoePool; window.simIsTest=simIsTest; window.simRefillDeck=simRefillDeck; window.simPointless=simPointless; window.simInReachInstead=simInReachInstead; window.simEnemySpawnTiles=simEnemySpawnTiles; window.simFinish=simFinish;
+      window.simDeployFight=simDeployFight; window.simDeployResultHTML=simDeployResultHTML; window.simInstabilityPick=simInstabilityPick; window.simFoePool=simFoePool; window.simIsTest=simIsTest; window.simRefillDeck=simRefillDeck; window.simPointless=simPointless; window.simInReachInstead=simInReachInstead; window.simEnemySpawnTiles=simEnemySpawnTiles; window.simFinish=simFinish;
       window.simWizFinish=simWizFinish; window.simRunAuto=simRunAuto; window.simWiz=function(){ return SIM_WIZ; };
       window.simNarrowOK=simNarrowOK; window.simPush=simPush; window.simRunSentence=simRunSentence; window.simPassiveSources=simPassiveSources;
       window.simEnemyTurn=simEnemyTurn; window.SIM_PHASES=SIM_PHASES;

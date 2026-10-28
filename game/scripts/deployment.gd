@@ -149,6 +149,9 @@ func need_of(team: Dictionary) -> Dictionary:
 ## on a large floor too). (0.40) Skull 4 has 3 waves, its floors being the ones
 ## that swarm, Skull 5 four and Skull 6 five.
 const WAVES_BY_SKULL := [3, 3, 4, 3, 4, 5]
+## (0.42) Dimensional Instability reaches a deployment's fights from this Skull
+## Level up; below it, none. (deploy.js INSTABILITY_FROM)
+const INSTABILITY_FROM := 4
 
 
 static func waves_for(skull, kind: String) -> int:
@@ -621,7 +624,7 @@ func spec() -> Variant:
 	var a: Dictionary = c["activity"]
 	return {"floor": a["floors"][a["index"]], "district": a["district"], "skull": a["skull"], "kind": a["kind"], "index": a["index"], "count": a["floors"].size(),
 		"name": a["name"], "type": a["type"], "tile": a["tile"], "n": c["n"], "pending": c["items"].duplicate(),
-		"instability": world.instability(), "core": a.get("core")}
+		"instability": world.instability() if int(a["skull"]) >= INSTABILITY_FROM else 0, "core": a.get("core")}
 
 
 ## A fight is over. res: {winner ("ally", "escape", anything else is lost),

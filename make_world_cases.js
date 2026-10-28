@@ -243,7 +243,7 @@ const fightOut = o => o ? { next: o.next, kind: o.kind || null, name: o.name || 
   poiDone: !!o.poiDone, final: o.final ? { bag: L.norm(o.final.bag), items: o.final.items } : null, reserves: o.reserves ? o.reserves : null,
   lostHaul: o.lostHaul ? L.norm(o.lostHaul) : null, lostItems: o.lostItems || null, dock: o.next === "wipe" ? dockOut(o.dock) : null } : null;
 const stepOut = r => ({ moved: !!r.moved, why: r.why || null, pos: r.pos || null, home: !!r.home, content: r.content ? { kind: r.content.kind, name: r.content.name } : null, ambush: !!r.ambush, tileAmbush: !!r.tileAmbush });
-const specOut = sp => sp ? { floor: sp.floor, district: sp.district, skull: sp.skull, kind: sp.kind, index: sp.index, count: sp.count, name: sp.name, type: sp.type, tile: sp.tile, n: sp.n, pending: sp.pending } : null;
+const specOut = sp => sp ? { floor: sp.floor, district: sp.district, skull: sp.skull, kind: sp.kind, index: sp.index, count: sp.count, name: sp.name, type: sp.type, tile: sp.tile, n: sp.n, pending: sp.pending, instability: sp.instability } : null;
 const tally = {};
 const count = (k, n) => { tally[k] = (tally[k] || 0) + (n === undefined ? 1 : n); };
 

@@ -352,6 +352,8 @@ Every District the Player clears destabilises the rest of KETER. For each Distri
 
 Whenever an Enemy Spawn Tile draws its Enemy, roll a d100. At or under the current chance, an Elite or a Mini-Boss appears in place of the drawn Enemy: roll a d6, and on 1–4 it is an Elite, on 5–6 a Mini-Boss — two times in three an Elite, one time in three a Mini-Boss. It is chosen at random from those of the current District, and takes the tile regardless of the tile's Skull Level. The Enemy that was drawn goes to the bottom of its pile. If the current District has no Elite (or no Mini-Boss, whichever was rolled), nothing unusual comes: the Enemy that was drawn arrives after all (Revision 15.8).
 
+Instability reaches only fights at **Skull Level 4 and above**, the Skull Level of the POI or ambush being fought. A fight at Skull 1 to 3 has none, however many Districts are cleared (Revision 16.5).
+
 With no Districts cleared the chance is 0%, so a fresh Player meets no Elites or Mini-Bosses outside a Boss's own guard.
 
 ## Enemy Archetypes
@@ -1542,7 +1544,7 @@ The authoritative reference for all game terms. Where the Glossary and body text
 | **Deployment Inventory** | Holds everything collected during the current deployment. Loot enters automatically, but the inventory is access-locked: Decks cannot be modified from it and its contents cannot be used until the Strike Team returns to the Hangar. Wiped entirely in a Deployment Wipe. | Turn |
 | **Deployment Wipe** | Occurs when every deployed Hero is Incapacitated and no reserve Hero remains. The Player loses the entire Deployment Inventory, all Consumables, and all equipped Prototypes, and is returned to the Hangar. Heroes and their Combat Decks are always preserved. | Turn |
 | **Devourer** | Archetype: Melee unit that gains buffs/heals on a killing blow. | Units |
-| **Dimensional Instability** | For each District the Player has cleared, every Enemy spawn carries a 3% chance — up to 15% after five — of producing an Elite (two times in three) or a Mini-Boss (one time in three) of the current District in place of the drawn Enemy, whatever the tile's Skull Level. With none of that kind in the District, the drawn Enemy arrives. | World |
+| **Dimensional Instability** | For each District the Player has cleared, every Enemy spawn carries a 3% chance — up to 15% after five — of producing an Elite (two times in three) or a Mini-Boss (one time in three) of the current District in place of the drawn Enemy, whatever the tile's Skull Level. With none of that kind in the District, the drawn Enemy arrives. Only fights at Skull 4 and above have it (Revision 16.5). | World |
 | **Disabler** | Archetype: Low initial damage but strong control: stuns, roots, pulls, debuffs, taunts. | Combat |
 | **Discard Pile** | Where a Friendly or Enemy Unit's card goes once its HP is reduced to 0. Each Deck has its own Discard Pile; all Enemies share one. Any card that leaves the Battlefield or is discarded after use goes to a Discard Pile. | Cards |
 | **Discovery Tile** | A tile not previously explored by the Player. A small marker token is placed on every unexplored tile; when a Player enters it, the token is removed and a Discovery Card is drawn — a Random Event, an Ambush, or a Point of Interest. Only 1 can be revealed per turn. | World |

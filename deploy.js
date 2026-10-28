@@ -43,6 +43,8 @@
      and at Skull 1 or 2, two Heroes may enter whatever the floor's size, and its spawn tiles take turns */
   /* (v14.24) Skull 4 has 3 waves, its floors being the ones that swarm; Skull 5 four, Skull 6 five */
   var WAVES_BY_SKULL=[3,3,4,3,4,5];
+  /* (v14.26) Dimensional Instability reaches a deployment's fights from this Skull Level up; below it, none */
+  var INSTABILITY_FROM=4;
   function waves(skull, kind){ var n=WAVES_BY_SKULL[Math.max(1,Math.min(6,+skull||1))-1]; return kind==="ambush"?Math.max(2,n-1):n; }
   function soft(skull){ return (+skull||1)<=2; }
   function loadouts(){
@@ -231,7 +233,7 @@
   function spec(){
     var s=cur(); if(!s||!s.activity) return null; var a=s.activity;
     return {floor:a.floors[a.index], district:a.district, skull:a.skull, kind:a.kind, index:a.index, count:a.floors.length,
-      name:a.name, type:a.type, tile:a.tile, n:s.n, pending:s.items.slice(), instability:W().instability?W().instability():0, core:a.core||null};
+      name:a.name, type:a.type, tile:a.tile, n:s.n, pending:s.items.slice(), instability:(a.skull>=INSTABILITY_FROM && W().instability)?W().instability():0, core:a.core||null};
   }
   function heroNames(s, refs){ var all=cards(); return refs.map(function(r){ var c=resolve(r,all); return c?c.name:String(r).split("|").slice(1).join("|"); }); }
 
@@ -384,7 +386,7 @@
   function abandon(){ var s=cur(); if(!s) return false; s.active=false; s.result="abandoned"; save(s); W().endDeployment(); if(K()) K().deploymentEnded({result:"abandoned", explored:false}); return true; }
   function last(){ var s=read(KEY,null); return s&&!s.active?s:null; }
 
-  window.KETER_DEPLOY={MAX_COPIES:MAX_COPIES, trim:trim, waves:waves, soft:soft, WAVES_BY_SKULL:WAVES_BY_SKULL, KEY:KEY, HIST_KEY:HIST_KEY, loadouts:loadouts, resolve:resolve, needOf:needOf, plan:plan, start:start, cur:cur, active:active,
+  window.KETER_DEPLOY={MAX_COPIES:MAX_COPIES, trim:trim, waves:waves, soft:soft, WAVES_BY_SKULL:WAVES_BY_SKULL, INSTABILITY_FROM:INSTABILITY_FROM, KEY:KEY, HIST_KEY:HIST_KEY, loadouts:loadouts, resolve:resolve, needOf:needOf, plan:plan, start:start, cur:cur, active:active,
     lockedDesign:lockedDesign, lockedLoadout:lockedLoadout, heroRefs:heroRefs, deckRefs:deckRefs, team:team, copiesLeft:copiesLeft,
     stepTo:stepTo, enterPOI:enterPOI, ambush:ambush, spec:spec, fightOver:fightOver, retryable:retryable, canWithdraw:canWithdraw, withdraw:withdraw,
     openCache:openCache, eventAt:eventAt, choose:choose, home:home, wipe:wipe, abandon:abandon, history:history, last:last,

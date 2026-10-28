@@ -6,6 +6,13 @@ the Change Log.
 
 <!-- NEWEST ENTRY GOES BELOW THIS LINE -->
 
+## v14.26 — Instability from Skull 4
+
+Alongside game 0.42. Measured first: with Elites and Mini-Bosses in every District, the balance lab's campaigns stalled once two or three Districts were cleared.
+
+- **No Dimensional Instability below Skull 4**: a fight at Skull 1 to 3 never brings an Elite or a Mini-Boss, however many Districts are cleared. From Skull 4 it is as before (Change Log, Revision 16.5).
+- **The test set's Elites and Mini-Bosses stay home** on a deployment, as its Enemies already did, unless the export has no others.
+
 ## v14.25 — Cores in reach, and Withdraw
 
 Alongside game 0.41. Measured first: the balance lab played whole campaigns, and the first District took about 170 deployments where we aimed for 15 to 25.

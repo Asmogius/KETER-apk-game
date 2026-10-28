@@ -193,8 +193,9 @@ Level. Beat it and the **District is cleared for good**: 5 merits for the
 Colony Rank, and the Core never comes back, on this map or another.
 
 Every District cleared brings **Dimensional Instability** to a deployment's
-fights: 3% of it each, 15% at most, sending Elites and Mini-Bosses in place of
-ordinary Enemies. Clear all six and the colony is safe.
+fights from Skull 4 up (v14.26; none at Skull 1 to 3): 3% of it each, 15% at
+most, sending Elites and Mini-Bosses in place of ordinary Enemies. Clear all
+six and the colony is safe.
 
 ## Ambushes, Caches and Events
 

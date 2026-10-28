@@ -2510,7 +2510,9 @@ func _reveal(level: int) -> Variant:
 ## cleared, up to 15%, that a spawn brings an Elite (two times in three) or a
 ## Mini-Boss (one in three) in place of the drawn Enemy, whatever the tile's
 ## level. It is chosen from those of the floor's own District, of the kind
-## rolled; with none there, the ordinary Enemy arrives after all (15.8).
+## rolled; with none there, the ordinary Enemy arrives after all (15.8). (0.42)
+## On a deployment, the test set's only when there are no others; and below
+## Skull 4 a deployment's fight has none (Deployment.INSTABILITY_FROM).
 ## (simInstabilityPick)
 func _instability_pick() -> Variant:
 	if instability <= 0:
@@ -2520,6 +2522,10 @@ func _instability_pick() -> Variant:
 	var want := "elite" if dice.roll("d6") <= 4 else "miniboss"
 	var district := str(floor_data.district) if floor_data != null else ""
 	var pool := cards.filter(func(c): return c is Dictionary and c.get("cardType") == want and (district == "" or Roster.district_of(c) == district))
+	# (0.42) on a deployment, the test set's only when the export has no others (as its Enemies, 0.40)
+	var real := pool.filter(func(c): return not Roster.is_test(c))
+	if deploy != null and not real.is_empty():
+		pool = real
 	if pool.is_empty():
 		say("Dimensional instability stirs, but " + (("District " + district) if district != "" else "this place") +
 			" has no " + ("Elite" if want == "elite" else "Mini-Boss") + " to send: an ordinary Enemy arrives")

@@ -39,6 +39,13 @@ func _run() -> void:
 		Rules.hooks = {}
 		quit(1 if bad > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("fortytwo"):
+		_fortytwo()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("fortyone"):
 		_fortyone()
 		await _fortyone_scene()
@@ -356,6 +363,7 @@ func _run() -> void:
 	_thirtyeight()
 	_forty()
 	_fortyone()
+	_fortytwo()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -10327,4 +10335,63 @@ func _fortyone_scene() -> void:
 	ck("0.41 map: Withdraw leaves the Core and says so; the team is free to walk", cm.deploy.cur()["activity"] == null and ms.note == "The team withdraws with its haul. Walk home to keep it." and not ms.actions().any(func(a): return a["id"] == "withdraw"), ms.actions())
 	scene.queue_free()
 	await _frames(2)
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- 0.42: Instability from Skull 4; test Elites stay home
+func _fortytwo() -> void:
+	Kit.fresh()
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var r := Roster.new(x)
+	var c := Campaign.new(x, r, x.floors(), 51)
+	var w := c.world
+	for d in ["1", "2", "3"]:
+		w.clear_district(d)
+	ck("0.42 (three Districts cleared: 9%)", w.instability() == 9 and Deployment.INSTABILITY_FROM == 4)
+	var t := Kit.field_team("Instability Run")
+	var rich := Loot.bag()
+	rich["shards"] = 3000
+	for ty in ["troop", "equipment", "aether"]:
+		rich["parts"][ty] = [40, 40, 40, 40, 40, 40]
+	c.deploy.stock = rich
+	ck("0.42 instability: (a team out)", c.deploy.start(t)["ok"])
+	var at := {}
+	for k in w.map["tiles"]:
+		var sk := w.skull_of(k)
+		if str(k) != w.dock() and not at.has(sk):
+			at[sk] = str(k)
+	var got := {}
+	for sk in [1, 2, 3, 4, 5, 6]:
+		c.deploy.cur()["pos"] = at[sk]
+		c.deploy.ambush(at[sk], {})
+		got[sk] = int(c.deploy.spec()["instability"])
+		c.deploy.fight_over({"winner": "ally", "haul": Loot.bag(), "reward": Loot.bag(), "items": [], "heroesDown": [], "troopsLost": [], "consUsed": [], "kills": []})
+	ck("0.42 instability: none in a fight at Skull 1 to 3, however many Districts are cleared; from Skull 4, 3% a District", got == {1: 0, 2: 0, 3: 0, 4: 9, 5: 9, 6: 9}, got)
+	# the test set's Elites and Mini-Bosses stay home on a deployment
+	var f: FloorData = null
+	for fl in x.floors():
+		if fl.name.begins_with("TEST") and Battle.from_state(fl, [], 1).enemy_spawns().size() >= 2:
+			f = fl
+			break
+	ck("0.42 (a test floor with two Enemy spawn tiles or more)", f != null)
+	if f == null:
+		return
+	f.district = "3"
+	var specials := func(deployed: bool) -> Dictionary:
+		var names := {}
+		for sd in range(1, 13):
+			var su := StrikeTeams.setup_for(Kit.team(), r, ["Test Warden"], "Test Warden", [], 3, 100)
+			if deployed:
+				su["deploy"] = {"district": "3", "skull": 4, "kind": "poi", "pending": [], "bounties": []}
+			var b := Battle.begin_team(f, r, su, sd)
+			for u in b.units:
+				var src = r.card_named(str(u["src"] if Rules.truthy(u.get("src")) else u["name"]))
+				if u["side"] == "enemy" and src is Dictionary and src.get("cardType") in ["elite", "miniboss"]:
+					names[str(src["name"])] = Roster.is_test(src)
+		return names
+	var dep_names: Dictionary = specials.call(true)
+	var free_names: Dictionary = specials.call(false)
+	ck("0.42 test Elites: on a deployment, Instability sends District 3's own Elites and Mini-Bosses, never the test set's", not dep_names.is_empty() and not dep_names.values().has(true), dep_names)
+	ck("0.42 test Elites: a practice Battle may still draw the test set's", free_names.values().has(true), free_names)
 	Kit.fresh()

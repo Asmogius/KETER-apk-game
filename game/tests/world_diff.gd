@@ -167,7 +167,7 @@ func _snap(dep: Deployment) -> Dictionary:
 func _spec(sp) -> Variant:
 	if sp == null:
 		return null
-	return {"floor": sp["floor"], "district": sp["district"], "skull": sp["skull"], "kind": sp["kind"], "index": sp["index"], "count": sp["count"], "name": sp["name"], "type": sp["type"], "tile": sp["tile"], "n": sp["n"], "pending": sp["pending"]}
+	return {"floor": sp["floor"], "district": sp["district"], "skull": sp["skull"], "kind": sp["kind"], "index": sp["index"], "count": sp["count"], "name": sp["name"], "type": sp["type"], "tile": sp["tile"], "n": sp["n"], "pending": sp["pending"], "instability": sp["instability"]}
 
 
 func _case(c: Dictionary) -> void:

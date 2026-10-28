@@ -2429,7 +2429,7 @@ func deploy_result_lines() -> Array:
 		out.append("%s cleared. Its reward: %s%s." % [str(o.get("name", "The POI")), t.text(fin["bag"]), ("; and " + ", ".join(fin["items"].map(named))) if not fin["items"].is_empty() else ""])
 	# (0.38) a District Core beaten
 	if Rules.truthy(o.get("district")):
-		out.append("District %s is cleared, for good: %d merits for the Colony Rank, and from now on Dimensional Instability is %d%% in a deployment's fights." % [str(o["district"]), int(o.get("merits", 0)), campaign.world.instability()])
+		out.append("District %s is cleared, for good: %d merits for the Colony Rank, and from now on Dimensional Instability is %d%% in a deployment's fights from Skull 4." % [str(o["district"]), int(o.get("merits", 0)), campaign.world.instability()])
 	if Rules.truthy(o.get("won")):
 		out.append("Every District is cleared: the colony is safe. The run goes on, if you want it to.")
 	match str(o.get("next", "map")):

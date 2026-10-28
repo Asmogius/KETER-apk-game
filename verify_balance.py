@@ -160,6 +160,13 @@ with sync_playwright() as p:
     r=E("""()=>{ var h=simDeployResultHTML({out:{next:'retry', reserves:['Field Medic']}, winner:'enemy', heroesDown:[], troopsLost:[]});
       return {withdraw:h.indexOf('id="simDepWithdraw"')>=0, retry:h.indexOf('id="simDepRetry"')>=0, give:h.indexOf('id="simDepGiveUp"')>=0, D:typeof KETER_DEPLOY.withdraw==='function' && KETER_DEPLOY.canWithdraw()===false && KETER_DEPLOY.withdraw().ok===false}; }""")
     ck("v14.25: after a lost fight, Withdraw sits between Retry and Give up; with no fight lost, it can't be done", r=={"withdraw":True,"retry":True,"give":True,"D":True}, r)
+    # ================= v14.26 =================
+    r=E("""()=>{ var keep={deploy:SIM.deploy, inst:SIM.instability, log:SIM.log, map:SIM.map}; SIM.log=[]; SIM.instability=100;
+      SIM.deploy={district:'3', skull:4, kind:'poi'}; var dep={}; for(var i=0;i<300;i++){ var c=simInstabilityPick(); if(c) dep[c.name]=simIsTest(c); }
+      SIM.deploy=null; SIM.map={district:'3'}; var free={}; for(var j=0;j<300;j++){ var c2=simInstabilityPick(); if(c2) free[c2.name]=simIsTest(c2); }
+      SIM.deploy=keep.deploy; SIM.instability=keep.inst; SIM.log=keep.log; SIM.map=keep.map;
+      return {from:KETER_DEPLOY.INSTABILITY_FROM, depAny:Object.keys(dep).length>0, depTest:Object.keys(dep).filter(function(n){ return dep[n]; }), freeTest:Object.keys(free).some(function(n){ return free[n]; })}; }""")
+    ck("v14.26: Instability from Skull 4; on a deployment its Elites and Mini-Bosses are never the test set's (a practice Battle's may be)", r=={"from":4,"depAny":True,"depTest":[],"freeTest":True}, r)
     ck("no page errors", not errs, errs)
     b.close()
 print(f"\nBALANCE PASS {len(ok)}  FAIL {len(bad)}")

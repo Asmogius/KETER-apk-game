@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.41 puts the first Cores in
-reach and lets a team withdraw from a lost fight; v0.40 rebalanced the fights from Skull 4 up.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.42 keeps Dimensional
+Instability off fights below Skull 4; v0.41 put the first Cores in reach and brought Withdraw.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,18 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.42 (Companion 14.26): **Instability from Skull 4**. With Elites and
+Mini-Bosses in every District, the campaign lab's runs stalled once two or three
+Districts were cleared: Instability made a Skull 3 POI a wall (a mid team
+cleared 98% of them with none, 20% at 9%).
+
+- **No Dimensional Instability below Skull 4.** A deployment's fight at Skull
+  1 to 3 never brings an Elite or a Mini-Boss, however many Districts are
+  cleared; from Skull 4 it is 3% for every District cleared, 15% at most, as
+  before (Revision 16.5). A practice Battle still has what you set.
+- **The test set's Elites and Mini-Bosses stay home** on a deployment, as its
+  Enemies already did (0.40), unless the export has no others.
 
 New in 0.41 (Companion 14.25): **the campaign lab's two changes**. The
 balance lab now plays whole campaigns from a new save. With every District on
@@ -787,7 +799,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-41_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-42_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -798,7 +810,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-41_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-42_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the
@@ -1499,7 +1511,9 @@ three, or a Mini-Boss, in place of the Enemy that was drawn, whatever the
 tile's level. Nothing in the game counts cleared Districts yet, so for a
 practice Battle you say how many as you set it up, on the last step. It
 starts at 0 every time. **A deployment's fights have 3% for every District
-cleared** (0.38), 15% at most.
+cleared** (0.38), 15% at most, **from Skull 4 up** (0.42; none at Skull 1 to 3).
+On a deployment the test set's Elites and Mini-Bosses come only when the export
+has no others (0.42).
 
 The Elite or Mini-Boss comes from the floor's own District. If the District
 has none of the kind rolled, the Enemy that was drawn arrives after all, and
