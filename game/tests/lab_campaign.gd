@@ -41,6 +41,8 @@
 ## that cleared a POI at its aim raises the aim, with Heroes down or not.
 ## d3foes=1 has every District's fights draw District 3's Elites and Mini-Bosses
 ## under Dimensional Instability, as if each District had its own.
+## inst=third|half|from4|bylevel changes Dimensional Instability: a third of it,
+## half, none below Skull 4, or none at Skull 1-2 and half at 3-4.
 ##   godot --headless --path . --script res://tests/lab_campaign.gd -- export=<zip> bot=<careful|casual> seed=<n> most=<deployments> out=<file> [d3floors=1]
 extends SceneTree
 
@@ -67,6 +69,7 @@ var retreat := false                 # (what-if) a lost fight: give the place up
 var retreating := false
 var bold := false                    # (what-if player) one trip home that cleared a POI at its aim raises the aim
 var d3foes := false                  # (what-if) every District's fights draw District 3's Elites and Mini-Bosses
+var instmode := ""                   # (what-if) Dimensional Instability: third, half, from4 or bylevel
 var core_skulls := []                # (what-if) the Skull Level of each District's Core
 
 
@@ -75,7 +78,7 @@ func _initialize() -> void:
 
 
 func _args() -> Dictionary:
-	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": "", "d3floors": "0", "keepheroes": "0", "keepcards": "0", "retreat": "1", "cores": "", "bold": "0", "d3foes": "0"}
+	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": "", "d3floors": "0", "keepheroes": "0", "keepcards": "0", "retreat": "1", "cores": "", "bold": "0", "d3foes": "0", "inst": ""}
 	for a in OS.get_cmdline_user_args():
 		var kv := str(a).split("=", true, 1)
 		if kv.size() == 2:
@@ -104,6 +107,7 @@ func _run() -> void:
 	retreat = str(o["retreat"]) == "1"
 	bold = str(o["bold"]) == "1"
 	d3foes = str(o["d3foes"]) == "1"
+	instmode = str(o["inst"])
 	core_skulls = Array(str(o["cores"]).replace(";", ",").split(",", false)).map(func(v): return int(v))      # (";" between them, from balance_lab.py)
 	rng.seed = int(o["seed"])
 	player = LabPlayer.new(bot, rng)
@@ -113,7 +117,7 @@ func _run() -> void:
 		_move_cores(c.world)
 	out_file = FileAccess.open(str(o["out"]), FileAccess.WRITE)
 	var most := int(o["most"])
-	var run := {"seed": int(o["seed"]), "bot": bot, "d3floors": d3floors, "keepheroes": keepheroes, "keepcards": keepcards, "retreat": retreat, "bold": bold, "d3foes": d3foes, "cores": core_skulls, "deployments": 0, "wipes": 0, "first_district": 0, "all_districts": 0,
+	var run := {"seed": int(o["seed"]), "bot": bot, "d3floors": d3floors, "keepheroes": keepheroes, "keepcards": keepcards, "retreat": retreat, "bold": bold, "d3foes": d3foes, "inst": instmode, "cores": core_skulls, "deployments": 0, "wipes": 0, "first_district": 0, "all_districts": 0,
 		"rank_at": {}, "districts_at": [], "comfort_at": {}, "error": ""}
 	for n in range(1, most + 1):
 		var line := _deployment(c, n)
@@ -501,7 +505,7 @@ func _fight(c: Campaign) -> bool:
 	var standing: Array = team["heroes"].duplicate()
 	standing.sort_custom(func(a, b): return power(r.card_named(a)) > power(r.card_named(b)))
 	var entering: Array = standing.slice(0, Roster.deploy_capacity(f, int(sp["skull"])))
-	var su := StrikeTeams.setup_for(team, r, entering, entering[0], player.starters(team, r, entering), 3, int(Rules.num(sp.get("instability"), 0)))
+	var su := StrikeTeams.setup_for(team, r, entering, entering[0], player.starters(team, r, entering), 3, _instability(int(Rules.num(sp.get("instability"), 0)), int(sp["skull"])))
 	su["deploy"] = {"district": sp["district"], "skull": sp["skull"], "kind": sp["kind"], "pending": sp["pending"], "bounties": c.dock.wanted()}
 	var b := Battle.begin_team(f, r, su, rng.randi())
 	player.play(b)
@@ -519,6 +523,20 @@ func _fight(c: Campaign) -> bool:
 	tally["heroes_down"] += res["heroesDown"].size()
 	dep.fight_over(res)
 	return res["winner"] == "ally"
+
+
+## (what-if) The Instability a fight has, as inst= changes it.
+func _instability(i: int, skull: int) -> int:
+	match instmode:
+		"third":
+			return int(round(i / 3.0))
+		"half":
+			return int(round(i / 2.0))
+		"from4":
+			return 0 if skull < 4 else i
+		"bylevel":
+			return 0 if skull <= 2 else (int(round(i / 2.0)) if skull <= 4 else i)
+	return i
 
 
 func _floor(c: Campaign, k) -> FloorData:
