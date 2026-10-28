@@ -7,7 +7,7 @@
 ## The team is one a player would have at that point of a run (the stage):
 ## starter (Skull 1-2), mid (3-4), late (5-6). The fight is an ambush, a POI's
 ## floor, or a District Core's last floor (a Boss's where one fits).
-##   godot --headless --path . --script res://tests/lab_fights.gd -- export=<zip> skull=<n> kind=<ambush|poi|core> bot=<careful|casual> n=<runs> seed=<n> out=<file> [stage=<starter|mid|late>] [inst=<Instability %>] [district=<1-6>]
+##   godot --headless --path . --script res://tests/lab_fights.gd -- export=<zip> skull=<n> kind=<ambush|poi|core> bot=<careful|casual> n=<runs> seed=<n> out=<file> [stage=<starter|mid|late>] [inst=<Instability %>] [district=<1-6>] [tile=<q,r>: that POI's own floors, every run]
 extends SceneTree
 
 const Kit := preload("res://tests/team_kit.gd")
@@ -22,6 +22,7 @@ var seen_wave := 0
 var all_floors: Array = []
 var inst := 0
 var district := "3"
+var tile := ""                         # (a POI on the map: its own floors, every run)
 var tune := {}              # the what-if switches (see tune=)
 var lab_roster: Roster = null
 var show_log := false
@@ -32,7 +33,7 @@ func _initialize() -> void:
 
 
 func _args() -> Dictionary:
-	var o := {"export": "", "skull": "1", "kind": "ambush", "bot": "careful", "n": "20", "seed": "1", "out": "", "stage": "", "inst": "0", "district": "3", "tune": ""}
+	var o := {"export": "", "skull": "1", "kind": "ambush", "bot": "careful", "n": "20", "seed": "1", "out": "", "stage": "", "inst": "0", "district": "3", "tune": "", "tile": ""}
 	for a in OS.get_cmdline_user_args():
 		var kv := str(a).split("=", true, 1)
 		if kv.size() == 2:
@@ -69,6 +70,7 @@ func _run() -> void:
 	player = LabPlayer.new(bot, rng)
 	inst = int(o["inst"])
 	district = str(o["district"])
+	tile = str(o["tile"])
 	for part in str(o["tune"]).split(",", false):
 		var kv := part.split(":")
 		tune[kv[0]] = float(kv[1]) if kv.size() > 1 else 1.0
@@ -173,7 +175,7 @@ func team_for(stage: String, skull: int, r: Roster) -> Dictionary:
 func run(c: Campaign, r: Roster, t0: Dictionary, skull: int, kind: String, stage: String) -> Dictionary:
 	var t: Dictionary = t0.duplicate(true)
 	var count := 1 if kind == "ambush" else (3 if kind == "core" else c.world.floor_count(skull))
-	var keys: Array = c.world.draw_floors(district, skull, count, kind == "ambush", str(rng.randi()))
+	var keys: Array = c.world.draw_floors(district, skull, count, kind == "ambush", tile if tile != "" else str(rng.randi()))
 	var out := {"skull": skull, "kind": kind, "bot": bot, "stage": stage, "level": int(t["level"]), "inst": inst, "district": district, "tune": tune,
 		"floors": keys.size(), "cleared": 0, "fights": 0, "retries": 0, "heroes_down": 0, "won": false, "fight": []}
 	var heroes_out := []

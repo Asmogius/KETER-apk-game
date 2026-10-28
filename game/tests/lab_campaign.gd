@@ -39,6 +39,8 @@
 ## (since 0.41 the game puts them at the World tables' Core Skull Levels);
 ## cores=2,3,4,5,6,6 moves the Cores of Districts 1 to 6 to those instead. bold=1 is a bolder player: one trip home
 ## that cleared a POI at its aim raises the aim, with Heroes down or not.
+## d3foes=1 has every District's fights draw District 3's Elites and Mini-Bosses
+## under Dimensional Instability, as if each District had its own.
 ##   godot --headless --path . --script res://tests/lab_campaign.gd -- export=<zip> bot=<careful|casual> seed=<n> most=<deployments> out=<file> [d3floors=1]
 extends SceneTree
 
@@ -64,6 +66,7 @@ var keepcards := false               # (what-if) and the cards taken
 var retreat := false                 # (what-if) a lost fight: give the place up and go home
 var retreating := false
 var bold := false                    # (what-if player) one trip home that cleared a POI at its aim raises the aim
+var d3foes := false                  # (what-if) every District's fights draw District 3's Elites and Mini-Bosses
 var core_skulls := []                # (what-if) the Skull Level of each District's Core
 
 
@@ -72,7 +75,7 @@ func _initialize() -> void:
 
 
 func _args() -> Dictionary:
-	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": "", "d3floors": "0", "keepheroes": "0", "keepcards": "0", "retreat": "1", "cores": "", "bold": "0"}
+	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": "", "d3floors": "0", "keepheroes": "0", "keepcards": "0", "retreat": "1", "cores": "", "bold": "0", "d3foes": "0"}
 	for a in OS.get_cmdline_user_args():
 		var kv := str(a).split("=", true, 1)
 		if kv.size() == 2:
@@ -100,6 +103,7 @@ func _run() -> void:
 	keepcards = str(o["keepcards"]) == "1"
 	retreat = str(o["retreat"]) == "1"
 	bold = str(o["bold"]) == "1"
+	d3foes = str(o["d3foes"]) == "1"
 	core_skulls = Array(str(o["cores"]).replace(";", ",").split(",", false)).map(func(v): return int(v))      # (";" between them, from balance_lab.py)
 	rng.seed = int(o["seed"])
 	player = LabPlayer.new(bot, rng)
@@ -109,7 +113,7 @@ func _run() -> void:
 		_move_cores(c.world)
 	out_file = FileAccess.open(str(o["out"]), FileAccess.WRITE)
 	var most := int(o["most"])
-	var run := {"seed": int(o["seed"]), "bot": bot, "d3floors": d3floors, "keepheroes": keepheroes, "keepcards": keepcards, "retreat": retreat, "bold": bold, "cores": core_skulls, "deployments": 0, "wipes": 0, "first_district": 0, "all_districts": 0,
+	var run := {"seed": int(o["seed"]), "bot": bot, "d3floors": d3floors, "keepheroes": keepheroes, "keepcards": keepcards, "retreat": retreat, "bold": bold, "d3foes": d3foes, "cores": core_skulls, "deployments": 0, "wipes": 0, "first_district": 0, "all_districts": 0,
 		"rank_at": {}, "districts_at": [], "comfort_at": {}, "error": ""}
 	for n in range(1, most + 1):
 		var line := _deployment(c, n)
@@ -493,7 +497,7 @@ func _fight(c: Campaign) -> bool:
 	if f == null:
 		dep.wipe()
 		return false
-	f.district = str(sp["district"])
+	f.district = "3" if d3foes else str(sp["district"])
 	var standing: Array = team["heroes"].duplicate()
 	standing.sort_custom(func(a, b): return power(r.card_named(a)) > power(r.card_named(b)))
 	var entering: Array = standing.slice(0, Roster.deploy_capacity(f, int(sp["skull"])))
