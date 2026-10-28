@@ -233,8 +233,16 @@ func fight(r: Roster, t: Dictionary, skull: int, kind: String, f: FloorData, lef
 	var b := Battle.begin_team(f, r, su, rng.randi())
 	if tune.has("mix"):
 		_mix_pile(b, r)
-	if tune.has("waves"):
-		b.waves_total = maxi(1, b.waves_total + int(tune["waves"]))
+	var dw = tune.get("waves" + str(skull), tune.get("waves"))         # "waves4:-1": at Skull 4 only
+	if dw != null:
+		b.waves_total = maxi(1, b.waves_total + int(dw))
+	var big := Roster.deploy_capacity(f, skull) >= 3          # a large floor: three Heroes enter
+	if big and tune.has("bigwaves"):
+		b.waves_total = maxi(1, b.waves_total + int(tune["bigwaves"]))
+	var halve := big and tune.has("bigturns")
+	var seen_wave := 0
+	if halve:
+		seen_wave = _take_turns(b, seen_wave)
 	_tune_foes(b)
 	played = 0
 	while not b.settle() and b.round <= 40:
@@ -267,6 +275,8 @@ func fight(r: Roster, t: Dictionary, skull: int, kind: String, f: FloorData, lef
 				break
 		if not b.over:
 			b.end_round()
+			if halve:
+				seen_wave = _take_turns(b, seen_wave)
 			_tune_foes(b)
 	if show_log:
 		print("---- %s, skull %d, %s: %s in round %d" % [f.name, skull, kind, b.winner if b.over else "unsettled", b.round])
@@ -318,6 +328,22 @@ func _knob(name: String, lv: int) -> Variant:
 	if tune.has(name + str(lv)):
 		return tune[name + str(lv)]
 	return tune.get(name)
+
+
+## bigturns: on a large floor its Enemy spawn tiles take turns, wave by wave, as
+## they do at Skull 1-2: of the Enemies a new wave brought, every other one is
+## taken off again before it acts. Returns the wave it has seen to.
+func _take_turns(b: Battle, seen: int) -> int:
+	if b.wave <= seen:
+		return seen
+	var fresh: Array = b.units.filter(func(u): return u["side"] == "enemy" and not u.has("_wave") and not Rules.truthy(u.get("down")))
+	var k := 0
+	for u in fresh:
+		u["_wave"] = b.wave
+		if (k + b.wave) % 2 == 1:
+			b.units.erase(u)
+		k += 1
+	return b.wave
 
 
 ## mix: each Enemy in the pile is, one time in two, one drawn a level lower.
