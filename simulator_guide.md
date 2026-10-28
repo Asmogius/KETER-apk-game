@@ -458,6 +458,11 @@ Floor, and each tile draws an Enemy of its own Skull Level — set in the POI
 Sandbox with the Spawn level tool. The next wave arrives when the current one is
 cleared, or when the wave timer runs out.
 
+On a deployment from the World Map (v14.24) a fight has 3, 3, 4, 3, 4 or 5 waves
+by its Skull Level, one fewer in an ambush; one Enemy in two is drawn from the
+Skull Level below the tile's; the test set's Enemies never come; and at Skull 1
+and 2, or on a large Floor, the spawn tiles take turns, wave by wave.
+
 Every spawn can also produce something worse. For each District you have
 cleared, there is a 3% chance — up to 15% — of an Elite or a Mini-Boss arriving
 in place of the drawn Enemy, whatever the tile's Level. The log says when it

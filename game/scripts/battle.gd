@@ -152,12 +152,16 @@ static func begin_team(f: FloorData, r: Roster, setup: Dictionary, seed = null) 
 		want[t["level"]] = want.get(t["level"], 0) + b.waves_total
 	var levels: Array = want.keys()
 	levels.sort()
+	var real := b.deploy != null
 	for level in levels:
-		var pool := r.foe_pool(level, f.district)
+		var pool := r.foe_pool(level, f.district, real)
 		if pool.is_empty():
 			continue
+		# (0.40) on a deployment, one Enemy in two is drawn from the level below
+		var lower: Array = r.foe_pool(level - 1, f.district, true) if real and level > 1 else []
 		for i in want[level]:
-			var c: Dictionary = pool[int(floor(float(b.dice.roll("d20")) / 21.0 * pool.size()))]
+			var from: Array = lower if not lower.is_empty() and b.dice.roll("d6") <= 3 else pool
+			var c: Dictionary = from[int(floor(float(b.dice.roll("d20")) / 21.0 * from.size()))]
 			b.enemy_pile.append({"name": c["name"], "level": level})
 	b._shuffle(b.enemy_pile)
 	b._place_allies()
@@ -1797,6 +1801,9 @@ func enemy_action(e: Dictionary, target: Dictionary) -> Dictionary:
 			return false                # one of yours under Auto, with a carried Action card
 		if not can_reach(e, a, target):
 			return false
+		# (0.40) nor one that would only give the target a status it already has
+		if pointless(a, target):
+			return false
 		# an Enemy never drops an area effect on its own side
 		return not fx.hurts_own_side(e, a, target)
 	if usable.call(pick):
@@ -1806,6 +1813,41 @@ func enemy_action(e: Dictionary, target: Dictionary) -> Dictionary:
 			return {"action": a, "inReach": true}
 	var first = (e.get("actions") if e.get("actions") != null else [null])
 	return {"action": pick if pick != null else (first[0] if not first.is_empty() else null), "inReach": false}
+
+
+## (0.40) An Action that would do nothing to this target: it deals no damage
+## and heals nothing, does nothing else, and every status it gives is one the
+## target already has (or has only just shrugged off). Auto and the Enemies
+## don't use it; they move to bring another Action in reach. (simPointless)
+static func pointless(a: Dictionary, target: Dictionary) -> bool:
+	var eff := Rules.action_effect(a)
+	if Rules.num(eff["damage"], 0) > 0 or Rules.num(eff["heal"], 0) > 0:
+		return false
+	var statuses := []
+	for p in Keywords.parse(a.get("text", "") if a.get("text") != null else ""):
+		if p["type"] != "kw" or p["kw"] == null:
+			continue
+		var cat := str(p["kw"].get("cat", ""))
+		if cat == "status":
+			statuses.append(str(p["kw"]["name"]))
+		elif cat in ["effect", "modifier", "stats"]:
+			return false
+	if statuses.is_empty():
+		return false
+	return statuses.all(func(k): return Rules.lock_block(target, k) != "")
+
+
+## (0.40) A Unit whose chosen target is still out of reach after its move
+## attacks another it can reach, chosen by its own Behavior keywords, rather
+## than do nothing. {target, act}, or null. (simInReachInstead)
+func in_reach_instead(e: Dictionary, pool: Array, target: Dictionary) -> Variant:
+	var near := pool.filter(func(u): return not is_same(u, target) and not Rules.truthy(u.get("down")) and u.get("pos") is Dictionary and enemy_action(e, u)["inReach"])
+	if near.is_empty():
+		return null
+	var pick = Rules.choose_target(e, near, {"distance": func(u): return Rules.hex_distance(e["pos"], u["pos"])})
+	if pick == null:
+		pick = near[0]
+	return {"target": pick, "act": enemy_action(e, pick)}
 
 
 func _tiles_for(u: Dictionary) -> Array:
@@ -1937,6 +1979,12 @@ func _enemy_turn(e: Dictionary) -> void:
 	# after its move attacked anyway, from wherever it stood.
 	if Rules.truthy(e.get("down")):
 		return
+	# (0.40) still out of reach: another in reach instead
+	if not act["inReach"]:
+		var alt = in_reach_instead(e, allies, target)
+		if alt != null:
+			target = alt["target"]
+			act = alt["act"]
 	if act["action"] == null:
 		var line2: String = e["name"] + " has nothing it can use"
 		_beat({"type": "skip", "unit": e["id"], "line": line2})
@@ -2096,6 +2144,12 @@ func _auto_turn(u: Dictionary) -> void:
 	# a hazard on the way can bring it down
 	if Rules.truthy(u.get("down")):
 		return
+	# (0.40) still out of reach: another in reach instead
+	if not act["inReach"]:
+		var alt = in_reach_instead(u, foes, target)
+		if alt != null:
+			target = alt["target"]
+			act = alt["act"]
 	if act["action"] == null or not act["inReach"]:
 		var line2: String = u["name"] + " cannot reach " + target["name"]
 		_beat({"type": "skip", "unit": u["id"], "line": line2})
@@ -2484,8 +2538,8 @@ func spawn_wave() -> int:
 	var made := 0
 	var missed := 0
 	var spawns := enemy_spawns()
-	# (0.36) at Skull 1 or 2 on a deployment, the spawn tiles take turns
-	var turns := deploy != null and spawns.size() > 1 and Deployment.soft(deploy["skull"])
+	# (0.36) at Skull 1 or 2 on a deployment, the spawn tiles take turns; (0.40) and on a large floor
+	var turns := deploy != null and spawns.size() > 1 and (Deployment.soft(deploy["skull"]) or Roster.hero_capacity(floor_data) >= 3)
 	for i in spawns.size():
 		var t: Dictionary = spawns[i]
 		if turns and (wave + i) % 2 == 0:
@@ -2639,11 +2693,27 @@ func phase_draw(opening := false) -> void:
 	var want := 6 if opening else heroes
 	var pulled := 0
 	for h in want:
-		if deck.is_empty():
+		if deck.is_empty() and not refill_deck():
 			break
 		hand.append(deck.pop_front())
 		pulled += 1
 	say(("Drew %d card%s" % [pulled, "" if pulled == 1 else "s"]) if pulled > 0 else ("No Hero left to draw for" if not deck.is_empty() else "The Deck is empty"))
+
+
+## (0.40) An empty Deck takes back the cards played so far, shuffled: every one
+## in the discard pile but a Troop's (a fallen Troop stays fallen). Returns
+## whether there are cards to draw again. (simRefillDeck)
+func refill_deck() -> bool:
+	if not deck.is_empty():
+		return true
+	var back := discard.filter(func(c): return c is Dictionary and str(c.get("type", "")) != "troop")
+	if back.is_empty():
+		return false
+	discard = discard.filter(func(c): return not (c is Dictionary and str(c.get("type", "")) != "troop"))
+	_shuffle(back)
+	deck = back
+	say("The Deck is empty: %d played card%s shuffled back in" % [back.size(), " is" if back.size() == 1 else "s are"])
+	return true
 
 
 ## The Recharge: every status ticks, for everyone at once; what is always on

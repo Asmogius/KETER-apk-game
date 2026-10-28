@@ -105,7 +105,7 @@ with sync_playwright() as p:
     r=E("()=>{ var lo=JSON.parse(localStorage.getItem('keter-app-loadouts'))[0]; return lo.deck.length; }")
     ck("v14.21: and the Deck Builder saves it trimmed", r==5, r)
     r=E("""()=>{ var D=KETER_DEPLOY; return {poi:[1,2,3,4,5,6].map(function(k){ return D.waves(k,'poi'); }), amb:[1,2,3,4,5,6].map(function(k){ return D.waves(k,'ambush'); }), soft:[D.soft(1),D.soft(2),D.soft(3)]}; }""")
-    ck("v14.21: waves by Skull Level, 3 3 4 4 5 6, one fewer in an ambush; Skull 1 and 2 are the gentle ones", r=={"poi":[3,3,4,4,5,6],"amb":[2,2,3,3,4,5],"soft":[True,True,False]}, r)
+    ck("v14.21: waves by Skull Level, one fewer in an ambush (v14.24: 3 3 4 3 4 5); Skull 1 and 2 are the gentle ones", r=={"poi":[3,3,4,3,4,5],"amb":[2,2,3,2,3,4],"soft":[True,True,False]}, r)
     r=E("""()=>{ var K=KETER_DOCK, s=K.state(); var a=K.freeDesigns(), f=K.starterFree(); s.upgrades.starter=2; K._save(s); return {a:a, f:f, b:K.freeDesigns(), f2:K.starterFree(), eff:K.tables().effect.starter}; }""")
     ck("v14.21: the Starter bay frees designs (1, 2, 3), and the starter keeps its 4", r=={"a":0,"f":4,"b":2,"f2":4,"eff":[1,2,3]}, r)
     # ================= v14.22 =================
@@ -126,6 +126,28 @@ with sync_playwright() as p:
     ck("v14.23: a Core for each District at its far edge, a POI; clearing it lasts, and brings Instability", r["ds"]==["1","2","3","4","5","6"] and r["far"] and r["cn"]["core"]=="1" and r["cn"]["name"]=="District 1 Core" and r["a"]==0 and r["b"]==6 and r["cleared"] and r["list"]==["1","2"], r)
     r=E("()=>{ var W=KETER_WORLD; W.newMap(77); var l=W.districtsCleared(); W.resetState(); return l; }")
     ck("v14.23: a District cleared stays so on a new map", r==["1","2"], r)
+    # ================= v14.24 =================
+    r=E("""()=>{ var all=simFoeCards().filter(function(c){ return c.cardType==='enemy'; });
+      var t=function(l){ return l.filter(function(c){ return simIsTest(c); }).length; };
+      var free=[1,2,3,4,5,6].map(function(lv){ return t(simFoePool(lv,'3')); }), real=[1,2,3,4,5,6].map(function(lv){ return t(simFoePool(lv,'3',true)); });
+      return {tests:t(all)>0, free:free.reduce(function(a,b){ return a+b; },0)>0, real:real}; }""")
+    ck("v14.24: a deployment's Enemy pool leaves the test set's Enemies out (a free fight still may draw them)", r=={"tests":True,"free":True,"real":[0,0,0,0,0,0]}, r)
+    r=E("""()=>{ var keep={deck:SIM.deck, discard:SIM.discard, log:SIM.log};
+      SIM.deck=[]; SIM.log=[]; SIM.discard=[{name:'A',type:'command'},{name:'T',type:'troop'},{name:'B',type:'aether'},{name:'C',type:'equipment'}];
+      var ok=simRefillDeck(), out={ok:ok, deck:SIM.deck.map(function(c){ return c.name; }).sort(), discard:SIM.discard.map(function(c){ return c.name; }), line:SIM.log.map(function(l){ return l.text; })};
+      SIM.deck=[]; SIM.discard=[{name:'T2',type:'troop'}]; out.none=simRefillDeck();
+      SIM.deck=keep.deck; SIM.discard=keep.discard; SIM.log=keep.log; return out; }""")
+    ck("v14.24: an empty Deck takes back the cards played (not Troops), shuffled; with none, nothing", r=={"ok":True,"deck":["A","B","C"],"discard":["T"],"line":["The Deck is empty: 3 played cards are shuffled back in"],"none":False}, r)
+    r=E("""()=>{ var spray={name:'Spray', role:'ranged', text:'[[target enemy]] gains [[Rooted]] for [[turns 1]].'};
+      var bite={name:'Bite', role:'melee', dmg:5, text:'[[target enemy]] gains [[Rooted]] for [[turns 1]].'};
+      var free={name:'U', statuses:[]}, held={name:'U', statuses:[{name:'Rooted', turns:1}]}, slowed={name:'U', statuses:[{name:'Slowed', n:1, turns:1}]};
+      var slow={name:'Slow', role:'ranged', text:'[[target enemy]] gains [[Slowed 1]] for [[turns 1]].'};
+      return {free:simPointless(spray, free), held:simPointless(spray, held), bite:simPointless(bite, held), slow:simPointless(slow, slowed)}; }""")
+    ck("v14.24: an Action that would only give a status the target already has is pointless (damage, or a status that stacks, is not)", r=={"free":False,"held":True,"bite":False,"slow":False}, r)
+    r=E("""()=>{ var by={}; simAllCards().forEach(function(c){ if(c._src==='master') by[c.name]=c; });
+      var s=function(n){ var c=by[n]; return [+c.stats.hp, +c.stats.ac].concat((c.entries||[]).filter(function(e){ return e.damage; }).map(function(e){ return +e.damage; })); };
+      return {ar:s('Arachnabot'), st:s('Starkiller Titan'), de:s('Decimation Titan'), co:s('Construction Titan')}; }""")
+    ck("v14.24: the Skull 4-6 Enemies re-statted (Arachnabot 28 Health; Titans about a third of their Health, a third less damage)", r=={"ar":[28,15,12,8],"st":[39,15,13,5],"de":[42,16,4,8],"co":[44,16,11,7]}, r)
     ck("no page errors", not errs, errs)
     b.close()
 print(f"\nBALANCE PASS {len(ok)}  FAIL {len(bad)}")

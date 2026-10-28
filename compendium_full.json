@@ -1,6 +1,6 @@
 {
  "schema": "keter.compendium/1",
- "version": "32",
+ "version": "33",
  "cards": [
   {
    "id": "D3-E06",
@@ -764,7 +764,7 @@
    "aetherCost": null,
    "rarity": null,
    "stats": {
-    "hp": "40",
+    "hp": "28",
     "ac": "15",
     "move": "4",
     "int": "15"
@@ -1676,7 +1676,7 @@
    "aetherCost": null,
    "rarity": null,
    "stats": {
-    "hp": "110",
+    "hp": "44",
     "ac": "16",
     "move": "2",
     "int": "16"
@@ -1687,7 +1687,7 @@
      "name": "Wrecking Swing",
      "kind": "Combo",
      "role": "melee",
-     "damage": "16",
+     "damage": "11",
      "armorPenetration": "2",
      "text": "[[target enemy]] takes [[Push 2]]."
     },
@@ -1695,7 +1695,7 @@
      "name": "Stomp",
      "kind": "Combo",
      "role": "melee",
-     "damage": "10",
+     "damage": "7",
      "text": "[[AoE 1]]."
     }
    ],
@@ -2023,10 +2023,10 @@
    "aetherCost": null,
    "rarity": null,
    "stats": {
-    "hp": "140",
-    "ac": "17",
+    "hp": "42",
+    "ac": "16",
     "move": "2",
-    "int": "17"
+    "int": "16"
    },
    "baseStats": null,
    "entries": [
@@ -2034,7 +2034,7 @@
      "name": "Gatling Sweep",
      "kind": "Combo",
      "role": "ranged",
-     "damage": "6",
+     "damage": "4",
      "attackRange": "5",
      "toHit": "8",
      "text": "[[Burst 3]]."
@@ -2043,7 +2043,7 @@
      "name": "Missile Salvo",
      "kind": "Combo",
      "role": "ranged",
-     "damage": "14",
+     "damage": "8",
      "attackRange": "7",
      "toHit": "8",
      "armorPenetration": "2",
@@ -2412,10 +2412,10 @@
    "aetherCost": null,
    "rarity": null,
    "stats": {
-    "hp": "160",
-    "ac": "17",
+    "hp": "48",
+    "ac": "16",
     "move": "2",
-    "int": "17"
+    "int": "16"
    },
    "baseStats": null,
    "entries": [
@@ -2423,7 +2423,7 @@
      "name": "Hammer Fists",
      "kind": "Combo",
      "role": "melee",
-     "damage": "18",
+     "damage": "11",
      "armorPenetration": "3",
      "text": "[[target enemy]] gains [[Stunned]] for [[turns 1]]."
     },
@@ -2431,7 +2431,7 @@
      "name": "Quake",
      "kind": "Combo",
      "role": "melee",
-     "damage": "8",
+     "damage": "5",
      "text": "[[AoE 2]]. [[target enemy]] gains [[Slowed 2]]."
     }
    ],
@@ -5531,10 +5531,10 @@
    "aetherCost": null,
    "rarity": null,
    "stats": {
-    "hp": "130",
-    "ac": "16",
+    "hp": "39",
+    "ac": "15",
     "move": "2",
-    "int": "16"
+    "int": "15"
    },
    "baseStats": null,
    "entries": [
@@ -5542,7 +5542,7 @@
      "name": "Rail Cannon",
      "kind": "Combo",
      "role": "ranged",
-     "damage": "22",
+     "damage": "13",
      "attackRange": "9",
      "toHit": "8",
      "armorPenetration": "4",
@@ -5552,7 +5552,7 @@
      "name": "Core Vent",
      "kind": "Combo",
      "role": "ranged",
-     "damage": "8",
+     "damage": "5",
      "attackRange": "2",
      "toHit": "8",
      "text": "[[AoE 1]]. [[target enemy]] gains [[Weakened 2]] for [[turns 2]]."
@@ -5786,7 +5786,7 @@
    "aetherCost": null,
    "rarity": null,
    "stats": {
-    "hp": "120",
+    "hp": "48",
     "ac": "16",
     "move": "1",
     "int": "16"
@@ -5803,7 +5803,7 @@
      "name": "Point Defence",
      "kind": "Combo",
      "role": "ranged",
-     "damage": "6",
+     "damage": "4",
      "attackRange": "4",
      "toHit": "9",
      "text": ""

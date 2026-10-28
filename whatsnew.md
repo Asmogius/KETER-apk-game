@@ -6,6 +6,18 @@ the Change Log.
 
 <!-- NEWEST ENTRY GOES BELOW THIS LINE -->
 
+## v14.24 — The balance lab's tuning
+
+Alongside game 0.40. Measured first: a stand-in player fought thousands of fights on the shipped content, and from Skull 4 up almost none could be won.
+
+- **Test Enemies stay home**: a deployment's fights never draw the test set's Enemies.
+- **Mixed spawns**: on a deployment, one Enemy in two comes from the Skull Level below the tile's.
+- **A large floor's spawn tiles take turns**, wave by wave, as at Skull 1 and 2.
+- **Waves by Skull Level: 3, 3, 4, 3, 4, 5** (were 3, 3, 4, 4, 5, 6), one fewer in an ambush.
+- **The Deck reshuffles** when it runs out: the cards played so far, but not Troops', go back in.
+- **Gentler Skull 4–6 Enemies**: Arachnabot 28 Health; the Titans 39–48 Health, AC one lower at Skull 6, about a third less damage.
+- **Smarter Auto and Enemies**: a Unit that can't reach its chosen target attacks another in reach; and none gives a target a status it already has (it closes in instead).
+
 ## v14.23 — Clear the Districts
 
 Alongside game 0.38.
@@ -29,7 +41,7 @@ Alongside game 0.36.
 
 - **4 copies of a card at most** in a Loadout's Deck, Troops included, and of a Chip that is a card in the Pouch (Basic Chips aren't limited). A Loadout from before is trimmed.
 - **The Starter bay** now frees the copies of your dearest designs (1, 2 or 3 of them) on every deployment, instead of more Frame Troopers.
-- **A deployment's fight has fewer waves where it's easy**: 3, 3, 4, 4, 5, 6 by Skull Level, one fewer in an ambush.
+- **A deployment's fight has fewer waves where it's easy**: 3, 3, 4, 4, 5, 6 by Skull Level, one fewer in an ambush (v14.24: 3, 3, 4, 3, 4, 5).
 - **A gentler start**: at Skull 1 and 2 two Heroes may enter any floor, and the Enemy spawn tiles take turns, wave by wave.
 
 ## v14.20 — More loot, free Common cards, a first team step by step

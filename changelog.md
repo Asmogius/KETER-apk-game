@@ -2,6 +2,14 @@
 
 <!-- NEWEST REVISION GOES BELOW THIS LINE -->
 
+## Revision 16.4 (Companion 14.24, game 0.40)
+
+Three rules from the balance lab, which found long fights running out of cards and Units standing idle.
+
+- **The Deck reshuffles.** When a card is to be drawn and the Deck is empty, the discard pile, all but its Troop cards, is shuffled to form a new Deck. A fallen Troop stays fallen. With nothing to shuffle, the draw is skipped as before. *Draw X* does the same.
+- **A target in reach instead.** Auto and the Enemies choose a target, then move toward it. If it is still out of reach, they now attack another Unit in reach, chosen by the same Behavior keywords, rather than do nothing.
+- **No wasted Actions.** Auto and the Enemies don't use an Action that deals no damage, heals nothing, does nothing else, and only gives the target a status it already has (or has only just shrugged off). They move to bring another Action in reach instead.
+
 ## Revision 16.3, clarified (Companion 14.12, game 0.23)
 
 No new keywords; three things 16.3 left unsaid.

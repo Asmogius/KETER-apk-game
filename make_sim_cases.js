@@ -76,7 +76,7 @@ const TAKEN = [
   /* attacking */ "simApplyAttack", "simConfirmAttack", "simBurstLive", "simBurstOf", "simBurstPool", "simBurstContinue", "simMoveTo",
   /* the Enemies */ "simEnemyAction", "simHurtsOwnSide", "simStepToward", "simStepAway", "simOneEnemy", "simWhyTarget", "simApplyEnemyAttack",
   /* the round */ "simEnemiesLeft", "simOutcome", "simRunPhase", "simEndOfRound", "simHalf", "simTurnEndTick",
-  /* waves */ "simEnemySpawnTiles", "simRevealFor", "simInstabilityPick", "simSpawnWave", "simWaves", "simSoftSkip", "simNothingMoreComing", "simWaveStep", "simFoePool", "simEnemyWant",
+  /* waves */ "simEnemySpawnTiles", "simRevealFor", "simInstabilityPick", "simSpawnWave", "simWaves", "simSoftSkip", "simNothingMoreComing", "simWaveStep", "simFoePool", "simEnemyWant", "simFloorCap", "simIsTest", "simRefillDeck", "simPointless", "simInReachInstead",
   /* Aether, Chips and cards */ "simAetherLabel", "simPhaseGenerate", "simPhaseChips", "simPhaseDraw", "simDrawPhase", "simCardCost", "simCostLabel",
   /* a Strike Team's fight */ "simRefCard", "simWizDeckCards", "simWizFinish", "simPlace",
   /* the Deck Builder's checks */ "normaliseLoadout", "loHeroes", "loDeckCards", "actionSlotsOf", "aetherCostOf", "pouchMinimum", "chipByKey", "pouchEntries", "pouchCount",
@@ -111,8 +111,8 @@ var R = window.KETER_RULES, SIM = {units:[], log:[]}, DICE = null, CARDS = [], W
 var SIM_WIZ = {}, SIM_DEP = null, LOADOUT = null;
 /* a deployment's fight tells the deployment how it went; here that is only kept, to be compared */
 var KETER_DEPLOY = { fightOver: function(res){ SIM._depRes = res; return {next:"map"}; },
-  /* (game 0.36) a deployment's waves, and its gentle start: deploy.js's own */
-  waves: function(skull, kind){ var W=[3,3,4,4,5,6], n=W[Math.max(1,Math.min(6,+skull||1))-1]; return kind==="ambush"?Math.max(2,n-1):n; },
+  /* (game 0.36) a deployment's waves, and its gentle start: deploy.js's own (0.40: 3, 3, 4, 3, 4, 5) */
+  waves: function(skull, kind){ var W=[3,3,4,3,4,5], n=W[Math.max(1,Math.min(6,+skull||1))-1]; return kind==="ambush"?Math.max(2,n-1):n; },
   soft: function(skull){ return (+skull||1)<=2; } };
 function simDeployResultHTML(){ return ""; }
 function simFoeCards(){ return CARDS; }
@@ -150,9 +150,13 @@ patch("nu.pos=spot; SIM.units.push(nu); placed++;", "nu.pos=spot; nu.id=\"d\"+(+
 /* A rule the game has had since 0.2: a spawn tile's Enemies come from the
    floor's own District at the tile's level (the simulator's rule on a
    deployment), where a free fight in the simulator takes any District. */
-patch("var pool=SIM.deploy ? simFoePool(+lv, SIM.deploy.district) :", "var pool=true ? simFoePool(+lv, String((SIM.map&&SIM.map.district)||\"\")) :", "the floor's District");
+patch("var pool=SIM.deploy ? simFoePool(+lv, SIM.deploy.district, true) :", "var pool=true ? simFoePool(+lv, String((SIM.map&&SIM.map.district)||\"\"), !!SIM.deploy) :", "the floor's District");
 vm.runInContext(stubs + vars + "\n" + taken + "\n" + hooks, sb);
 const R = sb.KETER_RULES;
+/* (0.40) how often the two AI rules came into play, for the summary: a target in
+   reach instead of one out of reach, and an Action passed over as pointless */
+vm.runInContext("var AI_SEEN={instead:0, pointless:0}; (function(){ var f=simInReachInstead; simInReachInstead=function(u, p, t){ var r=f(u, p, t); if(r) AI_SEEN.instead++; return r; };" +
+  " var g=simPointless; simPointless=function(a, t){ var r=g(a, t); if(r) AI_SEEN.pointless++; return r; }; })();", sb);
 /* Units made as a fight is set up are numbered as the game numbers them (a1,
    a2... e1, e2...), where the Companion gives each a random id. */
 vm.runInContext("(function(){ var make=R.unitFromCard; R.unitFromCard=function(spec, side){ var u=make(spec, side);" +
@@ -883,6 +887,8 @@ for(let i = 0; i < 300; i++){
       hushed(() => { if(op.hand >= 0) sb.simPlayCard(op.hand); if(op.cons >= 0) sb.simUseConsumable(op.cons); });
       quiet(); SIM.phase = was;
     }else{
+      /* (0.40) now and then the Deck has run out first: the next Draw Phase shuffles the discard pile back in */
+      if(SIM.deck.length && chance(0.3)){ SIM.discard = SIM.discard.concat(SIM.deck); SIM.deck = []; script.push({ op: "drain" }); shots.push(teamSnapshot()); }
       op = { op: "round" };
       turnOver();
       autoed = false;
@@ -999,4 +1005,4 @@ cases.forEach(c => { if(c.fn !== "autoTurn") return; const log = c.result.log ||
   if(log.some(l => / holds back/.test(l))) plays["Auto: a Unit held back"] = (plays["Auto: a Unit held back"] || 0) + 1;
   if(log.some(l => / used .+ on .+ \(/.test(l) && !/\(Medic\)$/.test(l))) plays["Auto: an attack"] = (plays["Auto: an attack"] || 0) + 1;
   if(log.some(l => / cannot reach /.test(l))) plays["Auto: out of reach"] = (plays["Auto: out of reach"] || 0) + 1; });
-console.log(JSON.stringify({ file: out, cases: cases.length, counts, seen, plays }));
+console.log(JSON.stringify({ file: out, cases: cases.length, counts, seen, plays, ai: vm.runInContext("AI_SEEN", sb) }));

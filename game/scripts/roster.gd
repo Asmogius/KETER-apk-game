@@ -136,6 +136,11 @@ static func foe_level(c: Dictionary) -> int:
 	return int(n) if Rules.truthy(n) else 1
 
 
+## (0.40) One of the test set's cards: for checking the rules, never a deployment's Enemy.
+static func is_test(c: Dictionary) -> bool:
+	return Rules.truthy(c.get("testCard")) or str(c.get("_src", "")) == "test" or (c.get("_raw") is Dictionary and Rules.truthy(c["_raw"].get("testCard")))
+
+
 static func district_of(c: Dictionary) -> String:
 	var a = c.get("affinities")
 	if a is Array and a.size() > 0 and a[0] is Dictionary:
@@ -145,9 +150,14 @@ static func district_of(c: Dictionary) -> String:
 
 ## The Enemies a spawn tile draws from: the floor's District at the tile's
 ## level; failing that any District at that level; then the nearest level,
-## lower first. (The Battle Simulator's deployment rule.)
-func foe_pool(level: int, district: String) -> Array:
+## lower first. (The Battle Simulator's deployment rule.) (0.40) A deployment
+## (real) never draws the test set's Enemies while the export has others.
+func foe_pool(level: int, district: String, real := false) -> Array:
 	var foes := enemies()
+	if real:
+		var kept := foes.filter(func(c): return not is_test(c))
+		if not kept.is_empty():
+			foes = kept
 	for d in [0, -1, 1, -2, 2, -3, 3, -4, 4, -5, 5]:
 		var want: int = level + d
 		if want < 1 or want > 6:

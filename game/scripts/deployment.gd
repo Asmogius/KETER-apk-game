@@ -145,8 +145,10 @@ func need_of(team: Dictionary) -> Dictionary:
 
 ## (0.36) A deployment's fight: fewer waves at a low Skull Level, one fewer in
 ## an ambush than in a POI; and at Skull 1 or 2 two Heroes may enter whatever
-## the floor's size, and its Enemy spawn tiles take turns, wave by wave.
-const WAVES_BY_SKULL := [3, 3, 4, 4, 5, 6]
+## the floor's size, and its Enemy spawn tiles take turns, wave by wave (0.40:
+## on a large floor too). (0.40) Skull 4 has 3 waves, its floors being the ones
+## that swarm, Skull 5 four and Skull 6 five.
+const WAVES_BY_SKULL := [3, 3, 4, 3, 4, 5]
 
 
 static func waves_for(skull, kind: String) -> int:

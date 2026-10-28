@@ -39,6 +39,13 @@ func _run() -> void:
 		Rules.hooks = {}
 		quit(1 if bad > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("forty"):
+		_forty()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("thirtyseven"):
 		_thirtyseven()
 		await _thirtyseven_scene()
@@ -339,6 +346,7 @@ func _run() -> void:
 	_thirtysix()
 	_thirtyseven()
 	_thirtyeight()
+	_forty()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -9788,8 +9796,8 @@ func _thirtysix() -> void:
 	var back: Dictionary = StrikeTeams.load_all()[0]
 	ck("0.36 copies: a team saved before the limit is trimmed to 4 of a card, Basic Chips aside", back["deck"] == {"Test Drone": 4, "Test Snare": 3} and back["pouch"] == {"Test Spark Chip": 4, "basic|3": 12}, back)
 	# waves and the early game
-	ck("0.36 waves: by Skull Level, 3 3 4 4 5 6 in a POI, one fewer in an ambush (2 at least)",
-		range(1, 7).map(func(k): return Deployment.waves_for(k, "poi")) == [3, 3, 4, 4, 5, 6] and range(1, 7).map(func(k): return Deployment.waves_for(k, "ambush")) == [2, 2, 3, 3, 4, 5])
+	ck("0.36 waves: by Skull Level, 3 3 4 3 4 5 in a POI (0.40), one fewer in an ambush (2 at least)",
+		range(1, 7).map(func(k): return Deployment.waves_for(k, "poi")) == [3, 3, 4, 3, 4, 5] and range(1, 7).map(func(k): return Deployment.waves_for(k, "ambush")) == [2, 2, 3, 2, 3, 4])
 	var x := KeterExport.new()
 	x.open(FIXTURE)
 	var r := Roster.new(x)
@@ -9812,7 +9820,7 @@ func _thirtysix() -> void:
 		su6["deploy"]["kind"] = "poi"
 		var hard := Battle.begin_team(f, r, su6, 5)
 		var tiles := soft.enemy_spawns().size()
-		ck("0.36 waves: a fight at Skull 1 in an ambush has 2 waves; at Skull 6 in a POI, 6", soft.waves_total == 2 and hard.waves_total == 6 and Battle.begin_team(f, r, StrikeTeams.setup_for(Kit.team(), r, ["Test Warden"], "Test Warden", [], 3, 0), 5).waves_total == 6)
+		ck("0.36 waves: a fight at Skull 1 in an ambush has 2 waves; at Skull 6 in a POI, 5 (0.40)", soft.waves_total == 2 and hard.waves_total == 5 and Battle.begin_team(f, r, StrikeTeams.setup_for(Kit.team(), r, ["Test Warden"], "Test Warden", [], 3, 0), 5).waves_total == 6)
 		ck("0.36 early: at Skull 1 the spawn tiles take turns: half of them in the first wave", soft.enemies_left() == int(ceil(tiles / 2.0)) and hard.enemies_left() == tiles, [soft.enemies_left(), hard.enemies_left(), tiles])
 	# the Starter bay
 	var c := Campaign.new(x, r, x.floors(), 31)
@@ -9972,6 +9980,95 @@ func _thirtyseven_scene() -> void:
 
 
 # ---------------------------------------------------------------- (0.38) the District Cores
+## 0.40: the balance lab's tuning.
+func _forty() -> void:
+	Kit.fresh()
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var r := Roster.new(x)
+	var cor: FloorData = _floor_named(x, "TEST · Corridor")
+	# Test Enemies stay home
+	var tests_in := func(l: Array) -> int: return l.filter(func(c): return Roster.is_test(c)).size()
+	var free_n := 0
+	var real_n := 0
+	for lv in range(1, 7):
+		free_n += tests_in.call(r.foe_pool(lv, "3"))
+		real_n += tests_in.call(r.foe_pool(lv, "3", true))
+	ck("0.40 foes: a deployment's pool never has the test set's Enemies; a free fight's still may", free_n > 0 and real_n == 0, [free_n, real_n])
+	# waves
+	ck("0.40 waves: 3 3 4 3 4 5 by Skull Level", range(1, 7).map(func(k): return Deployment.waves_for(k, "poi")) == [3, 3, 4, 3, 4, 5])
+	# mixed spawns, on a deployment at Skull 4
+	var f: FloorData = null
+	for fl in x.floors():
+		if fl.name.begins_with("TEST") and Battle.from_state(fl, [], 1).enemy_spawns().size() >= 2:
+			f = fl
+			break
+	ck("0.40 (a test floor with two Enemy spawn tiles or more)", f != null)
+	if f != null:
+		f.district = "3"
+		var su := StrikeTeams.setup_for(Kit.team(), r, ["Test Warden"], "Test Warden", [], 3, 0)
+		su["deploy"] = {"district": "3", "skull": 4, "kind": "poi", "pending": [], "bounties": []}
+		var names := {}
+		for sd in range(1, 9):
+			var b4 := Battle.begin_team(f, r, su, sd)
+			for e in b4.enemy_pile:
+				names[str(e["name"])] = true
+			for u in b4.units:
+				if u["side"] == "enemy":
+					names[str(u["src"] if Rules.truthy(u.get("src")) else u["name"])] = true
+		var lv4: Array = r.foe_pool(4, "3", true).map(func(c): return str(c["name"]))
+		var lv3: Array = r.foe_pool(3, "3", true).map(func(c): return str(c["name"]))
+		ck("0.40 mixed: a Skull 4 deployment draws from Skull 4 and Skull 3, and no test Enemy", names.keys().any(func(n): return lv4.has(n)) and names.keys().any(func(n): return lv3.has(n))
+			and not names.keys().any(func(n): return Roster.is_test(r.card_named(n))), [names.keys(), lv4, lv3])
+		# a large floor's spawn tiles take turns
+		var raw0 = f.raw.get("battlefieldSize")
+		f.raw["battlefieldSize"] = "Large"
+		var big := Battle.begin_team(f, r, su, 3)
+		f.raw["battlefieldSize"] = "Medium"
+		var mid := Battle.begin_team(f, r, su, 3)
+		if raw0 == null:
+			f.raw.erase("battlefieldSize")
+		else:
+			f.raw["battlefieldSize"] = raw0
+		var tiles := big.enemy_spawns().size()
+		ck("0.40 large: on a large floor the spawn tiles take turns (half in the first wave); on a medium one at Skull 4, all", big.enemies_left() == int(ceil(tiles / 2.0)) and mid.enemies_left() == tiles, [big.enemies_left(), mid.enemies_left(), tiles])
+	# the Deck reshuffles
+	var w := _mk(r, "Test Warden", "ally", "a1", Vector2i(0, 0))
+	var b := Battle.from_state(cor, [w], 1)
+	b.deck = []
+	b.hand = []
+	b.discard = [{"name": "A", "type": "command"}, {"name": "T", "type": "troop"}, {"name": "B", "type": "aether"}]
+	b.phase_draw()
+	ck("0.40 deck: an empty Deck takes back the cards played but Troops', shuffled, and draws on", b.hand.size() == 1 and b.deck.size() == 1 and b.discard.map(func(c): return c["name"]) == ["T"]
+		and b.log.any(func(l): return str(l["text"]) == "The Deck is empty: 2 played cards are shuffled back in"), [b.hand, b.deck, b.discard])
+	b.deck = []
+	b.hand = []
+	b.phase_draw()
+	ck("0.40 deck: with nothing but a Troop's card to take back, the draw is skipped", b.hand.is_empty() and not b.refill_deck() and str(b.log[b.log.size() - 1]["text"]) == "The Deck is empty")
+	# pointless Actions
+	var spray := {"name": "Spray", "role": "ranged", "text": "[[target enemy]] gains [[Rooted]] for [[turns 1]]."}
+	var bite := {"name": "Bite", "role": "melee", "dmg": 5, "text": "[[target enemy]] gains [[Rooted]] for [[turns 1]]."}
+	var slow := {"name": "Slow", "role": "ranged", "text": "[[target enemy]] gains [[Slowed 1]] for [[turns 1]]."}
+	var held := {"name": "U", "statuses": [{"name": "Rooted", "turns": 1}]}
+	var slowed := {"name": "U", "statuses": [{"name": "Slowed", "n": 1, "turns": 1}]}
+	ck("0.40 AI: an Action that only gives a status its target already has is pointless; damage, or a status that stacks, is not",
+		not Battle.pointless(spray, {"name": "U", "statuses": []}) and Battle.pointless(spray, held) and not Battle.pointless(bite, held) and not Battle.pointless(slow, slowed))
+	# a target in reach instead
+	var g := _mk(r, "Test Grunt", "enemy", "e1", Vector2i(3, 0))
+	var near := _mk(r, "Test Warden", "ally", "a2", Vector2i(4, 0))
+	var far := _mk(r, "Test Warden", "ally", "a3", Vector2i(0, 0))
+	var bb := Battle.from_state(cor, [g, near, far], 1)
+	var alt = bb.in_reach_instead(g, [near, far], far)
+	ck("0.40 AI: one whose target is out of reach turns on another in reach", alt != null and alt["target"]["id"] == "a2" and alt["act"]["inReach"], alt)
+	ck("0.40 AI: and with none in reach, nothing", bb.in_reach_instead(g, [far], far) == null)
+	# gentler Skull 4-6 Enemies (the master cards)
+	var st = r.card_named("Starkiller Titan")
+	var ar = r.card_named("Arachnabot")
+	ck("0.40 Enemies: Arachnabot 28 Health; the Starkiller Titan 39 Health, AC 15, Rail Cannon 13", ar != null and st != null and int(Rules.num(ar["stats"]["hp"], 0)) == 28
+		and int(Rules.num(st["stats"]["hp"], 0)) == 39 and int(Rules.num(st["stats"]["ac"], 0)) == 15
+		and Rules.unit_from_card(Roster.unit_spec(st), "enemy")["actions"].any(func(a): return a["name"] == "Rail Cannon" and int(Rules.num(a.get("dmg"), 0)) == 13), [ar.get("stats") if ar else null, st.get("stats") if st else null])
+
+
 func _thirtyeight() -> void:
 	Kit.fresh()
 	var x := KeterExport.new()

@@ -690,7 +690,7 @@ func apply_keyword(p: Dictionary, who: Array, ctx: Dictionary, dur) -> void:
 		if k == "Draw":
 			var drawn := 0
 			for i3 in amt3:
-				if b.deck.is_empty():
+				if b.deck.is_empty() and not b.refill_deck():
 					break
 				b.hand.append(b.deck.pop_front())
 				drawn += 1

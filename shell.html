@@ -2899,6 +2899,8 @@ function simAutoOne(unit, next){
   }
   /* v13.4: a hazard on the way can bring it down; it used to attack regardless */
   if(unit.down){ simDraw(); renderSim(); return setTimeout(next, 320); }
+  /* (v14.24) still out of reach: another in reach instead */
+  if(!act.inReach){ var alt=simInReachInstead(unit, foes, target); if(alt){ target=alt.target; act=alt.act; } }
   if(!act.action || !act.inReach){
     simLogEnemy(unit.name+" cannot reach "+target.name);
     simDraw(); renderSim();
@@ -3146,8 +3148,8 @@ function simOutcome(){
 var WAVES_PER_FLOOR=6;
 /* (v14.21) a deployment's fight has fewer waves at a low Skull Level, and one fewer in an ambush */
 function simWaves(){ var d=simDepCtx(); return d&&window.KETER_DEPLOY&&KETER_DEPLOY.waves?KETER_DEPLOY.waves(+d.skull||1, d.kind):WAVES_PER_FLOOR; }
-/* (v14.21) and at Skull 1 or 2 its Enemy spawn tiles take turns, wave by wave */
-function simSoftSkip(i, n){ var d=simDepCtx(); return !!(d && n>1 && window.KETER_DEPLOY && KETER_DEPLOY.soft(+d.skull||1) && (SIM.wave+i)%2===0); }
+/* (v14.21) and at Skull 1 or 2 its Enemy spawn tiles take turns, wave by wave; (v14.24) and on a large floor */
+function simSoftSkip(i, n){ var d=simDepCtx(); return !!(d && n>1 && window.KETER_DEPLOY && (KETER_DEPLOY.soft(+d.skull||1) || simFloorCap()>=3) && (SIM.wave+i)%2===0); }
 function simEnemySpawnTiles(){
   var out=[], labels=(SIM.map&&SIM.map.colorLabels)||{};
   Object.keys((SIM.map&&SIM.map.hexes)||{}).forEach(function(k){
@@ -3170,8 +3172,10 @@ function simEnemySpawnTiles(){
 function simDepCtx(){ return SIM.deploy || SIM_DEP || null; }
 /* v12.8: a deployment's Enemies come from the tile's District, at the level
    wanted; failing that from any District, then the nearest level, lower first */
-function simFoePool(lv, district){
+function simFoePool(lv, district, real){
   var foes=simFoeCards().filter(function(c){ return c.cardType==="enemy"; });
+  /* (v14.24) a deployment (real) never draws the test set's Enemies while there are others */
+  if(real){ var kept=foes.filter(function(c){ return !simIsTest(c); }); if(kept.length) foes=kept; }
   var lvOf=function(c){ return parseInt(c.skullLevel||c.level,10)||1; };
   var dOf=function(c){ return String((c.affinities&&c.affinities[0]||{}).district||""); };
   var tries=[0,-1,1,-2,2,-3,3,-4,4,-5,5];
@@ -3728,6 +3732,8 @@ function simOneEnemy(enemy, next){
   /* v13.2: a held shot can bring it down as it moves. It used to go on and
      make its attack anyway. */
   if(enemy.down){ simDraw(); renderSim(); return setTimeout(next, 380); }
+  /* (v14.24) still out of reach: another in reach instead */
+  if(!act.inReach){ var alt=simInReachInstead(enemy, allies, target); if(alt){ target=alt.target; act=alt.act; } }
   if(!act.action){
     simLogEnemy(enemy.name+" has nothing it can use");
     simDraw(); renderSim();
@@ -3857,6 +3863,8 @@ function simEnemyAction(enemy, target){
     if(!R.canAfford(enemy,a)) return false;
     if(!simAetherOK(enemy,a)) return false;          /* v13.4: one of yours under Auto, with a carried Action card */
     if(!simCanReach(enemy,a,target)) return false;   /* range, and sight when ranged */
+    /* (v14.24) nor one that would only give the target a status it already has */
+    if(simPointless(a,target)) return false;
     /* Auto never drops an area effect on its own side */
     if(simHurtsOwnSide(enemy,a,target)) return false;
     return true;
@@ -3865,6 +3873,35 @@ function simEnemyAction(enemy, target){
   var any=(enemy.actions||[]).filter(usable)[0];
   if(any) return {action:any, inReach:true};
   return {action:pick||(enemy.actions||[])[0]||null, inReach:false};
+}
+/* (v14.24) An Action that would do nothing to this target: it deals no damage
+   and heals nothing, does nothing else, and every status it gives is one the
+   target already has (or has only just shrugged off). Auto and the Enemies
+   don't use it; they move to bring another Action in reach. */
+function simPointless(a, target){
+  var eff=R.actionEffect(a);
+  if((eff.damage||0)>0 || (eff.heal||0)>0) return false;
+  var K=window.KETER_KW, statuses=[];
+  if(!K) return false;
+  var parts=K.parse(a.text||"");
+  for(var i=0;i<parts.length;i++){
+    var p=parts[i];
+    if(p.type!=="kw" || !p.kw) continue;
+    var cat=String(p.kw.cat||"");
+    if(cat==="status") statuses.push(String(p.kw.name));
+    else if(cat==="effect"||cat==="modifier"||cat==="stats") return false;
+  }
+  if(!statuses.length) return false;
+  return statuses.every(function(k){ return !!R.lockBlock(target, k); });
+}
+/* (v14.24) A Unit whose chosen target is still out of reach after its move
+   attacks another it can reach, chosen by its own Behavior keywords, rather
+   than do nothing. {target, act}, or null. */
+function simInReachInstead(unit, pool, target){
+  var near=pool.filter(function(u){ return u!==target && !u.down && u.pos && simEnemyAction(unit, u).inReach; });
+  if(!near.length) return null;
+  var pick=R.chooseTarget(unit, near, {distance:function(u){ return R.hexDistance(unit.pos,u.pos); }})||near[0];
+  return {target:pick, act:simEnemyAction(unit, pick)};
 }
 /* One move toward or away, respecting Movement Speed and the map. */
 function simStepToward(enemy, target){
@@ -4425,12 +4462,29 @@ function simPhaseDraw(opening){
   var want = opening ? 6 : heroes;
   var pulled=0;
   for(var h=0;h<want;h++){
-    if(!SIM.deck.length) break;
+    if(!SIM.deck.length && !simRefillDeck()) break;
     SIM.hand.push(SIM.deck.shift()); pulled++;
   }
   SIM.log.push({t:Date.now(), text: pulled
     ? ("Drew "+pulled+" card"+(pulled===1?"":"s"))
     : (SIM.deck.length?"No Hero left to draw for":"The Deck is empty")});
+}
+/* (v14.24) An empty Deck takes back the cards played so far, shuffled: every one
+   in the discard pile but a Troop's (a fallen Troop stays fallen). Returns
+   whether there are cards to draw again. */
+function simRefillDeck(){
+  if((SIM.deck||[]).length) return true;
+  var isBack=function(c){ return c && typeof c==="object" && String(c.type||"")!=="troop"; };
+  var back=(SIM.discard||[]).filter(isBack);
+  if(!back.length) return false;
+  SIM.discard=(SIM.discard||[]).filter(function(c){ return !isBack(c); });
+  for(var i=back.length-1;i>0;i--){
+    var j=Math.floor(simDice().roll("d20")/21*(i+1));
+    var t=back[i]; back[i]=back[j]; back[j]=t;
+  }
+  SIM.deck=back;
+  SIM.log.push({t:Date.now(), text:"The Deck is empty: "+back.length+" played card"+(back.length===1?" is":"s are")+" shuffled back in"});
+  return true;
 }
 /* kept for the opening hand, which happens before the first phase */
 function simDrawPhase(opening){
@@ -5969,7 +6023,7 @@ function simApplyKeyword(p, who, ctx, dur){
     var by=(ctx.sourceCard && ctx.sourceCard!=="(unnamed)") ? ctx.sourceCard : ((ctx.actor&&ctx.actor.name)||name);
     if(k==="Draw"){
       var drawn=0;
-      for(var di=0; di<amt && (SIM.deck||[]).length; di++){ SIM.hand.push(SIM.deck.shift()); drawn++; }
+      for(var di=0; di<amt && ((SIM.deck||[]).length || simRefillDeck()); di++){ SIM.hand.push(SIM.deck.shift()); drawn++; }
       simLogEffect(drawn ? by+": drew "+drawn+" card"+(drawn===1?"":"s") : "The Deck is empty: nothing to draw");
       return;
     }
@@ -7355,7 +7409,7 @@ try{ window.SIM=SIM; window.simSelect=simSelect; window.simMoveTo=simMoveTo;
       window.SIM_EV=SIM_EV; window.simEmit=simEmit; window.simFlushEvents=simFlushEvents; window.simApplyContinuous=simApplyContinuous;
       /* v12.6 */
       window.simFindLoot=simFindLoot; window.simSalvage=simSalvage; window.simSettleLoot=simSettleLoot;
-      window.simDeployFight=simDeployFight; window.simFoePool=simFoePool; window.simEnemySpawnTiles=simEnemySpawnTiles; window.simFinish=simFinish;
+      window.simDeployFight=simDeployFight; window.simFoePool=simFoePool; window.simIsTest=simIsTest; window.simRefillDeck=simRefillDeck; window.simPointless=simPointless; window.simInReachInstead=simInReachInstead; window.simEnemySpawnTiles=simEnemySpawnTiles; window.simFinish=simFinish;
       window.simWizFinish=simWizFinish; window.simRunAuto=simRunAuto; window.simWiz=function(){ return SIM_WIZ; };
       window.simNarrowOK=simNarrowOK; window.simPush=simPush; window.simRunSentence=simRunSentence; window.simPassiveSources=simPassiveSources;
       window.simEnemyTurn=simEnemyTurn; window.SIM_PHASES=SIM_PHASES;
@@ -7894,14 +7948,18 @@ function simRefCard(ref){
 }
 /* How many Heroes this Floor admits: the Sandbox decides a floor's size and
    saves it, so the Simulator reads that rather than measuring tiles again. */
-function simHeroCapacity(){
+/* How many Heroes the floor's size lets in: Small 1, Medium 2, Large 3 */
+function simFloorCap(){
   var sz=(SIM.map&&(SIM.map.battlefieldSize||SIM.map.floorSize))||"";
   if(!sz){
     var n=Object.keys((SIM.map&&SIM.map.hexes)||{}).length;
     sz = n<100?"Small":(n<=250?"Medium":"Large");
   }
   /* the Sandbox writes it in either case */
-  var cap={small:1,medium:2,large:3}[String(sz).toLowerCase()]||1;
+  return {small:1,medium:2,large:3}[String(sz).toLowerCase()]||1;
+}
+function simHeroCapacity(){
+  var cap=simFloorCap();
   /* (v14.21) a deployment's fight at Skull 1 or 2 lets two Heroes in, whatever the floor's size */
   var d=simDepCtx(); if(d && window.KETER_DEPLOY && KETER_DEPLOY.soft(+d.skull||1)) cap=Math.max(cap,2);
   return cap;
@@ -8699,11 +8757,14 @@ function simWizFinish(){
   }else{
     var want=simEnemyWant();
     Object.keys(want).forEach(function(lv){
-      var pool=SIM.deploy ? simFoePool(+lv, SIM.deploy.district) : simFoeCards().filter(function(c){ return c.cardType==="enemy" &&
+      var pool=SIM.deploy ? simFoePool(+lv, SIM.deploy.district, true) : simFoeCards().filter(function(c){ return c.cardType==="enemy" &&
         (parseInt(c.skullLevel||c.level,10)||1)===+lv; });
       if(!pool.length) return;
+      /* (v14.24) on a deployment, one Enemy in two is drawn from the level below */
+      var lower=(SIM.deploy && +lv>1) ? simFoePool(+lv-1, SIM.deploy.district, true) : [];
       for(var i=0;i<want[lv];i++){
-        var c=pool[Math.floor(simDice().roll("d20")/21*pool.length)];
+        var from=(lower.length && simDice().roll("d6")<=3) ? lower : pool;
+        var c=from[Math.floor(simDice().roll("d20")/21*from.length)];
         SIM.enemyPile.push({name:c.name, level:+lv});
       }
     });

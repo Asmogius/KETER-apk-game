@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.39 brings music, a clearer fight
-and map, and a field guide for the first fight; v0.38 gave the campaign a goal: clear the six Districts.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.40 rebalances the fights from
+Skull 4 up, from what the balance lab measured; v0.39 brought music, a clearer fight and map.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,28 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.40 (Companion 14.24): **the balance lab's tuning**. A stand-in player
+played thousands of fights on the content the game ships with; from Skull 4 up
+almost none could be won. These are the changes it measured.
+
+- **Test Enemies stay home.** A deployment's fights never draw the test set's
+  Enemies (they made up half of Skull 1's spawns).
+- **Mixed spawns.** On a deployment, one Enemy in two is drawn from the
+  Skull Level below the tile's, so a floor is no longer one Enemy repeated.
+- **A large floor's spawn tiles take turns**, wave by wave, as at Skull 1
+  and 2: the large last floor of a POI used to bring twice the Enemies.
+- **Waves by Skull Level: 3, 3, 4, 3, 4, 5** (were 3, 3, 4, 4, 5, 6), one
+  fewer in an ambush.
+- **The Deck reshuffles.** When it runs out, the cards played so far (not
+  Troops') are shuffled back in, so a long fight keeps its cards.
+- **Gentler Titans and Arachnabots.** The Skull 4–6 Enemies: Arachnabot 28
+  Health (was 40); the Titans 39–48 Health (were 110–160), AC one lower at
+  Skull 6, and about a third less damage (the Starkiller's Rail Cannon 13).
+- **Smarter Auto and Enemies.** A Unit whose chosen target is out of reach
+  after its move attacks another one in reach instead of doing nothing; and
+  none uses an Action that would only give its target a status it already
+  has (an Arachnabot closes in to Pounce instead of Rooting the Rooted).
 
 New in 0.39 (Companion 14.23): **the fight and the map, clearer; and music**.
 
@@ -70,8 +92,8 @@ New in 0.36 (Companion 14.21): **the first of the audit's improvements**.
 - **The Starter bay** frees the copies of more of your designs instead of
   more Frame Troopers: the dearest 1, 2 or 3 of them go out free.
 - **Shorter fights where it's easy.** A deployment's fight has 3, 3, 4, 4,
-  5 or 6 waves by its Skull Level, one fewer in an ambush (2 at least).
-  Practice Battles keep six.
+  5 or 6 waves by its Skull Level (0.40: 3, 3, 4, 3, 4, 5), one fewer in an
+  ambush (2 at least). Practice Battles keep six.
 - **A gentler start.** At Skull 1 and 2, two Heroes may enter whatever the
   floor's size, and the Enemy spawn tiles take turns, wave by wave.
 - **The dock's Testing row** (restock, reach, reset) shows only with
@@ -745,7 +767,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-39_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-40_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose

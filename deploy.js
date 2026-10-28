@@ -41,7 +41,8 @@
   }
   /* (v14.21) a deployment's fight: fewer waves at a low Skull Level, one fewer in an ambush than in a POI;
      and at Skull 1 or 2, two Heroes may enter whatever the floor's size, and its spawn tiles take turns */
-  var WAVES_BY_SKULL=[3,3,4,4,5,6];
+  /* (v14.24) Skull 4 has 3 waves, its floors being the ones that swarm; Skull 5 four, Skull 6 five */
+  var WAVES_BY_SKULL=[3,3,4,3,4,5];
   function waves(skull, kind){ var n=WAVES_BY_SKULL[Math.max(1,Math.min(6,+skull||1))-1]; return kind==="ambush"?Math.max(2,n-1):n; }
   function soft(skull){ return (+skull||1)<=2; }
   function loadouts(){

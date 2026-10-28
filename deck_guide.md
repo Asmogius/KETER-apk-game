@@ -18,6 +18,7 @@ is what buys a safety net.
 
 A **Deck** is **one** Deck of 10 to 60 cards, shared by every Hero in the team, with at most **4 copies** of any card (v14.21; a Loadout from before is trimmed). A Chip that is a card is 4 at most in the Pouch too; Basic Chips aren't limited.
 You draw 6 at the start of a Combat, then 1 per Hero standing each Draw Phase.
+When the Deck runs out, the cards you have played (not Troops) are shuffled back in to make a new one (v14.24), so a long fight keeps its cards.
 
 **On the World Map** (the video game), a Strike Team's Troops must be designs
 from the Workshop, and each copy in its Deck is paid for in parts when it

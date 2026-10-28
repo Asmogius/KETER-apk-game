@@ -397,7 +397,7 @@ Nothing carries between Combats. Damage does not persist, and every Combat Card 
 
 A Strike Team has **one Deck** of 10 to 60 Combat Cards, shared by all of its Heroes. Troop, Equipment, Command and Aether Cards go in it; Action Cards never do (Section 3). A card of any Affinity may be included — but see Section 2 for why the matching Aether Chips matter.
 
-Before the combat begins, any Starting Troops are taken out of the Deck (Section 3). At the start of combat, 6 cards are drawn. During each Draw Phase thereafter, 1 card is drawn per Hero currently on the Battlefield. If the Deck is empty, the Draw Phase is skipped.
+Before the combat begins, any Starting Troops are taken out of the Deck (Section 3). At the start of combat, 6 cards are drawn. During each Draw Phase thereafter, 1 card is drawn per Hero currently on the Battlefield. If the Deck is empty, the cards in the discard pile, all but Troop cards, are shuffled to form a new Deck (Revision 16.4); if there are none, the Draw Phase is skipped.
 
 ## Turn Sequence
 
@@ -1550,7 +1550,7 @@ The authoritative reference for all game terms. Where the Glossary and body text
 | **Door Kicker** | Archetype: Short range, high burst potential, decent Melee. | Combat |
 | **Drained** | A Status. Next turn only, the Unit generates its number less Energy. | Units |
 | **Drained X** | The penalty from Overclock: the Unit has half Movement Speed; X is the number of turns this lasts. | Stats |
-| **Draw Phase** | The Combat turn-sequence step in which the Player draws 1 card per Hero currently on the Battlefield (6 cards are drawn at the start of Combat). If the Deck is empty, the Draw Phase is skipped. | Turn |
+| **Draw Phase** | The Combat turn-sequence step in which the Player draws 1 card per Hero currently on the Battlefield (6 cards are drawn at the start of Combat). If the Deck is empty, the discard pile but its Troop cards is shuffled to form a new one; with none, the Draw Phase is skipped. | Turn |
 | **Drone** | Archetype: Flying, usually Ranged; low survivability but agile. Most small Drones have the Evasive X trait, which adds X to the To-Hit requirement for any single-target Ranged attack targeting that Unit. | Units |
 | **Duration (colour)** | Pink. How long an effect lasts: 2 to 10 turns, or persistent. Optional; without one an effect resolves at once. | Cards |
 | **Emergency Evac Flare** | A Consumable Item that lets you leave a POI early, keeping any loot already found. The final reward is not given, and the POI is considered complete and cannot be re-entered. Black Labs are the exception. | Economy |

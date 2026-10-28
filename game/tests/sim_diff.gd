@@ -458,6 +458,10 @@ func _case_run(c: Dictionary) -> void:
 							pb.attack(au, aa, who)
 					"place":
 						pb.unit_by_id(str(op["unit"]))["pos"] = {"q": int(op["q"]), "r": int(op["r"])}
+					"drain":
+						# (0.40) the Deck has run out: what was in it is in the discard pile
+						pb.discard.append_array(pb.deck)
+						pb.deck = []
 					"move":
 						if pb.move(pb.unit_by_id(str(op["unit"])), Vector2i(int(op["q"]), int(op["r"]))).is_empty() and wrong == "":
 							wrong = "step %d: %s couldn't walk to %d,%d" % [pshots.size(), str(op["unit"]), int(op["q"]), int(op["r"])]
