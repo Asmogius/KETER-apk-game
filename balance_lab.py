@@ -5,6 +5,8 @@ the content the game ships with, and this gathers how they went.
   python3 balance_lab.py run  [--n 60] [--jobs 4] [--out DIR]   play the grid
   python3 balance_lab.py sum  [--out DIR]                       gather it into summary.json
   python3 balance_lab.py run --grid focus --tune notest,mix --out DIR   a what-if, on the cells it matters to
+  python3 balance_lab.py run-camp [--runs 8] [--bots careful,casual] [--most 150] --out DIR   whole campaigns (lab_campaign.gd)
+  python3 balance_lab.py sum-camp --out DIR                     gather them into camp_summary.json
 
 The grid: Skull Level 1-6, each an ambush, a POI (its floors in a row) and a
 District Core (three floors), for the careful player and the casual one
@@ -159,17 +161,89 @@ def summarise(a):
     return 0
 
 
+# ---------------------------------------------------------------- campaigns
+# What we aim for (agreed before the lab was built): the careful player clears
+# its first District in 15-25 deployments, and all six in 60-100.
+CAMP_TARGETS = {"first": [15, 25], "all": [60, 100]}
+
+
+def play_camp(job):
+    bot, seed, most, exp, out = job
+    f = out / "camps" / ("%s_s%03d.jsonl" % (bot, seed))
+    if f.exists() and any(json.loads(l).get("summary") for l in f.read_text().splitlines() if l.strip()):
+        return str(f), 0
+    f.parent.mkdir(parents=True, exist_ok=True)
+    args = [GODOT, "--headless", "--path", str(GAME), "--script", "res://tests/lab_campaign.gd", "--",
+            "export=%s" % exp, "bot=%s" % bot, "seed=%d" % seed, "most=%d" % most, "out=%s" % f]
+    r = subprocess.run(args, capture_output=True, text=True, timeout=6 * 3600)
+    if r.returncode != 0:
+        sys.stderr.write("%s seed %d failed:\n%s\n" % (bot, seed, (r.stdout + r.stderr)[-2000:]))
+        return str(f), 1
+    return str(f), 0
+
+
+def run_camp(a):
+    out = pathlib.Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
+    exp = export_path(out)
+    jobs = [(b, s, a.most, exp, out) for b in a.bots.split(",") for s in range(1, a.runs + 1)]
+    bad = 0
+    with cf.ThreadPoolExecutor(a.jobs) as ex:
+        for i, (_, err) in enumerate(ex.map(play_camp, jobs)):
+            bad += err
+            print("%d/%d campaigns" % (i + 1, len(jobs)), flush=True)
+    print("failed campaigns:", bad)
+    return 1 if bad else 0
+
+
+def sum_camp(a):
+    out = pathlib.Path(a.out)
+    runs, deps = [], []
+    for f in sorted((out / "camps").glob("*.jsonl")):
+        rows = [json.loads(l) for l in f.read_text().splitlines() if l.strip()]
+        summ = [r for r in rows if r.get("summary")]
+        if not summ:
+            continue
+        runs.append(summ[0])
+        deps += [dict(r, bot=summ[0]["bot"], seed=summ[0]["seed"]) for r in rows if not r.get("summary")]
+    by_bot = {}
+    for b in sorted({r["bot"] for r in runs}):
+        rs = [r for r in runs if r["bot"] == b]
+        ds = [d for d in deps if d["bot"] == b and not d.get("error")]
+        firsts = [r["first_district"] for r in rs if r["first_district"]]
+        alls = [r["all_districts"] for r in rs if r["all_districts"]]
+        most = max(r["deployments"] for r in rs)
+        by_bot[b] = {
+            "runs": len(rs), "most": most,
+            "first_med": statistics.median(firsts) if firsts else None, "first_n": len(firsts),
+            "all_med": statistics.median(alls) if alls else None, "all_n": len(alls),
+            "wipe_rate": sum(1 for d in ds if d["result"] == "wipe") / max(1, len(ds)),
+            "rank_at": {k: statistics.median([r["rank_at"][k] for r in rs if k in r["rank_at"]]) for k in ["2", "3", "4", "5", "6"] if any(k in r["rank_at"] for r in rs)},
+            "comfort_at": {k: statistics.median([r["comfort_at"][k] for r in rs if k in r["comfort_at"]]) for k in ["1", "2", "3", "4", "5", "6"] if any(k in r["comfort_at"] for r in rs)},
+            "districts_final": [r["final"]["districts"] for r in rs],
+            "errors": [r["error"] for r in rs if r.get("error")],
+        }
+    (out / "camp_summary.json").write_text(json.dumps({"targets": CAMP_TARGETS, "by_bot": by_bot, "runs": runs}, indent=1))
+    (out / "camp_deployments.json").write_text(json.dumps(deps))
+    for b, v in by_bot.items():
+        print(b, json.dumps(v))
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("what", choices=["run", "sum"])
+    ap.add_argument("what", choices=["run", "sum", "run-camp", "sum-camp"])
     ap.add_argument("--n", type=int, default=60, help="runs a cell")
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 2)
     ap.add_argument("--out", default=str(ROOT / "lab_out"))
     ap.add_argument("--core-grid", action="store_true", help="only the main grid, without the extra cells")
     ap.add_argument("--grid", default="full", choices=["full", "focus", "tuned"], help="which cells: all, the careful player from Skull 3, or the main grid and District 1")
     ap.add_argument("--tune", default="", help="what-if switches for lab_fights.gd's tune= (the game is untouched)")
+    ap.add_argument("--runs", type=int, default=8, help="campaigns a player")
+    ap.add_argument("--bots", default="careful,casual", help="which players play campaigns")
+    ap.add_argument("--most", type=int, default=150, help="deployments a campaign at most")
     a = ap.parse_args()
-    sys.exit(run(a) if a.what == "run" else summarise(a))
+    sys.exit({"run": run, "sum": summarise, "run-camp": run_camp, "sum-camp": sum_camp}[a.what](a))
 
 
 if __name__ == "__main__":
