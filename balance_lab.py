@@ -168,13 +168,13 @@ CAMP_TARGETS = {"first": [15, 25], "all": [60, 100]}
 
 
 def play_camp(job):
-    bot, seed, most, exp, out = job
+    bot, seed, most, exp, out, extra = job
     f = out / "camps" / ("%s_s%03d.jsonl" % (bot, seed))
     if f.exists() and any(json.loads(l).get("summary") for l in f.read_text().splitlines() if l.strip()):
         return str(f), 0
     f.parent.mkdir(parents=True, exist_ok=True)
     args = [GODOT, "--headless", "--path", str(GAME), "--script", "res://tests/lab_campaign.gd", "--",
-            "export=%s" % exp, "bot=%s" % bot, "seed=%d" % seed, "most=%d" % most, "out=%s" % f]
+            "export=%s" % exp, "bot=%s" % bot, "seed=%d" % seed, "most=%d" % most, "out=%s" % f] + [x for x in extra.split(",") if x]
     r = subprocess.run(args, capture_output=True, text=True, timeout=6 * 3600)
     if r.returncode != 0:
         sys.stderr.write("%s seed %d failed:\n%s\n" % (bot, seed, (r.stdout + r.stderr)[-2000:]))
@@ -186,7 +186,7 @@ def run_camp(a):
     out = pathlib.Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     exp = export_path(out)
-    jobs = [(b, s, a.most, exp, out) for b in a.bots.split(",") for s in range(1, a.runs + 1)]
+    jobs = [(b, s, a.most, exp, out, a.camp) for b in a.bots.split(",") for s in range(1, a.runs + 1)]
     bad = 0
     with cf.ThreadPoolExecutor(a.jobs) as ex:
         for i, (_, err) in enumerate(ex.map(play_camp, jobs)):
@@ -242,6 +242,7 @@ def main():
     ap.add_argument("--runs", type=int, default=8, help="campaigns a player")
     ap.add_argument("--bots", default="careful,casual", help="which players play campaigns")
     ap.add_argument("--most", type=int, default=150, help="deployments a campaign at most")
+    ap.add_argument("--camp", default="", help="what-if switches for lab_campaign.gd, key=value,key=value (d3floors=1)")
     a = ap.parse_args()
     sys.exit({"run": run, "sum": summarise, "run-camp": run_camp, "sum-camp": sum_camp}[a.what](a))
 

@@ -27,7 +27,10 @@
 ## Mk II and Mk III as Troop parts allow. Every fight is played by
 ## lab_player.gd, careful or casual; one still going at round 40 is lost.
 ## It makes no designs in the Workshop: its Troops are the free ones.
-##   godot --headless --path . --script res://tests/lab_campaign.gd -- export=<zip> bot=<careful|casual> seed=<n> most=<deployments> out=<file>
+## What-if (lab only, the game is untouched): d3floors=1 fights every
+## District's floors on battlefields grown from District 3's chunks, as if
+## every District had content of its own like District 3's.
+##   godot --headless --path . --script res://tests/lab_campaign.gd -- export=<zip> bot=<careful|casual> seed=<n> most=<deployments> out=<file> [d3floors=1]
 extends SceneTree
 
 const Kit := preload("res://tests/team_kit.gd")
@@ -46,6 +49,7 @@ var comfort := 0                     # the Skull Level it aims at, less one (low
 var clean := 0                       # trips home in a row at its aim, every Hero standing and a POI cleared there
 var first_stash := true
 var tally := {}                      # this deployment's counts
+var d3floors := false                # (what-if) every District on District 3's kind of floor
 
 
 func _initialize() -> void:
@@ -53,7 +57,7 @@ func _initialize() -> void:
 
 
 func _args() -> Dictionary:
-	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": ""}
+	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": "", "d3floors": "0"}
 	for a in OS.get_cmdline_user_args():
 		var kv := str(a).split("=", true, 1)
 		if kv.size() == 2:
@@ -76,13 +80,14 @@ func _run() -> void:
 	r = Roster.new(x)
 	floors = x.floors()
 	bot = str(o["bot"])
+	d3floors = str(o["d3floors"]) == "1"
 	rng.seed = int(o["seed"])
 	player = LabPlayer.new(bot, rng)
 	var c := Campaign.new(x, r, floors, int(o["seed"]))
 	r.progress = c.progress
 	out_file = FileAccess.open(str(o["out"]), FileAccess.WRITE)
 	var most := int(o["most"])
-	var run := {"seed": int(o["seed"]), "bot": bot, "deployments": 0, "wipes": 0, "first_district": 0, "all_districts": 0,
+	var run := {"seed": int(o["seed"]), "bot": bot, "d3floors": d3floors, "deployments": 0, "wipes": 0, "first_district": 0, "all_districts": 0,
 		"rank_at": {}, "districts_at": [], "comfort_at": {}, "error": ""}
 	for n in range(1, most + 1):
 		var line := _deployment(c, n)
@@ -342,7 +347,7 @@ func _deployment(c: Campaign, n: int) -> Dictionary:
 		result = "home"
 		haul = h["haul"]
 		# two clean trips at its aim, and it aims a Skull Level higher
-		if lost_none and tally["poi_skulls"].has(target):
+		if lost_none and tally["poi_skulls"].any(func(k): return int(k) >= target):
 			clean += 1
 			if clean >= 2 and comfort < 6:
 				comfort = mini(6, target)
@@ -374,7 +379,14 @@ func _goal(c: Campaign, target: int, from := "") -> Dictionary:
 	if comfort >= 6:
 		cand = w.cores().keys().filter(func(k): return w.available(k))
 	if cand.is_empty():
-		for s in range(target, 0, -1):
+		# at its aim; or, with none there just now (cleared, not back yet), the nearest level that has one, lower first
+		var order := [target]
+		for d in range(1, 6):
+			order.append(target - d)
+			order.append(target + d)
+		for s in order:
+			if s < 1 or s > 6:
+				continue
 			cand = w.map["tiles"].keys().filter(func(k): return w.skull_of(k) == s and w.available(k) and w.content_at(k)["kind"] == "poi" and not Rules.truthy(w.content_at(k).get("core")))
 			if not cand.is_empty():
 				break
@@ -407,6 +419,12 @@ func _fight(c: Campaign) -> void:
 	var sp: Dictionary = dep.spec()
 	var team: Dictionary = dep.team_now()
 	var f := _floor(c, sp["floor"])
+	if d3floors and not ChunkGen.is_gen_key(sp["floor"]):
+		# (what-if) a whole floor (a TEST floor) gives way to one grown from District 3's chunks, of the size this fight would have
+		var size := "small" if sp["kind"] == "ambush" else ("large" if int(sp["index"]) == int(sp["count"]) - 1 and int(sp["skull"]) >= 4 else "medium")
+		var lv := ChunkGen.generate(c.world.chunks, "3", int(sp["skull"]), size, hash(str(sp["tile"]) + ":" + str(sp["index"]) + ":" + str(sp["n"])) & 0x7FFFFFFF)
+		if not lv.is_empty():
+			f = FloorData.from_dict(lv)
 	if f == null:
 		dep.wipe()
 		return
