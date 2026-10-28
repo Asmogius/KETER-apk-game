@@ -130,7 +130,9 @@
       var a=s.activity, inFight=fightRunning();
       return h+'<div class="wldbox"><p><b>'+esc(a.kind==="poi"?a.name:"Ambush")+'</b>'+(a.kind==="poi"?' · floor '+(a.index+1)+' of '+a.floors.length:'')+' · Skull '+a.skull+'</p>'+
         '<p class="wldnote">'+(inFight?"The fight is under way in the Battle Simulator.":"The next fight is waiting.")+'</p>'+
-        '<div class="pxrow"><button class="ghost primary" id="wlFight">'+(inFight?"Back to the fight":"Fight")+'</button></div></div>';
+        (!inFight&&D().canWithdraw()?'<p class="wldnote">The last fight here was lost. Withdraw leaves it as it is and takes the haul back to the map.</p>':'')+
+        '<div class="pxrow"><button class="ghost primary" id="wlFight">'+(inFight?"Back to the fight":"Fight")+'</button>'+
+        (!inFight&&D().canWithdraw()?'<button class="ghost" id="wlWithdraw">Withdraw with the haul</button>':'')+'</div></div>';
     }
     if(!SEL) return h+'<p class="wldnote">Tap a tile to see it.'+(s?' Tap one further off to walk there.':' Deploy to set out from the dock.')+'</p>';
     var k=SEL, open=W().isOpen(k);
@@ -456,6 +458,7 @@
       '<label class="chf"><span>Back after (deployments)</span>'+n("respawn",t.respawn)+'</label>'+
       '<label class="chf"><span>Free starter copies</span>'+n("starterFree",t.starterFree)+'</label></div>'+
       '<p class="pxsub">Floors in a POI, Skull 1 to 6</p><div class="chgrid">'+t.floorsBySkull.map(function(v,i){ return '<label class="chf"><span>Skull '+(i+1)+'</span>'+n("floorsBySkull."+i,v)+'</label>'; }).join("")+'</div>'+
+      '<p class="pxsub">Core Skull Level, Districts 1 to 6</p><p class="wldnote">Each District’s Core is its farthest tile at or below this Skull Level.</p><div class="chgrid">'+t.coreSkulls.map(function(v,i){ return '<label class="chf"><span>District '+(i+1)+'</span>'+n("coreSkulls."+i,v)+'</label>'; }).join("")+'</div>'+
       '<p class="pxsub">A cache</p><div class="chgrid"><label class="chf"><span>Shards per Skull</span>'+n("cache.shards",t.cache.shards)+'</label><label class="chf"><span>Rolled parts</span>'+n("cache.n",t.cache.n)+'</label>'+
         '<label class="chf"><span>Rarer by</span>'+n("cache.bonus",t.cache.bonus)+'</label><label class="chf"><span>Blueprint %</span>'+n("cache.bp",t.cache.bp)+'</label><label class="chf"><span>Card %</span>'+n("cache.card",t.cache.card||0)+'</label></div>'+
       '<p class="pxsub">A POI’s final reward</p><div class="chgrid"><label class="chf"><span>Shards per Skull</span>'+n("poi.shards",t.poi.shards)+'</label><label class="chf"><span>Rolled parts</span>'+n("poi.n",t.poi.n)+'</label>'+
@@ -493,6 +496,7 @@
     if(id==="wlWalk"){ walk(SEL); return; }
     if(id==="wlStop"){ WALK=null; refresh(); return; }
     if(id==="wlFight"){ fight(); return; }
+    if(id==="wlWithdraw"){ if(D().withdraw().ok){ NOTE="The team withdraws with its haul. Walk home to keep it."; refresh(); } return; }
     if(id==="wlEnter"){ var sp=D().enterPOI(s.pos); if(sp) fight(); else { NOTE="No floor to fight on: add floors in the Sandbox."; refresh(); } return; }
     if(id==="wlCache"){ var c=D().openCache(s.pos); if(c) NOTE='The cache holds '+esc(bagText(c.bag))+(c.items.length?'; and '+c.items.map(function(it){ return esc(P().itemName(it)); }).join(", "):'')+'. Into the haul.'; refresh(); return; }
     if((a=t.getAttribute("data-wlev"))!==null){ var o=D().choose(s.pos,+a); if(o){ o.tile=s.pos; EVOUT=o; } refresh(); return; }
@@ -534,7 +538,8 @@
     var el=e.target, a;
     if((a=el.getAttribute("data-wt"))){
       var t=W().tables(), p=a.split("."), v=Math.max(0,parseFloat(el.value)||0);
-      if(p.length===1) t[p[0]]=v; else if(p[0]==="floorsBySkull") t.floorsBySkull[+p[1]]=Math.max(1,Math.round(v)); else t[p[0]][p[1]]=v;
+      if(p.length===1) t[p[0]]=v; else if(p[0]==="floorsBySkull") t.floorsBySkull[+p[1]]=Math.max(1,Math.round(v));
+      else if(p[0]==="coreSkulls") t.coreSkulls[+p[1]]=Math.max(1,Math.min(6,Math.round(v))); else t[p[0]][p[1]]=v;
       W().saveTables(t); paint(); return;
     }
     if((a=el.getAttribute("data-uq"))){ saveUq(function(u){ u[a]=el.value; }); return; }

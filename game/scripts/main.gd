@@ -2348,7 +2348,7 @@ func show_deploy_result() -> void:
 	if next == "floor":
 		labels = ["Next floor (%d of %d)" % [int(o["floor"]), int(o["count"])]]
 	elif next == "retry":
-		labels = ["Retry with reserves", "Give up: lose the haul"]
+		labels = ["Retry with reserves", "Withdraw: back to the map with the haul", "Give up: lose the haul"]
 	labels.append("See the board")
 	var d := Dialog.new(title, "\n\n".join(deploy_result_lines()), labels, Color("#d6a851") if (battle.winner == "ally" or battle.winner == "escape") else Color("#ff2a3c"))
 	d.set_title_art(Art.menu_piece("victory" if battle.winner == "ally" else "defeat") if battle.winner in ["ally", "enemy"] else null)
@@ -2368,6 +2368,12 @@ func show_deploy_result() -> void:
 		elif next == "floor" or (next == "retry" and i == 0):
 			_from_fight()
 			start_deploy_fight()
+		elif next == "retry" and i == 1:
+			# (0.41) the POI or ambush is left as it was; the haul goes with the team
+			campaign.deploy.withdraw()
+			campaign.save()
+			_from_fight()
+			map_screen.say_note("The team withdraws with its haul. Walk home to keep it.")
 		elif next == "retry":
 			var w := campaign.deploy.wipe()
 			campaign.save()
@@ -2428,7 +2434,7 @@ func deploy_result_lines() -> Array:
 		out.append("Every District is cleared: the colony is safe. The run goes on, if you want it to.")
 	match str(o.get("next", "map")):
 		"floor": out.append("Floor %d of %d cleared. The only way out is onward, or an Emergency Exit." % [int(o["floor"]) - 1, int(o["count"])])
-		"retry": out.append("The haul is safe while a Hero stands. %s can try this fight again." % _list(o.get("reserves", [])))
+		"retry": out.append("The haul is safe while a Hero stands. %s can try this fight again, or the team can withdraw and keep the haul." % _list(o.get("reserves", [])))
 		"wipe":
 			out.append("Deployment lost: a wipe loses everything carried: %s%s. The free Heroes recover at the dock; a recruited one is lost with the team." % [t.text(o.get("lostHaul")),
 				(", " + ", ".join(o["lostItems"].map(func(it): return campaign.progress.item_name(it, true)))) if not o.get("lostItems", []).is_empty() else ""])

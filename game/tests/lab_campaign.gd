@@ -22,8 +22,9 @@
 ## ambush; then, with every Hero standing and fewer than two POIs behind it,
 ## goes on to the next, or else walks home. Two trips home in a row that
 ## cleared a POI at its aim with every Hero standing raise its aim a Skull
-## Level; a wipe lowers it one. With its aim at Skull 6 passed (two clean Skull 6
-## trips) it goes for the nearest Core instead. It raises its Frame Troopers to
+## Level; a wipe lowers it one. It goes for a Core whose Skull Level its aim has
+## reached, and for any Core once its aim has passed Skull 6 (two clean Skull 6
+## trips). It raises its Frame Troopers to
 ## Mk II and Mk III as Troop parts allow. Every fight is played by
 ## lab_player.gd, careful or casual; one still going at round 40 is lost.
 ## It makes no designs in the Workshop: its Troops are the free ones.
@@ -31,11 +32,12 @@
 ## District's floors on battlefields grown from District 3's chunks, as if
 ## every District had content of its own like District 3's; keepheroes=1 keeps
 ## the recruited Heroes through a wipe, and keepcards=1 the cards it took;
-## retreat=1 lets a team that loses a fight give up that POI or ambush and walk
-## home with its haul, instead of trying again until it is wiped out;
-## cores=2,3,4,5,6,6 puts the Cores of Districts 1 to 6 at those Skull Levels
-## instead of all at Skull 6, and the player goes for one as soon as its aim
-## reaches the Core's Skull Level. bold=1 is a bolder player: one trip home
+## retreat=1 (the default since 0.41, when the game gained Withdraw) has a team
+## that loses a fight withdraw from that POI or ambush and walk home with its
+## haul, instead of trying again until it is wiped out (retreat=0: never);
+## The player goes for a Core as soon as its aim reaches the Core's Skull Level
+## (since 0.41 the game puts them at the World tables' Core Skull Levels);
+## cores=2,3,4,5,6,6 moves the Cores of Districts 1 to 6 to those instead. bold=1 is a bolder player: one trip home
 ## that cleared a POI at its aim raises the aim, with Heroes down or not.
 ##   godot --headless --path . --script res://tests/lab_campaign.gd -- export=<zip> bot=<careful|casual> seed=<n> most=<deployments> out=<file> [d3floors=1]
 extends SceneTree
@@ -70,7 +72,7 @@ func _initialize() -> void:
 
 
 func _args() -> Dictionary:
-	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": "", "d3floors": "0", "keepheroes": "0", "keepcards": "0", "retreat": "0", "cores": "", "bold": "0"}
+	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": "", "d3floors": "0", "keepheroes": "0", "keepcards": "0", "retreat": "1", "cores": "", "bold": "0"}
 	for a in OS.get_cmdline_user_args():
 		var kv := str(a).split("=", true, 1)
 		if kv.size() == 2:
@@ -424,8 +426,9 @@ func _deployment(c: Campaign, n: int) -> Dictionary:
 	return line
 
 
-## Where to go next: the nearest POI at the Skull Level it aims at (lower, if
-## there is none), or, once a Skull 6 POI is behind it, the nearest Core.
+## Where to go next: the nearest Core at or below the Skull Level it aims at
+## (any Core, once a Skull 6 POI is behind it), or else the nearest POI at that
+## Skull Level (the nearest level that has one, if it has none).
 ## {tile, kind, skull, district} or {}.
 func _goal(c: Campaign, target: int, from := "") -> Dictionary:
 	var w := c.world
@@ -433,7 +436,7 @@ func _goal(c: Campaign, target: int, from := "") -> Dictionary:
 	var cand := []
 	if comfort >= 6:
 		cand = w.cores().keys().filter(func(k): return w.available(k))
-	elif core_skulls.size() == 6:
+	else:
 		cand = w.cores().keys().filter(func(k): return w.available(k) and w.skull_of(k) <= target)
 	if cand.is_empty():
 		# at its aim; or, with none there just now (cleared, not back yet), the nearest level that has one, lower first
@@ -470,10 +473,10 @@ func _fights(c: Campaign) -> void:
 		guard += 1
 		var won := _fight(c)
 		if retreat and not won and dep.active() and dep.cur()["activity"] != null:
-			# (what-if) it gives the place up: no more floors, and home with what it carries
-			dep.cur()["activity"] = null
-			tally["retreats"] = int(tally.get("retreats", 0)) + 1
-			retreating = true
+			# it withdraws (the game's own, since 0.41): no more floors, and home with what it carries
+			if dep.withdraw()["ok"]:
+				tally["retreats"] = int(tally.get("retreats", 0)) + 1
+				retreating = true
 
 
 func _fight(c: Campaign) -> bool:

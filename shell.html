@@ -3647,8 +3647,8 @@ function simDeployResultHTML(R0){
   var btn=function(id,label,primary){ return '<button class="ghost'+(primary?' primary':'')+'" id="'+id+'" style="flex:1;">'+label+'</button>'; };
   var row='';
   if(o.next==="floor"){ h+='<p>Floor '+(o.floor-1)+' of '+o.count+' cleared. The only way out is onward, or an Emergency Exit.</p>'; row=btn("simDepNext","Next floor ("+o.floor+" of "+o.count+")",true); }
-  else if(o.next==="retry"){ h+='<p>The haul is safe while a Hero stands. '+esc((o.reserves||[]).join(", "))+' can try this fight again.</p>';
-    row=btn("simDepRetry","Retry with reserves",true)+btn("simDepGiveUp","Give up \u2014 lose the haul"); }
+  else if(o.next==="retry"){ h+='<p>The haul is safe while a Hero stands. '+esc((o.reserves||[]).join(", "))+' can try this fight again, or the team can withdraw and keep the haul.</p>';
+    row=btn("simDepRetry","Retry with reserves",true)+btn("simDepWithdraw","Withdraw \u2014 keep the haul")+btn("simDepGiveUp","Give up \u2014 lose the haul"); }
   else if(o.next==="wipe"){ h+='<div class="simloot"><p><b>Deployment lost \u2014 a wipe loses everything carried</b></p>'+
       '<ul style="opacity:.6;text-decoration:line-through;">'+bagList(o.lostHaul||L.bag())+itemList(o.lostItems)+packList(o.lostPack)+'</ul>'+
       (o.dock&&o.dock.insured?'<p style="margin:4px 0;"><b>Salvage insurance</b> kept some of it, now in your stockpile:</p><ul>'+bagList(o.dock.insured)+'</ul>':'')+
@@ -3657,9 +3657,11 @@ function simDeployResultHTML(R0){
   return h+'<div class="row" style="display:flex;gap:7px;margin-top:11px;">'+row+'</div>';
 }
 document.addEventListener("click",function(e){
-  var id=e.target&&e.target.id; if(!/^simDep(Next|Retry|GiveUp|Map)$/.test(id||"")) return;
+  var id=e.target&&e.target.id; if(!/^simDep(Next|Retry|Withdraw|GiveUp|Map)$/.test(id||"")) return;
   $("modal").classList.remove("on");
   if(id==="simDepNext"||id==="simDepRetry"){ simDeployFight(KETER_DEPLOY.spec()); return; }
+  /* (v14.25) the POI or ambush is left as it was; the haul goes with the team */
+  if(id==="simDepWithdraw"){ KETER_DEPLOY.withdraw(); simSave(); go("world"); return; }
   if(id==="simDepGiveUp"){ var w=KETER_DEPLOY.wipe(); SIM.deployResult={out:Object.assign({next:"wipe"},w||{}), winner:"enemy", heroesDown:[], troopsLost:[]}; simSave(); say("Deployment lost", simDeployResultHTML(SIM.deployResult)); return; }
   if(id==="simDepMap"){ go("world"); }
 });
@@ -7411,7 +7413,7 @@ try{ window.SIM=SIM; window.simSelect=simSelect; window.simMoveTo=simMoveTo;
       window.SIM_EV=SIM_EV; window.simEmit=simEmit; window.simFlushEvents=simFlushEvents; window.simApplyContinuous=simApplyContinuous;
       /* v12.6 */
       window.simFindLoot=simFindLoot; window.simSalvage=simSalvage; window.simSettleLoot=simSettleLoot;
-      window.simDeployFight=simDeployFight; window.simFoePool=simFoePool; window.simIsTest=simIsTest; window.simRefillDeck=simRefillDeck; window.simPointless=simPointless; window.simInReachInstead=simInReachInstead; window.simEnemySpawnTiles=simEnemySpawnTiles; window.simFinish=simFinish;
+      window.simDeployFight=simDeployFight; window.simDeployResultHTML=simDeployResultHTML; window.simFoePool=simFoePool; window.simIsTest=simIsTest; window.simRefillDeck=simRefillDeck; window.simPointless=simPointless; window.simInReachInstead=simInReachInstead; window.simEnemySpawnTiles=simEnemySpawnTiles; window.simFinish=simFinish;
       window.simWizFinish=simWizFinish; window.simRunAuto=simRunAuto; window.simWiz=function(){ return SIM_WIZ; };
       window.simNarrowOK=simNarrowOK; window.simPush=simPush; window.simRunSentence=simRunSentence; window.simPassiveSources=simPassiveSources;
       window.simEnemyTurn=simEnemyTurn; window.SIM_PHASES=SIM_PHASES;

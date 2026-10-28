@@ -39,6 +39,14 @@ func _run() -> void:
 		Rules.hooks = {}
 		quit(1 if bad > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("fortyone"):
+		_fortyone()
+		await _fortyone_scene()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("forty"):
 		_forty()
 		Kit.fresh()
@@ -347,6 +355,7 @@ func _run() -> void:
 	_thirtyseven()
 	_thirtyeight()
 	_forty()
+	_fortyone()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -383,6 +392,7 @@ func _run() -> void:
 	await _thirtysix_scene()
 	await _thirtyseven_scene()
 	await _thirtyeight_scene()
+	await _fortyone_scene()
 	await _thirtynine_scene()
 	Kit.fresh()
 	print("\nGAME PASS %d  FAIL %d" % [ok, bad])
@@ -4227,8 +4237,8 @@ func _eight_scene() -> void:
 	scene.battle.loot = Loot.add(scene.battle.loot, {"shards": 9})
 	await _end_fight(scene, false)
 	said = scene.dialog.text_label.text
-	ck("0.8 lost: with Heroes in reserve the fight can be tried again, and the haul is safe", scene.dialog.title_label.text == "Defeat" and "Test Warden is down and sits out the rest of the deployment." in said and "What dropped here is lost with the fight: 9 shards." in said and "Test Striker and Quillon Vex can try this fight again." in said and
-		scene.dialog.buttons.map(func(x): return x.text) == ["Retry with reserves", "Give up: lose the haul", "See the board"] and Loot.norm(cm.deploy.cur()["haul"]) == carried and cm.deploy.cur()["activity"] != null, said)
+	ck("0.8 lost: with Heroes in reserve the fight can be tried again, and the haul is safe", scene.dialog.title_label.text == "Defeat" and "Test Warden is down and sits out the rest of the deployment." in said and "What dropped here is lost with the fight: 9 shards." in said and "Test Striker and Quillon Vex can try this fight again, or the team can withdraw and keep the haul." in said and
+		scene.dialog.buttons.map(func(x): return x.text) == ["Retry with reserves", "Withdraw: back to the map with the haul", "Give up: lose the haul", "See the board"] and Loot.norm(cm.deploy.cur()["haul"]) == carried and cm.deploy.cur()["activity"] != null, said)
 	scene.dialog.buttons[0].pressed.emit()
 	await _frames(4)
 	ck("0.8 lost: Retry sets the same fight up again with who is left", s.visible and s.mode == "deploy" and s.team()["heroes"] == ["Test Striker", "Quillon Vex"] and not s._rows.any(func(e): return e.get("hero") == "Test Warden") and s.the_floor().name == cm.deploy.spec()["floor"], s.team()["heroes"])
@@ -4403,8 +4413,8 @@ func _eight_scene() -> void:
 	s.start()
 	await _frames(4)
 	await _end_fight(scene, false)
-	ck("0.8 give up: a fight lost with Heroes in reserve offers it", c2.deploy.active() and c2.deploy.cur()["n"] == 3 and scene.dialog != null and scene.dialog.buttons.map(func(x): return x.text) == ["Retry with reserves", "Give up: lose the haul", "See the board"])
-	scene.dialog.buttons[1].pressed.emit()
+	ck("0.8 give up: a fight lost with Heroes in reserve offers it", c2.deploy.active() and c2.deploy.cur()["n"] == 3 and scene.dialog != null and scene.dialog.buttons.map(func(x): return x.text) == ["Retry with reserves", "Withdraw: back to the map with the haul", "Give up: lose the haul", "See the board"])
+	scene.dialog.buttons[2].pressed.emit()
 	await _frames(2)
 	saved = JSON.parse_string(FileAccess.get_file_as_string(Campaign.path))
 	ck("0.8 give up: the deployment ends as a wipe and says what went with it", not c2.deploy.active() and scene.dialog != null and scene.dialog.title_label.text == "Deployment lost" and "A wipe loses everything carried: " in scene.dialog.text_label.text
@@ -10084,9 +10094,9 @@ func _thirtyeight() -> void:
 	for k in cores:
 		var d: String = cores[k]
 		for t in w.map["tiles"]:
-			if str(w.map["tiles"][t].get("d", "")) == d and World.dist(str(t), w.dock()) > World.dist(str(k), w.dock()):
+			if str(w.map["tiles"][t].get("d", "")) == d and w.skull_of(t) <= w.core_skull_of(d) and World.dist(str(t), w.dock()) > World.dist(str(k), w.dock()):
 				far_ok = false
-	ck("0.38 cores: each at its District's far edge", far_ok)
+	ck("0.38 cores: each at its District's far edge (0.41: at or below its Core Skull Level)", far_ok)
 	var k1: String = w.core_of("1")
 	var cn = w.content_at(k1)
 	ck("0.38 cores: what it holds: a POI, its District's Core", cn != null and cn["kind"] == "poi" and cn["core"] == "1" and cn["name"] == "District 1 Core" and cn["type"] == "District Core" and w.available(k1), cn)
@@ -10213,6 +10223,108 @@ func _thirtynine_scene() -> void:
 	ob.music_btns["off"].pressed.emit()
 	ck("0.39 options: and set from there", Motion.music == "off")
 	ob.queue_free()
+	scene.queue_free()
+	await _frames(2)
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- 0.41: graded Cores, Withdraw
+func _fortyone() -> void:
+	Kit.fresh()
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var r := Roster.new(x)
+	var c := Campaign.new(x, r, x.floors(), 51)
+	var w := c.world
+	# the Cores, graded
+	ck("0.41 cores: Core Skull Levels 4 4 5 5 6 6 by District, to start with (6 for one the tables don't name)", range(1, 7).map(func(d): return w.core_skull_of(str(d))) == [4, 4, 5, 5, 6, 6] and w.core_skull_of("") == 6 and w.core_skull_of("9") == 6)
+	var at := {}
+	for k in w.cores():
+		at[w.cores()[k]] = w.skull_of(k)
+	ck("0.41 cores: each District's Core at its Core Skull Level", ["1", "2", "3", "4", "5", "6"].map(func(d): return at.get(d)) == [4, 4, 5, 5, 6, 6], at)
+	w.tables["coreSkulls"] = [6, 6, 6, 6, 6, 6]
+	var c6 := w.cores()
+	var far := c6.size() == 6
+	for k in c6:
+		for t in w.map["tiles"]:
+			if str(w.map["tiles"][t].get("d", "")) == c6[k] and World.dist(str(t), w.dock()) > World.dist(str(k), w.dock()):
+				far = false
+	ck("0.41 cores: at Skull 6 everywhere, each at its District's far edge, as before", far)
+	w.tables["coreSkulls"] = [2, 0, 1, 9, 5, "x"]
+	ck("0.41 cores: a level is read as 1 to 6, and one that isn't a number is the default", range(1, 7).map(func(d): return w.core_skull_of(str(d))) == [2, 4, 1, 6, 5, 6], range(1, 7).map(func(d): return w.core_skull_of(str(d))))
+	w.tables["coreSkulls"] = [4, 4]
+	ck("0.41 cores: a list that isn't six long is the default", range(1, 7).map(func(d): return w.core_skull_of(str(d))) == [4, 4, 5, 5, 6, 6])
+	w.tables["coreSkulls"] = [4, 4, 5, 5, 6, 6]
+	# Withdraw
+	var t := Kit.field_team("Withdraw Run")
+	var rich := Loot.bag()
+	rich["shards"] = 3000
+	for ty in ["troop", "equipment", "aether"]:
+		rich["parts"][ty] = [40, 40, 40, 40, 40, 40]
+	c.deploy.stock = rich
+	ck("0.41 withdraw: (a team out)", c.deploy.start(t)["ok"])
+	ck("0.41 withdraw: with no fight lost, there is nothing to withdraw from", not c.deploy.can_withdraw() and not c.deploy.withdraw()["ok"])
+	var k1: String = w.core_of("1")
+	c.deploy.cur()["pos"] = k1
+	c.deploy.enter_poi(k1)
+	var got := Loot.bag()
+	got["shards"] = 7
+	var win := {"winner": "ally", "haul": got, "reward": Loot.bag(), "items": [], "heroesDown": [], "troopsLost": [], "consUsed": [], "kills": []}
+	c.deploy.fight_over(win)
+	ck("0.41 withdraw: after a floor won, onward only", not c.deploy.can_withdraw() and c.deploy.cur()["activity"] != null and int(c.deploy.cur()["activity"]["index"]) == 1)
+	var down: String = c.deploy.hero_names()[0]
+	var haul0 := Loot.norm(c.deploy.cur()["haul"])
+	var lose := {"winner": "enemy", "haul": Loot.bag(), "reward": Loot.bag(), "items": [], "heroesDown": [down], "troopsLost": [], "consUsed": [], "kills": []}
+	var o := c.deploy.fight_over(lose)
+	ck("0.41 withdraw: a fight lost with a Hero standing can be withdrawn from", o["next"] == "retry" and c.deploy.can_withdraw() and c.deploy.cur()["activity"].get("lost") == true, o)
+	var wd := c.deploy.withdraw()
+	ck("0.41 withdraw: back on the map with the haul; the Core is left as it was; the Hero down still sits out", wd["ok"] and wd["kind"] == "poi" and wd["name"] == "District 1 Core" and c.deploy.cur()["activity"] == null
+		and Loot.norm(c.deploy.cur()["haul"]) == haul0 and int(haul0["shards"]) == 7 and w.available(k1) and not w.is_cleared(k1) and c.deploy.cur()["heroesOut"] == [down]
+		and str(c.deploy.cur()["log"][0]["text"]) == "The team withdraws from District 1 Core, with its haul.", [wd, c.deploy.cur()["log"][0]])
+	ck("0.41 withdraw: once only", not c.deploy.can_withdraw() and not c.deploy.withdraw()["ok"])
+	var sp = c.deploy.enter_poi(k1)
+	ck("0.41 withdraw: entered again, the Core starts from its first floor", sp != null and int(sp["index"]) == 0 and int(sp["count"]) == 3, sp)
+	lose["heroesDown"] = []
+	c.deploy.fight_over(lose)
+	c.deploy.fight_over(win)
+	ck("0.41 withdraw: lost, then won on the retry: onward only again", not c.deploy.can_withdraw() and not c.deploy.cur()["activity"].has("lost"))
+	# an ambush
+	var amb_at: String = c.deploy.cur()["pos"]
+	c.deploy.cur()["activity"] = null
+	c.deploy.ambush(amb_at, {})
+	c.deploy.fight_over(lose)
+	wd = c.deploy.withdraw()
+	ck("0.41 withdraw: from an ambush too", wd["ok"] and wd["kind"] == "ambush" and str(c.deploy.cur()["log"][0]["text"]) == "The team withdraws from the ambush, with its haul.", c.deploy.cur()["log"][0])
+	Kit.fresh()
+
+
+func _fortyone_scene() -> void:
+	Kit.fresh()
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	await _frames(2)
+	var t := Kit.field_team()
+	Kit.keep([t])
+	var cm: Campaign = scene.campaign
+	var rich := Loot.bag()
+	rich["shards"] = 3000
+	for ty in ["troop", "equipment", "aether"]:
+		rich["parts"][ty] = [40, 40, 40, 40, 40, 40]
+	cm.deploy.stock = rich
+	ck("0.41 map: (a team out)", cm.deploy.start(t)["ok"])
+	var k1: String = cm.world.core_of("1")
+	cm.deploy.cur()["pos"] = k1
+	cm.deploy.enter_poi(k1)
+	cm.deploy.fight_over({"winner": "enemy", "haul": Loot.bag(), "reward": Loot.bag(), "items": [], "heroesDown": [], "troopsLost": [], "consUsed": [], "kills": []})
+	scene.show_map()
+	await _frames(2)
+	var ms = scene.map_screen
+	ck("0.41 map: a fight lost and waiting offers Fight and Withdraw", ms.actions().map(func(a): return a["id"]) == ["fight", "withdraw"], ms.actions())
+	ms.do("withdraw")
+	await _frames(1)
+	ck("0.41 map: Withdraw leaves the Core and says so; the team is free to walk", cm.deploy.cur()["activity"] == null and ms.note == "The team withdraws with its haul. Walk home to keep it." and not ms.actions().any(func(a): return a["id"] == "withdraw"), ms.actions())
 	scene.queue_free()
 	await _frames(2)
 	Kit.fresh()

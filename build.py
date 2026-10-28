@@ -832,7 +832,7 @@ POI_EXPORTS = ["shapeCells", "commitShape", "applyCell", "pushUndo", "hexDist",
 # ---------------------------------------------------------------- symbols
 # One symbol table for both tools. It used to live only in the Sandbox, which
 # meant the Forge could not draw the same pictograms; that is the sort of
-APP_VERSION = "14.24"
+APP_VERSION = "14.25"
 
 # ---------------------------------------------------------------- behaviour
 # The enemy AI vocabulary, shared by the Card Forge (which edits it) and the

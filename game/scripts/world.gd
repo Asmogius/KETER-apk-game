@@ -26,6 +26,7 @@ const POI_TYPES := ["Lab", "Security Armory", "Bunker", "Overrun Hideout"]
 const DEFAULTS := {"v": 1, "radius": 18, "ringsPerSkull": 3, "blocked": 15,
 	"density": {"poi": 5, "ambush": 4, "cache": 5, "event": 4},
 	"ambushStep": 5, "floorsBySkull": [1, 1, 2, 2, 3, 3], "respawn": 3, "starterFree": 4,
+	"coreSkulls": [4, 4, 5, 5, 6, 6],
 	"cache": {"shards": 6, "n": 4, "bonus": 0, "bp": 30, "card": 35},
 	"poi": {"shards": 20, "n": 6, "bonus": 1, "bp": 60, "card": 50}}
 
@@ -250,6 +251,9 @@ var _cores_id := ""
 
 ## Each District's Core: its tile farthest from the dock (the first by name of
 ## those equally far), never a Unique POI's. {tile: district}
+## (0.41) No higher than the District's Core Skull Level on the tables
+## (Districts 1 to 6: 4, 4, 5, 5, 6, 6 to start with): its farthest tile at or
+## below it, or, with none there, its farthest tile.
 func cores() -> Dictionary:
 	var tiles: Dictionary = map.get("tiles", {})
 	var taken := {}
@@ -258,25 +262,47 @@ func cores() -> Dictionary:
 		if u is Dictionary and Rules.truthy(u.get("tile")):
 			taken[str(u["tile"])] = true
 			ids.append(str(u["tile"]))
-	var id := "%s:%d:%s" % [str(map.get("seed", "")), tiles.size(), ",".join(ids)]
+	var levels := []
+	for i in 6:
+		levels.append(core_skull_of(str(i + 1)))
+	var id := "%s:%d:%s:%s" % [str(map.get("seed", "")), tiles.size(), ",".join(ids), ",".join(levels.map(func(v): return str(v)))]
 	if id == _cores_id:
 		return _cores
 	var best := {}
+	var any := {}
 	var dk := dock()
 	for k in tiles:
 		var d := str(tiles[k].get("d", "")) if tiles[k] is Dictionary else ""
 		if d == "" or str(k) == dk or taken.has(str(k)):
 			continue
 		var dd := dist(str(k), dk)
-		var b = best.get(d)
+		var b = any.get(d)
+		if b == null or dd > b["d"] or (dd == b["d"] and str(k) < b["k"]):
+			any[d] = {"k": str(k), "d": dd}
+		if skull_of(k) > core_skull_of(d):
+			continue
+		b = best.get(d)
 		if b == null or dd > b["d"] or (dd == b["d"] and str(k) < b["k"]):
 			best[d] = {"k": str(k), "d": dd}
 	var out := {}
-	for d in best:
-		out[best[d]["k"]] = d
+	for d in any:
+		out[(best[d] if best.has(d) else any[d])["k"]] = d
 	_cores = out
 	_cores_id = id
 	return out
+
+
+## (0.41) The Skull Level a District's Core is no higher than (6 for a District
+## the tables don't name).
+func core_skull_of(d) -> int:
+	var n := int(str(d)) if str(d).is_valid_int() else 0
+	if n < 1 or n > 6:
+		return 6
+	var list = tables.get("coreSkulls")
+	if not (list is Array) or list.size() != 6:
+		return int(DEFAULTS["coreSkulls"][n - 1])
+	var v := int(Rules.num(list[n - 1], 0))
+	return clampi(v, 1, 6) if v > 0 else int(DEFAULTS["coreSkulls"][n - 1])
 
 
 func core_at(k) -> String:

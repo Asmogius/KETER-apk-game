@@ -195,6 +195,11 @@ func _case(c: Dictionary) -> void:
 		"floorCount":
 			var w := _world()
 			_check(fn, [1, 2, 3, 4, 5, 6, 0, 9].map(func(s): return w.floor_count(s)), want)
+		"cores":
+			# (0.41) the Cores at other Core Skull Levels
+			var w := _world()
+			w.tables["coreSkulls"] = A[0]
+			_check(fn, w.cores(), want)
 		"draw":
 			var w := _world(A[0])
 			_check(fn, w.draw_floors(A[1], A[2], A[3], A[4]), want)
@@ -339,6 +344,9 @@ func _deployment(A: Array, want: Array) -> void:
 			"home":
 				var h := dep.home()
 				out = {"ok": h["ok"], "why": h.get("why"), "haul": Loot.norm(h["haul"]) if h.get("haul") != null else null, "items": h.get("items"), "n": h.get("n"), "dock": _dock_out(h.get("dock"))}
+			"withdraw":
+				var r := dep.withdraw()
+				out = {"ok": r["ok"], "kind": r.get("kind"), "name": r.get("name")}
 			"wipe":
 				var wi := dep.wipe()
 				out = {"ok": wi["ok"], "lostHaul": Loot.norm(wi["lostHaul"]), "lostItems": wi["lostItems"], "n": wi["n"], "dock": _dock_out(wi.get("dock")), "lostPack": wi.get("lostPack"), "lostCards": wi.get("lostCards", {})}

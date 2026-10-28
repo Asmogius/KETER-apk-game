@@ -6,6 +6,13 @@ the Change Log.
 
 <!-- NEWEST ENTRY GOES BELOW THIS LINE -->
 
+## v14.25 — Cores in reach, and Withdraw
+
+Alongside game 0.41. Measured first: the balance lab played whole campaigns, and the first District took about 170 deployments where we aimed for 15 to 25.
+
+- **Graded Cores**: a District's Core is its farthest tile at or below its **Core Skull Level**, Skull 4 for Districts 1 and 2, 5 for 3 and 4, 6 for 5 and 6. A new row on the World page's tables (Dev Mode) sets them.
+- **Withdraw**: after a lost fight with a Hero still standing, a third choice beside Retry and Give up. The team goes back to the map with its haul, the POI or ambush left as it was; the Heroes who went down still sit out. The World page offers it too while the lost fight waits.
+
 ## v14.24 — The balance lab's tuning
 
 Alongside game 0.40. Measured first: a stand-in player fought thousands of fights on the shipped content, and from Skull 4 up almost none could be won.

@@ -256,6 +256,7 @@
     (res.consUsed||[]).forEach(function(nm){ var pk=s.pack&&s.pack.cons; if(pk && pk[nm]>0){ pk[nm]--; if(!pk[nm]) delete pk[nm]; } });
     var out={next:"map", kind:a.kind, name:a.name};
     if(res.winner==="ally" || res.winner==="escape"){
+      delete a.lost;
       /* the Enemies beaten, for the Bounty Board (claimed at home) */
       (res.kills||[]).forEach(function(x){ if(x && x.name) s.kills.push({name:x.name, skull:+x.skull||a.skull}); });
       var gained=L().add(res.haul, res.winner==="ally"?res.reward:null);
@@ -284,7 +285,7 @@
       save(s); return out;
     }
     /* lost: the fight's loot is gone; the haul stays while any Hero stands */
-    if(heroRefs(s).length){ out.next="retry"; out.reserves=heroNames(s, heroRefs(s)); note(s, "The fight is lost; "+out.reserves.join(", ")+" can try again."); save(s); return out; }
+    if(heroRefs(s).length){ a.lost=true; out.next="retry"; out.reserves=heroNames(s, heroRefs(s)); note(s, "The fight is lost; "+out.reserves.join(", ")+" can try again."); save(s); return out; }
     save(s); return Object.assign(wipe(), {next:"wipe"});
   }
   /* v13.5: `live` is the deployment as the fight just left it. This used to
@@ -300,6 +301,16 @@
     return {bag:b, items:items};
   }
   function retryable(){ var s=cur(); return !!(s && s.activity && heroRefs(s).length); }
+  /* (v14.25) After a lost fight, with a Hero still standing: leave the POI or the ambush as it
+     is (a POI's floors start again next time) and go back to the map with the haul. The Heroes
+     who are down still sit out, and the team still walks home. */
+  function canWithdraw(){ var s=cur(); return !!(s && s.activity && s.activity.lost && heroRefs(s).length); }
+  function withdraw(){
+    if(!canWithdraw()) return {ok:false};
+    var s=cur(), a=s.activity; s.activity=null;
+    note(s, "The team withdraws from "+(a.kind==="poi"?a.name:"the ambush")+", with its haul.");
+    save(s); return {ok:true, kind:a.kind, name:a.name};
+  }
 
   /* ---- a cache: loot, no fight ---- */
   function openCache(k){
@@ -375,7 +386,7 @@
 
   window.KETER_DEPLOY={MAX_COPIES:MAX_COPIES, trim:trim, waves:waves, soft:soft, WAVES_BY_SKULL:WAVES_BY_SKULL, KEY:KEY, HIST_KEY:HIST_KEY, loadouts:loadouts, resolve:resolve, needOf:needOf, plan:plan, start:start, cur:cur, active:active,
     lockedDesign:lockedDesign, lockedLoadout:lockedLoadout, heroRefs:heroRefs, deckRefs:deckRefs, team:team, copiesLeft:copiesLeft,
-    stepTo:stepTo, enterPOI:enterPOI, ambush:ambush, spec:spec, fightOver:fightOver, retryable:retryable,
+    stepTo:stepTo, enterPOI:enterPOI, ambush:ambush, spec:spec, fightOver:fightOver, retryable:retryable, canWithdraw:canWithdraw, withdraw:withdraw,
     openCache:openCache, eventAt:eventAt, choose:choose, home:home, wipe:wipe, abandon:abandon, history:history, last:last,
     _save:save};
 })();

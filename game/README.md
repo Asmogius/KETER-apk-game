@@ -1,7 +1,7 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.40 rebalances the fights from
-Skull 4 up, from what the balance lab measured; v0.39 brought music, a clearer fight and map.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.41 puts the first Cores in
+reach and lets a team withdraw from a lost fight; v0.40 rebalanced the fights from Skull 4 up.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +11,24 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.41 (Companion 14.25): **the campaign lab's two changes**. The
+balance lab now plays whole campaigns from a new save. With every District on
+floors like District 3's, the first District took about 170 deployments,
+against 15 to 25: every Core was a Skull 6 fight, and a wipe sent the team
+back to its starters. These are the two changes it measured.
+
+- **Graded Cores.** A District's Core is its farthest tile at or below the
+  District's **Core Skull Level**: Skull 4 for Districts 1 and 2, Skull 5 for
+  3 and 4, Skull 6 for 5 and 6. The levels are a row of the Companion's World
+  tables (Dev Mode), so you can move them. A Core is still three floors, and
+  clearing a District still raises Instability.
+- **Withdraw.** After a lost fight with a Hero still standing there is a
+  third choice beside Retry with reserves and Give up: **Withdraw**, back on
+  the World Map with the haul. The POI or ambush is left as it was (a POI's
+  floors start again next time), the Heroes who went down sit out the rest
+  of the deployment, and the team still has to walk home. The map offers it
+  too, while the lost fight waits.
 
 New in 0.40 (Companion 14.24): **the balance lab's tuning**. A stand-in player
 played thousands of fights on the content the game ships with; from Skull 4 up
@@ -58,8 +76,8 @@ New in 0.39 (Companion 14.23): **the fight and the map, clearer; and music**.
 
 New in 0.38 (Companion 14.23): **a goal: clear the Districts**.
 
-- **Each District has a Core**: its tile farthest from the dock, marked
-  with the Unique POI's star. It is a POI of three floors, the last a
+- **Each District has a Core**: its tile farthest from the dock (0.41: at
+  or below its Core Skull Level), marked with the Unique POI's star. It is a POI of three floors, the last a
   Boss's where one fits, at the tile's Skull Level.
 - **Beat it and the District is cleared, for good**: 5 merits for the
   Colony Rank, and the Core never comes back. A District stays cleared on
@@ -769,7 +787,7 @@ sideways.
 
 1. **Install Godot Engine 4** (the editor) from the Play Store, and let it
    access your files when it asks.
-2. **Unzip `v0-40_KETER_game.zip`.** In the Files app, tap the zip and choose
+2. **Unzip `v0-41_KETER_game.zip`.** In the Files app, tap the zip and choose
    Extract. Inside is one folder, `KETER`; keep it somewhere easy to find, such
    as `Documents`. That folder is "the game's folder" below.
 3. In Godot's **Project Manager**, tap **Import**, find that folder, choose
@@ -780,7 +798,7 @@ sideways.
 
 ## Or as an app, without Godot (0.21)
 
-`v0-39_KETER.apk` is the game as an Android app: it installs and plays like
+`v0-41_KETER.apk` is the game as an Android app: it installs and plays like
 any other, with no Godot.
 
 1. **Copy the APK to your phone** (or download it there) and tap it in the
@@ -1284,7 +1302,9 @@ Troops lost and the Consumables used, and what comes next:
   floor, the POI's reward as well.
 - **Lost, with a Hero still standing:** what dropped in that fight is lost,
   the haul is safe. **Retry with reserves** sets the same fight up again with
-  who is left, or **Give up** ends the deployment as a wipe.
+  who is left; **Withdraw** (0.41) leaves the POI or ambush as it was and
+  goes back to the map with the haul; or **Give up** ends the deployment as a
+  wipe.
 - **Lost, with nobody left: a wipe.** The deployment is over and everything
   it carried is lost, what it packed too, and its claims on the Bounty
   Board. Salvage insurance, if you have it, keeps its share of the haul's

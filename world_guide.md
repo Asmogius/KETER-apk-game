@@ -134,8 +134,11 @@ the next round.
   deployment.
 - **A Troop copy that goes down** is gone for the rest of the deployment.
 - **Lose** a fight with a Hero still standing, and the haul is safe. **Retry
-  with reserves** sets the same floor up again with the Heroes left. **Give
-  up** is a wipe.
+  with reserves** sets the same floor up again with the Heroes left.
+  **Withdraw** (v14.25) takes the team back to the map with the haul and
+  leaves the POI or ambush as it was: a POI's floors start again next time,
+  and the Heroes who went down still sit out. The World page offers it too
+  while the lost fight waits. **Give up** is a wipe.
 - **Lose with no Hero left**, and it's a **wipe**: the haul is lost, and so is
   everything packed, the copies were spent, and the Heroes recover at the
   dock. The dock's **Salvage insurance** keeps a share of the haul's shards
@@ -182,8 +185,10 @@ Clear the last floor and the POI gives its **final reward**:
 
 ## District Cores (v14.23)
 
-Each District has a **Core** (★): its tile farthest from the dock. It is a
-POI of **three floors**, the last a Boss's where one fits, at the tile's Skull
+Each District has a **Core** (★): its tile farthest from the dock at or
+below the District's **Core Skull Level** (v14.25), which is Skull 4 for
+Districts 1 and 2, Skull 5 for 3 and 4 and Skull 6 for 5 and 6 unless the
+tables say otherwise. It is a POI of **three floors**, the last a Boss's where one fits, at the tile's Skull
 Level. Beat it and the **District is cleared for good**: 5 merits for the
 Colony Rank, and the Core never comes back, on this map or another.
 
@@ -255,7 +260,8 @@ In Dev Mode the World Map shows every tile's contents and adds four sections:
 - **Tables**: the map's size, rings per Skull Level, blocked tiles and content
   amounts (for the next map generated), the ambush chance, how long cleared
   tiles stay cleared, free starter copies (before the Starter bay), floors per
-  POI by Skull Level, and the Cache and POI rewards.
+  POI by Skull Level, each District's Core Skull Level (v14.25), and the Cache
+  and POI rewards.
 
 ### Editing the map in the Sandbox
 

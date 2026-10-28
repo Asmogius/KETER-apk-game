@@ -38,6 +38,7 @@
   var DEFAULTS={v:1, radius:18, ringsPerSkull:3, blocked:15,
     density:{poi:5, ambush:4, cache:5, event:4},
     ambushStep:5, floorsBySkull:[1,1,2,2,3,3], respawn:3, starterFree:4,
+    coreSkulls:[4,4,5,5,6,6],
     cache:{shards:6, n:4, bonus:0, bp:30, card:35},
     poi:{shards:20, n:6, bonus:1, bp:60, card:50}};
 
@@ -83,6 +84,7 @@
       ["radius","ringsPerSkull","blocked","ambushStep","respawn","starterFree"].forEach(function(k){ if(isFinite(+m[k])&&m[k]!=="") t[k]=Math.max(0,+m[k]); });
       if(m.density) KINDS.forEach(function(k){ if(isFinite(+m.density[k])) t.density[k]=Math.max(0,+m.density[k]); });
       if(Array.isArray(m.floorsBySkull)&&m.floorsBySkull.length===6) t.floorsBySkull=m.floorsBySkull.map(function(v,i){ var x=parseInt(v,10); return x>0?Math.min(9,x):DEFAULTS.floorsBySkull[i]; });
+      if(Array.isArray(m.coreSkulls)&&m.coreSkulls.length===6) t.coreSkulls=m.coreSkulls.map(function(v,i){ var x=parseInt(v,10); return x>0?Math.min(6,x):DEFAULTS.coreSkulls[i]; });
       ["cache","poi"].forEach(function(s){ if(m[s]) ["shards","n","bonus","bp","card"].forEach(function(k){ if(isFinite(+m[s][k])) t[s][k]=Math.max(0,+m[s][k]); }); });
     }
     t.radius=Math.max(3,Math.min(20,Math.round(t.radius))); t.ringsPerSkull=Math.max(1,Math.round(t.ringsPerSkull));
@@ -94,6 +96,7 @@
     ["radius","ringsPerSkull","blocked","ambushStep","respawn","starterFree"].forEach(function(k){ if(+t[k]!==D[k]) d[k]=+t[k]; });
     KINDS.forEach(function(k){ if(+t.density[k]!==D.density[k]){ d.density=d.density||{}; d.density[k]=+t.density[k]; } });
     if(JSON.stringify(t.floorsBySkull.map(Number))!==JSON.stringify(D.floorsBySkull)) d.floorsBySkull=t.floorsBySkull.map(Number);
+    if(JSON.stringify(t.coreSkulls.map(Number))!==JSON.stringify(D.coreSkulls)) d.coreSkulls=t.coreSkulls.map(Number);
     ["cache","poi"].forEach(function(s){ ["shards","n","bonus","bp","card"].forEach(function(k){ if(+t[s][k]!==D[s][k]){ d[s]=d[s]||{}; d[s][k]=+t[s][k]; } }); });
     return write(TAB_KEY,d);
   }
@@ -214,19 +217,27 @@
   function saveUniques(u){ return write(UQ_KEY,u); }
   function uniqueAt(k){ var l=uniqueList(); for(var i=0;i<l.length;i++) if(l[i]&&l[i].tile===k) return l[i]; return null; }
   /* (v14.23) Each District's Core: its tile farthest from the dock (the first by name of those
-     equally far), never a Unique POI's. Beaten, it clears the District for good. */
+     equally far), never a Unique POI's. Beaten, it clears the District for good.
+     (v14.25) No higher than the District's Core Skull Level on the tables (Districts 1 to 6:
+     4, 4, 5, 5, 6, 6 to start with): its farthest tile at or below it, or, with none there,
+     its farthest tile. */
   var CORES=null, CORES_ID=null;
+  function coreSkullOf(d){ var n=parseInt(d,10); tables(); return n>=1&&n<=6 ? TCACHE.coreSkulls[n-1] : 6; }
   function cores(){
-    var m=map(), ul=uniqueList(), id=m.seed+":"+Object.keys(m.tiles).length+":"+ul.map(function(u){ return u&&u.tile; }).join(",");
+    var m=map(), ul=uniqueList(); tables();
+    var id=m.seed+":"+Object.keys(m.tiles).length+":"+ul.map(function(u){ return u&&u.tile; }).join(",")+":"+TCACHE.coreSkulls.join(",");
     if(CORES && CORES_ID===id) return CORES;
     var taken={}; ul.forEach(function(u){ if(u&&u.tile) taken[u.tile]=1; });
-    var best={}, out={};
+    var best={}, any={}, out={};
     Object.keys(m.tiles).forEach(function(k){
       var d=String(m.tiles[k].d||""); if(!d || k===m.dock || taken[k]) return;
-      var dd=dist(k,m.dock), b=best[d];
+      var dd=dist(k,m.dock), b=any[d];
+      if(!b || dd>b.d || (dd===b.d && k<b.k)) any[d]={k:k, d:dd};
+      if(skullOf(k)>coreSkullOf(d)) return;
+      b=best[d];
       if(!b || dd>b.d || (dd===b.d && k<b.k)) best[d]={k:k, d:dd};
     });
-    Object.keys(best).forEach(function(d){ out[best[d].k]=d; });
+    Object.keys(any).forEach(function(d){ out[(best[d]||any[d]).k]=d; });
     CORES=out; CORES_ID=id; return out;
   }
   function coreAt(k){ return cores()[k]||""; }
@@ -433,7 +444,7 @@
     generate:generate, map:map, setMap:setMap, newMap:newMap, tile:tile, isOpen:isOpen, skullOf:skullOf, districtOf:districtOf,
     ambushChance:ambushChance, poiTypeOf:poiTypeOf, reach:reach,
     state:state, saveState:saveState, resetState:resetState, stand:stand, known:known, knownCount:knownCount,
-    uniques:uniques, saveUniques:saveUniques, uniqueAt:uniqueAt, contentAt:contentAt, cores:cores, coreAt:coreAt, coreOf:coreOf, districtsCleared:districtsCleared, isDistrictCleared:isDistrictCleared, clearDistrict:clearDistrict, instability:instability, isCleared:isCleared, clear:clear, available:available, backIn:backIn, endDeployment:endDeployment,
+    uniques:uniques, saveUniques:saveUniques, uniqueAt:uniqueAt, contentAt:contentAt, cores:cores, coreSkullOf:coreSkullOf, coreAt:coreAt, coreOf:coreOf, districtsCleared:districtsCleared, isDistrictCleared:isDistrictCleared, clearDistrict:clearDistrict, instability:instability, isCleared:isCleared, clear:clear, available:available, backIn:backIn, endDeployment:endDeployment,
     path:path, pathRisk:pathRisk, floors:floors, chunks:chunks, level:level, drawFloors:drawFloors, floorCount:floorCount, floorSkull:floorSkull, districtNum:districtNum,
     toLevel:toLevel, saveToSandbox:saveToSandbox, fromLevel:fromLevel, sandboxMaps:sandboxMaps, useSandbox:useSandbox, sandboxNewer:sandboxNewer,
     DEFAULT_EVENTS:DEFAULT_EVENTS, events:events, saveEvents:saveEvents, resetEvents:resetEvents, eventFor:eventFor,

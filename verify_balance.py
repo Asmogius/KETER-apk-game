@@ -119,11 +119,11 @@ with sync_playwright() as p:
     ck("v14.22: Mk II and Mk III: +3/+1, then +6/+2/+1 Movement, paid in Troop parts; no higher", r["a"]==2 and r["b"]==3 and r["no"]=="Already Mk III" and r["hp"][1]==r["hp"][0]+3 and r["hp"][2]==r["hp"][0]+6 and r["ac"][2]==r["ac"][0]+2 and r["mv"][1]==r["mv"][0]+1 and r["left"]==[0,0,0] and r["card"]==3, r)
     # ================= v14.23 =================
     r=E("""()=>{ var W=KETER_WORLD; W.resetState(); var c=W.cores(), ks=Object.keys(c), m=W.map(), far=true;
-      ks.forEach(function(k){ Object.keys(m.tiles).forEach(function(t){ if(String(m.tiles[t].d)===c[k] && W.dist(t,m.dock)>W.dist(k,m.dock)) far=false; }); });
+      ks.forEach(function(k){ Object.keys(m.tiles).forEach(function(t){ if(String(m.tiles[t].d)===c[k] && W.skullOf(t)<=W.coreSkullOf(c[k]) && W.dist(t,m.dock)>W.dist(k,m.dock)) far=false; }); });
       var k1=W.coreOf('1'), cn=W.contentAt(k1); var a=W.instability(); W.clearDistrict('1',1); W.clearDistrict('2',1);
       for(var i=0;i<6;i++) W.endDeployment();
       return {ds:ks.map(function(k){ return c[k]; }).sort(), far:far, cn:cn, a:a, b:W.instability(), cleared:W.isCleared(k1), list:W.districtsCleared()}; }""")
-    ck("v14.23: a Core for each District at its far edge, a POI; clearing it lasts, and brings Instability", r["ds"]==["1","2","3","4","5","6"] and r["far"] and r["cn"]["core"]=="1" and r["cn"]["name"]=="District 1 Core" and r["a"]==0 and r["b"]==6 and r["cleared"] and r["list"]==["1","2"], r)
+    ck("v14.23: a Core for each District at its far edge (v14.25: at or below its Core Skull Level), a POI; clearing it lasts, and brings Instability", r["ds"]==["1","2","3","4","5","6"] and r["far"] and r["cn"]["core"]=="1" and r["cn"]["name"]=="District 1 Core" and r["a"]==0 and r["b"]==6 and r["cleared"] and r["list"]==["1","2"], r)
     r=E("()=>{ var W=KETER_WORLD; W.newMap(77); var l=W.districtsCleared(); W.resetState(); return l; }")
     ck("v14.23: a District cleared stays so on a new map", r==["1","2"], r)
     # ================= v14.24 =================
@@ -148,6 +148,18 @@ with sync_playwright() as p:
       var s=function(n){ var c=by[n]; return [+c.stats.hp, +c.stats.ac].concat((c.entries||[]).filter(function(e){ return e.damage; }).map(function(e){ return +e.damage; })); };
       return {ar:s('Arachnabot'), st:s('Starkiller Titan'), de:s('Decimation Titan'), co:s('Construction Titan')}; }""")
     ck("v14.24: the Skull 4-6 Enemies re-statted (Arachnabot 28 Health; Titans about a third of their Health, a third less damage)", r=={"ar":[28,15,12,8],"st":[39,15,13,5],"de":[42,16,4,8],"co":[44,16,11,7]}, r)
+    # ================= v14.25 =================
+    r=E("""()=>{ var W=KETER_WORLD, c=W.cores(), lv=W.tables().coreSkulls, ok=true;
+      Object.keys(c).forEach(function(k){ if(W.skullOf(k)>W.coreSkullOf(c[k])) ok=false; });
+      var sk=Object.keys(c).sort(function(a,b){ return +c[a]-+c[b]; }).map(function(k){ return W.skullOf(k); });
+      var t=W.tables(); t.coreSkulls=[6,6,6,6,6,6]; W.saveTables(t); var c6=W.cores(), m=W.map(), far=true;
+      Object.keys(c6).forEach(function(k){ Object.keys(m.tiles).forEach(function(x){ if(String(m.tiles[x].d)===c6[k] && W.dist(x,m.dock)>W.dist(k,m.dock)) far=false; }); });
+      var saved=JSON.parse(localStorage.getItem('keter-app-world-tables')||'{}').coreSkulls; W.resetTables();
+      return {lv:lv, ok:ok, sk:sk, far:far, saved:saved, back:W.tables().coreSkulls}; }""")
+    ck("v14.25: Core Skull Levels 4 4 5 5 6 6 by District; each Core at or below its own; at 6 everywhere, the far edge again; saved as a change, reset with the tables", r["lv"]==[4,4,5,5,6,6] and r["ok"] and r["sk"]==[4,4,5,5,6,6] and r["far"] and r["saved"]==[6,6,6,6,6,6] and r["back"]==[4,4,5,5,6,6], r)
+    r=E("""()=>{ var h=simDeployResultHTML({out:{next:'retry', reserves:['Field Medic']}, winner:'enemy', heroesDown:[], troopsLost:[]});
+      return {withdraw:h.indexOf('id="simDepWithdraw"')>=0, retry:h.indexOf('id="simDepRetry"')>=0, give:h.indexOf('id="simDepGiveUp"')>=0, D:typeof KETER_DEPLOY.withdraw==='function' && KETER_DEPLOY.canWithdraw()===false && KETER_DEPLOY.withdraw().ok===false}; }""")
+    ck("v14.25: after a lost fight, Withdraw sits between Retry and Give up; with no fight lost, it can't be done", r=={"withdraw":True,"retry":True,"give":True,"D":True}, r)
     ck("no page errors", not errs, errs)
     b.close()
 print(f"\nBALANCE PASS {len(ok)}  FAIL {len(bad)}")

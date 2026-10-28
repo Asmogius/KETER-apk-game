@@ -520,7 +520,8 @@ The result says what went into the haul and what comes next:
 
 - **Next floor**, inside a POI.
 - **Back to the map.**
-- **Retry with reserves**, when a Hero still stands.
+- **Retry with reserves**, when a Hero still stands; or **Withdraw** (v14.25),
+  back to the map with the haul, the POI or ambush left as it was.
 - **Deployment lost**, a wipe. It lists what was lost, packed items
   included, and what Salvage insurance kept, if the dock has it.
 

@@ -304,7 +304,11 @@ func _fill_panel_now() -> void:
 			_event_outcome(event_out)
 		_line("The next fight is waiting: %s." % str(a["floors"][a["index"]]), UI.DIM)
 		_line("Heroes who can go in: %s." % ", ".join(dep.hero_names()), UI.DIM)
+		if dep.can_withdraw():
+			_line("The last fight here was lost. Withdraw leaves it as it is and takes the haul back to the map.", UI.DIM)
 		_action("Fight", "fight", null, true)
+		if dep.can_withdraw():
+			_action("Withdraw with the haul", "withdraw")
 		return
 	if selected == "":
 		panel.visible = false
@@ -466,6 +470,10 @@ func do(id: String, arg = null) -> void:
 		"fight":
 			if c != null and c["activity"] != null:
 				fight_requested.emit()
+		"withdraw":
+			if dep.withdraw()["ok"]:
+				campaign.save()
+				say_note("The team withdraws with its haul. Walk home to keep it.")
 		"enter":
 			if c == null:
 				return
@@ -634,6 +642,13 @@ func come_home() -> void:
 		_close_dialog()
 		if i == 0:
 			dock_requested.emit())
+
+
+## (0.41) A line at the head of the panel, from outside it (a withdrawal).
+func say_note(text: String, bad := false) -> void:
+	note = text
+	note_bad = bad
+	refresh()
 
 
 ## A fight is over and the deployment has said what comes next: the map shows it.

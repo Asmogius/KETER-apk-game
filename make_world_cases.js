@@ -98,6 +98,12 @@ for(let i = 0; i < 160; i++){
 /* ---- the floors a fight is drawn from ---- */
 add("floors", [], W.floors().map(f => ({ key: f.key, name: f.name, district: f.district, skull: f.skull, type: f.type, size: f.size, test: f.test, tiles: f.tiles })));
 add("floorCount", [], [1, 2, 3, 4, 5, 6, 0, 9].map(s => W.floorCount(s)));
+/* (v14.25) the Cores at other Core Skull Levels */
+[[4, 4, 5, 5, 6, 6], [6, 6, 6, 6, 6, 6], [1, 2, 3, 4, 5, 6], [3, 3, 3, 3, 3, 3], [2, 6, 1, 5, 4, 4]].forEach(cs => {
+  const t = W.tables(); t.coreSkulls = cs; W.saveTables(t);
+  add("cores", [cs], W.cores());
+});
+store["keter-app-world-tables"] = JSON.stringify(world.tables);
 for(let i = 0; i < 260; i++){
   const sd = ri(1, 1e9), d = pick(["1", "2", "3", "4", "5", "6", ""]), sk = ri(1, 6), n = ri(1, 4), amb = chance(0.4);
   L.seed(sd);
@@ -372,17 +378,20 @@ for(let ci = 0; ci < 150; ci++){
         const res = fightResult(s), lost0 = JSON.stringify(s.lost), out = D.fightOver(res);
         if(JSON.stringify(D.cur() ? D.cur().lost : D.last().lost) !== lost0) count("copies lost");
         run(["fight", res], fightOut(out)); count("fight: " + out.next + (out.escaped ? " (escaped)" : out.poiDone ? " (POI cleared)" : ""));
+        /* (v14.25) after a lost fight, now and then the team withdraws with its haul */
+        if(out.next === "retry" && chance(0.35)){ const w = D.withdraw(); run(["withdraw"], { ok: w.ok, kind: w.kind || null, name: w.name || null }); count("withdrew"); }
         continue;
       }
       const here = s.pos, c = W.available(here) ? W.contentAt(here) : null, roll = rnd();
       if(roll < 0.04){
         /* things that can't be done, asked anyway */
-        const what = pick(["farstep", "blockedstep", "cache", "choose", "home", "enter", "badchoice"]);
+        const what = pick(["farstep", "blockedstep", "cache", "choose", "home", "enter", "badchoice", "withdraw"]);
         if(what === "farstep"){ const far = pick(keys); run(["step", far], stepOut(D.stepTo(far))); }
         else if(what === "blockedstep"){ const nb = W.neighbours(here).filter(n => !W.isOpen(n)); if(nb.length){ const k = pick(nb); run(["step", k], stepOut(D.stepTo(k))); } }
         else if(what === "cache"){ const r = D.openCache(here); run(["cache", here], r ? { bag: L.norm(r.bag), items: r.items } : null); if(r) count("cache"); }
         else if(what === "choose" || what === "badchoice"){ const i = what === "badchoice" ? 7 : 0, o = D.choose(here, i); run(["choose", here, i], chooseOut(o)); if(o) count("event"); }
         else if(what === "home"){ const h = D.home(); run(["home"], homeOut(h)); if(h && h.ok){ count("home"); break; } }
+        else if(what === "withdraw"){ const w = D.withdraw(); run(["withdraw"], { ok: w.ok, kind: w.kind || null, name: w.name || null }); }
         else { const sp = D.enterPOI(here); run(["enter", here], specOut(sp)); if(sp) count("POI entered" + (c && c.kind === "poi" ? "" : " (where there was none)")); }
         continue;
       }

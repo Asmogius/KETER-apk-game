@@ -657,6 +657,7 @@ func fight_over(res: Dictionary) -> Dictionary:
 	var out := {"next": "map", "kind": a["kind"], "name": a["name"]}
 	var winner = res.get("winner")
 	if winner == "ally" or winner == "escape":
+		a.erase("lost")
 		for x in res.get("kills", []):
 			if x is Dictionary and Rules.truthy(x.get("name")):
 				var ks = Rules.num(x.get("skull"), 0)
@@ -713,6 +714,7 @@ func fight_over(res: Dictionary) -> Dictionary:
 		return out
 	# lost: the fight's loot is gone; the haul stays while any Hero stands
 	if not hero_names().is_empty():
+		a["lost"] = true
 		out["next"] = "retry"
 		out["reserves"] = hero_names()
 		note("The fight is lost; %s can try again." % ", ".join(out["reserves"]))
@@ -722,6 +724,25 @@ func fight_over(res: Dictionary) -> Dictionary:
 	w["kind"] = a["kind"]
 	w["name"] = a["name"]
 	return w
+
+
+## (0.41) After a lost fight, with a Hero still standing: leave the POI or the
+## ambush as it is (a POI's floors start again next time) and go back to the
+## map with the haul. The Heroes who are down still sit out, and the team still
+## walks home. (deploy.js canWithdraw and withdraw)
+func can_withdraw() -> bool:
+	var c = cur()
+	return c != null and c["activity"] != null and Rules.truthy(c["activity"].get("lost")) and not hero_names().is_empty()
+
+
+func withdraw() -> Dictionary:
+	if not can_withdraw():
+		return {"ok": false}
+	var c = cur()
+	var a: Dictionary = c["activity"]
+	c["activity"] = null
+	note("The team withdraws from %s, with its haul." % (str(a["name"]) if a["kind"] == "poi" else "the ambush"))
+	return {"ok": true, "kind": a["kind"], "name": a["name"]}
 
 
 ## A POI's reward, once its last floor is won: {bag, items}.
