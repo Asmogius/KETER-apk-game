@@ -4,6 +4,7 @@ the content the game ships with, and this gathers how they went.
 
   python3 balance_lab.py run  [--n 60] [--jobs 4] [--out DIR]   play the grid
   python3 balance_lab.py sum  [--out DIR]                       gather it into summary.json
+  python3 balance_lab.py run --grid focus --tune notest,mix --out DIR   a what-if, on the cells it matters to
 
 The grid: Skull Level 1-6, each an ambush, a POI (its floors in a row) and a
 District Core (three floors), for the careful player and the casual one
@@ -40,10 +41,16 @@ def export_path(out):
     return p
 
 
-def cells(extra=True):
+def cells(extra=True, grid="full"):
     # every District Core sits at Skull 6 (the farthest tile from the dock): a Core is played at 5 and 6
     cell = lambda s, k, b, inst=0, stage="", d="3": {"skull": s, "kind": k, "bot": b, "inst": inst, "stage": stage, "district": d}
     out = [cell(s, k, b) for s in SKULLS for k in KINDS for b in BOTS if k != "core" or s >= 5]
+    if grid == "focus":
+        # where the curve breaks: the careful player from Skull 3 up
+        return [c for c in out if c["bot"] == "careful" and c["skull"] >= 3]
+    if grid == "tuned":
+        # the main grid, and District 1 (its floors drawn from the whole floors)
+        return out + [cell(s, "poi", "careful", 0, "", "1") for s in SKULLS] + [cell(6, "core", "careful", 0, "", "1")]
     if extra:
         # Instability at its most (five Districts cleared), where it bites
         out += [cell(s, k, "careful", 15) for s in (4, 5, 6) for k in ("poi", "core") if k != "core" or s >= 5]
@@ -59,7 +66,7 @@ def cell_name(c):
 
 
 def play(job):
-    c, part, n, exp, out = job
+    c, part, n, exp, out, tune = job
     f = out / "runs" / ("%s_p%02d.jsonl" % (cell_name(c), part))
     if f.exists() and f.stat().st_size > 0:
         return str(f), 0
@@ -70,6 +77,8 @@ def play(job):
             "n=%d" % n, "seed=%d" % seed, "inst=%d" % c["inst"], "district=%s" % c["district"], "out=%s" % f]
     if c["stage"]:
         args.append("stage=%s" % c["stage"])
+    if tune:
+        args.append("tune=%s" % tune)
     r = subprocess.run(args, capture_output=True, text=True, timeout=3600)
     if r.returncode != 0 or not f.exists():
         sys.stderr.write("%s part %d failed:\n%s\n" % (cell_name(c), part, (r.stdout + r.stderr)[-2000:]))
@@ -82,7 +91,7 @@ def run(a):
     out.mkdir(parents=True, exist_ok=True)
     exp = export_path(out)
     parts = max(1, a.n // PART)
-    jobs = [(c, p, PART, exp, out) for c in cells(not a.core_grid) for p in range(parts)]
+    jobs = [(c, p, PART, exp, out, a.tune) for c in cells(not a.core_grid, a.grid) for p in range(parts)]
     # the slowest first, so that the last to finish isn't a long one alone
     jobs.sort(key=lambda j: -(j[0]["skull"] * (3 if j[0]["kind"] == "core" else (2 if j[0]["kind"] == "poi" else 1))))
     bad = 0
@@ -111,6 +120,7 @@ def sum_cell(rows):
     rounds_won = [f["rounds"] for f in won_f]
     return {
         "runs": len(rows),
+        "fights_n": len(fights),
         "clear": sum(r["won"] for r in rows) / max(1, len(rows)),
         "first_try": sum(1 for r in rows if r["won"] and r["retries"] == 0) / max(1, len(rows)),
         "fight_win": len(won_f) / max(1, len(fights)),
@@ -134,7 +144,7 @@ def sum_cell(rows):
 def summarise(a):
     out = pathlib.Path(a.out)
     res = []
-    for c in cells(True):
+    for c in cells(True, a.grid):
         rows = []
         for f in sorted((out / "runs").glob(cell_name(c) + "_p*.jsonl")):
             rows += [json.loads(l) for l in f.read_text().splitlines() if l.strip()]
@@ -156,6 +166,8 @@ def main():
     ap.add_argument("--jobs", type=int, default=os.cpu_count() or 2)
     ap.add_argument("--out", default=str(ROOT / "lab_out"))
     ap.add_argument("--core-grid", action="store_true", help="only the main grid, without the extra cells")
+    ap.add_argument("--grid", default="full", choices=["full", "focus", "tuned"], help="which cells: all, the careful player from Skull 3, or the main grid and District 1")
+    ap.add_argument("--tune", default="", help="what-if switches for lab_fights.gd's tune= (the game is untouched)")
     a = ap.parse_args()
     sys.exit(run(a) if a.what == "run" else summarise(a))
 
