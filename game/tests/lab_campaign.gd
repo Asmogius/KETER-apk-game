@@ -32,7 +32,10 @@
 ## every District had content of its own like District 3's; keepheroes=1 keeps
 ## the recruited Heroes through a wipe, and keepcards=1 the cards it took;
 ## retreat=1 lets a team that loses a fight give up that POI or ambush and walk
-## home with its haul, instead of trying again until it is wiped out.
+## home with its haul, instead of trying again until it is wiped out;
+## cores=2,3,4,5,6,6 puts the Cores of Districts 1 to 6 at those Skull Levels
+## instead of all at Skull 6, and the player goes for one as soon as its aim
+## reaches the Core's Skull Level.
 ##   godot --headless --path . --script res://tests/lab_campaign.gd -- export=<zip> bot=<careful|casual> seed=<n> most=<deployments> out=<file> [d3floors=1]
 extends SceneTree
 
@@ -57,6 +60,7 @@ var keepheroes := false              # (what-if) a wipe keeps the recruited Hero
 var keepcards := false               # (what-if) and the cards taken
 var retreat := false                 # (what-if) a lost fight: give the place up and go home
 var retreating := false
+var core_skulls := []                # (what-if) the Skull Level of each District's Core
 
 
 func _initialize() -> void:
@@ -64,7 +68,7 @@ func _initialize() -> void:
 
 
 func _args() -> Dictionary:
-	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": "", "d3floors": "0", "keepheroes": "0", "keepcards": "0", "retreat": "0"}
+	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": "", "d3floors": "0", "keepheroes": "0", "keepcards": "0", "retreat": "0", "cores": ""}
 	for a in OS.get_cmdline_user_args():
 		var kv := str(a).split("=", true, 1)
 		if kv.size() == 2:
@@ -91,13 +95,16 @@ func _run() -> void:
 	keepheroes = str(o["keepheroes"]) == "1"
 	keepcards = str(o["keepcards"]) == "1"
 	retreat = str(o["retreat"]) == "1"
+	core_skulls = Array(str(o["cores"]).replace(";", ",").split(",", false)).map(func(v): return int(v))      # (";" between them, from balance_lab.py)
 	rng.seed = int(o["seed"])
 	player = LabPlayer.new(bot, rng)
 	var c := Campaign.new(x, r, floors, int(o["seed"]))
 	r.progress = c.progress
+	if core_skulls.size() == 6:
+		_move_cores(c.world)
 	out_file = FileAccess.open(str(o["out"]), FileAccess.WRITE)
 	var most := int(o["most"])
-	var run := {"seed": int(o["seed"]), "bot": bot, "d3floors": d3floors, "keepheroes": keepheroes, "keepcards": keepcards, "retreat": retreat, "deployments": 0, "wipes": 0, "first_district": 0, "all_districts": 0,
+	var run := {"seed": int(o["seed"]), "bot": bot, "d3floors": d3floors, "keepheroes": keepheroes, "keepcards": keepcards, "retreat": retreat, "cores": core_skulls, "deployments": 0, "wipes": 0, "first_district": 0, "all_districts": 0,
 		"rank_at": {}, "districts_at": [], "comfort_at": {}, "error": ""}
 	for n in range(1, most + 1):
 		var line := _deployment(c, n)
@@ -134,6 +141,32 @@ func _run() -> void:
 func _write(d: Dictionary) -> void:
 	out_file.store_line(JSON.stringify(d))
 	out_file.flush()
+
+
+## (what-if) Each District's Core moved to the outermost open tile of that
+## District at the Skull Level asked for: the first District asked for the
+## lowest. Written into the World's own record of its Cores.
+func _move_cores(w: World) -> void:
+	var now := w.cores()                 # (lays out the record it keeps)
+	var ds: Array = now.values()
+	ds.sort()
+	var moved := {}
+	for i in ds.size():
+		var d := str(ds[i])
+		var want := int(core_skulls[i])
+		var best := ""
+		var bd := -1
+		for k in w.map["tiles"]:
+			if str(w.map["tiles"][k].get("d", "")) != d or str(k) == w.dock() or w.skull_of(k) != want or w.unique_at(k) != null:
+				continue
+			var dd := World.dist(str(k), w.dock())
+			if dd > bd or (dd == bd and str(k) < best):
+				bd = dd
+				best = str(k)
+		if best == "":
+			best = now.keys()[now.values().find(d)]
+		moved[best] = d
+	w._cores = moved
 
 
 # ---------------------------------------------------------------- at the dock
@@ -397,6 +430,8 @@ func _goal(c: Campaign, target: int, from := "") -> Dictionary:
 	var cand := []
 	if comfort >= 6:
 		cand = w.cores().keys().filter(func(k): return w.available(k))
+	elif core_skulls.size() == 6:
+		cand = w.cores().keys().filter(func(k): return w.available(k) and w.skull_of(k) <= target)
 	if cand.is_empty():
 		# at its aim; or, with none there just now (cleared, not back yet), the nearest level that has one, lower first
 		var order := [target]
