@@ -27,9 +27,12 @@
 ## Mk II and Mk III as Troop parts allow. Every fight is played by
 ## lab_player.gd, careful or casual; one still going at round 40 is lost.
 ## It makes no designs in the Workshop: its Troops are the free ones.
-## What-if (lab only, the game is untouched): d3floors=1 fights every
+## What-ifs (lab only, the game is untouched): d3floors=1 fights every
 ## District's floors on battlefields grown from District 3's chunks, as if
-## every District had content of its own like District 3's.
+## every District had content of its own like District 3's; keepheroes=1 keeps
+## the recruited Heroes through a wipe, and keepcards=1 the cards it took;
+## retreat=1 lets a team that loses a fight give up that POI or ambush and walk
+## home with its haul, instead of trying again until it is wiped out.
 ##   godot --headless --path . --script res://tests/lab_campaign.gd -- export=<zip> bot=<careful|casual> seed=<n> most=<deployments> out=<file> [d3floors=1]
 extends SceneTree
 
@@ -50,6 +53,10 @@ var clean := 0                       # trips home in a row at its aim, every Her
 var first_stash := true
 var tally := {}                      # this deployment's counts
 var d3floors := false                # (what-if) every District on District 3's kind of floor
+var keepheroes := false              # (what-if) a wipe keeps the recruited Heroes
+var keepcards := false               # (what-if) and the cards taken
+var retreat := false                 # (what-if) a lost fight: give the place up and go home
+var retreating := false
 
 
 func _initialize() -> void:
@@ -57,7 +64,7 @@ func _initialize() -> void:
 
 
 func _args() -> Dictionary:
-	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": "", "d3floors": "0"}
+	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": "", "d3floors": "0", "keepheroes": "0", "keepcards": "0", "retreat": "0"}
 	for a in OS.get_cmdline_user_args():
 		var kv := str(a).split("=", true, 1)
 		if kv.size() == 2:
@@ -81,13 +88,16 @@ func _run() -> void:
 	floors = x.floors()
 	bot = str(o["bot"])
 	d3floors = str(o["d3floors"]) == "1"
+	keepheroes = str(o["keepheroes"]) == "1"
+	keepcards = str(o["keepcards"]) == "1"
+	retreat = str(o["retreat"]) == "1"
 	rng.seed = int(o["seed"])
 	player = LabPlayer.new(bot, rng)
 	var c := Campaign.new(x, r, floors, int(o["seed"]))
 	r.progress = c.progress
 	out_file = FileAccess.open(str(o["out"]), FileAccess.WRITE)
 	var most := int(o["most"])
-	var run := {"seed": int(o["seed"]), "bot": bot, "d3floors": d3floors, "deployments": 0, "wipes": 0, "first_district": 0, "all_districts": 0,
+	var run := {"seed": int(o["seed"]), "bot": bot, "d3floors": d3floors, "keepheroes": keepheroes, "keepcards": keepcards, "retreat": retreat, "deployments": 0, "wipes": 0, "first_district": 0, "all_districts": 0,
 		"rank_at": {}, "districts_at": [], "comfort_at": {}, "error": ""}
 	for n in range(1, most + 1):
 		var line := _deployment(c, n)
@@ -264,6 +274,8 @@ func _deployment(c: Campaign, n: int) -> Dictionary:
 	if not why.is_empty():
 		return {"n": n, "error": "can't leave: " + str(why)}
 	var stock0 := Loot.norm(dep.stock)
+	var heroes0: Dictionary = c.dock.state["heroes"].duplicate(true)
+	var cards0: Dictionary = c.dock.inv["cards"].duplicate(true)
 	var started := dep.start(team, pack)
 	if not started["ok"]:
 		return {"n": n, "error": "start refused: " + str(started.get("reasons"))}
@@ -272,6 +284,7 @@ func _deployment(c: Campaign, n: int) -> Dictionary:
 		"held": c.dock.inv["cards"].size(), "shop": shop, "shards_before": int(stock0["shards"]), "districts_before": w.districts_cleared().size()}
 	var pois_done := 0
 	var guard := 0
+	retreating = false
 	var goal := _goal(c, target)
 	line["goal"] = goal.duplicate()
 	while dep.active() and guard < 400:
@@ -281,6 +294,8 @@ func _deployment(c: Campaign, n: int) -> Dictionary:
 			_fights(c)
 			continue
 		var here: String = cur["pos"]
+		if retreating and goal.get("home") != true:
+			goal = {"tile": w.dock(), "home": true}
 		if goal.is_empty() or (goal.get("tile") == here and not w.available(here)):
 			# done here: on to another POI, or home
 			var standing: bool = cur["heroesOut"].is_empty()
@@ -357,6 +372,10 @@ func _deployment(c: Campaign, n: int) -> Dictionary:
 	else:
 		comfort = maxi(0, mini(comfort, target - 1) - 1)
 		clean = 0
+		if keepheroes:
+			c.dock.state["heroes"] = heroes0
+		if keepcards:
+			c.dock.inv["cards"] = cards0
 	line.merge(tally)
 	line["result"] = result
 	line["haul_shards"] = int(Loot.norm(haul)["shards"]) if result == "home" else 0
@@ -411,10 +430,15 @@ func _fights(c: Campaign) -> void:
 	var guard := 0
 	while dep.active() and dep.cur()["activity"] != null and guard < 30:
 		guard += 1
-		_fight(c)
+		var won := _fight(c)
+		if retreat and not won and dep.active() and dep.cur()["activity"] != null:
+			# (what-if) it gives the place up: no more floors, and home with what it carries
+			dep.cur()["activity"] = null
+			tally["retreats"] = int(tally.get("retreats", 0)) + 1
+			retreating = true
 
 
-func _fight(c: Campaign) -> void:
+func _fight(c: Campaign) -> bool:
 	var dep := c.deploy
 	var sp: Dictionary = dep.spec()
 	var team: Dictionary = dep.team_now()
@@ -427,7 +451,7 @@ func _fight(c: Campaign) -> void:
 			f = FloorData.from_dict(lv)
 	if f == null:
 		dep.wipe()
-		return
+		return false
 	f.district = str(sp["district"])
 	var standing: Array = team["heroes"].duplicate()
 	standing.sort_custom(func(a, b): return power(r.card_named(a)) > power(r.card_named(b)))
@@ -449,6 +473,7 @@ func _fight(c: Campaign) -> void:
 	tally["won" if res["winner"] == "ally" else "lost"] += 1
 	tally["heroes_down"] += res["heroesDown"].size()
 	dep.fight_over(res)
+	return res["winner"] == "ally"
 
 
 func _floor(c: Campaign, k) -> FloorData:
