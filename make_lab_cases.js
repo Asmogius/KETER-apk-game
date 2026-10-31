@@ -106,7 +106,41 @@ const defaults = [];
 ["hero", "troop", "enemy", "elite", "miniboss", "action", "command", "aether", "equipment", "sphere", "consumable", "prototype", "boss", "worldtile"].forEach(t => prevs.forEach(pv => defaults.push({ type: t, prev: clone(pv), build: clone(L.defaultBuild(t, clone(pv))) })));
 const capsCases = cases.map(c => ({ build: c.build, caps: clone(L.caps(clone(c.build))) }));
 
+/* the Workshop's modules: chassis of every kind (some with a Lab line of their own, some with a bad
+   one), designs of modules at every tier (some not open, some broken), what the player owns, and a
+   design made before the Lab converted */
+const KWS = ["DMG", "Burst", "Lunge", "Charge", "Push", "Stunned", "Slowed", "Rooted", "Poisoned", "Bleed", "Weakened", "Marked", "AoE", "Range", "Pierce", "HP", "AC",
+  "Hardened", "NRG", "Dash", "remove", "Deploy", "Barricade", "Leap", "Evasive", "MS", "Aim", "Aura", "gain Aether", "kills an enemy", "is attacked", "the round begins"];
+const SUBS = [["Melee"], ["Ranged"], ["Support"], ["Cyber"], ["Ranged", "Cyber"], ["Melee", "Support"], [], ["Support", "Ranged"]];
+function chassis(){
+  const ch = { id: "ch_" + ri(1, 999), name: "Frame " + ri(1, 99), district: pick(["", "1", "3", "6"]), subtypes: pick(SUBS), powerCap: pick([8, 12, 14, 16, 20, 24, 30, 40, 50, 99]),
+    cost: { troop: ri(0, 9) }, aether: { generic: ri(0, 2), affinity: ri(0, 2) }, stats: { hp: ri(6, 40), ac: ri(8, 15), move: ri(2, 6), dmg: ri(1, 5), nrg: ri(2, 5), int: ri(8, 14) } };
+  if(chance(0.25)) ch.lab = chance(0.7) ? { role: pick(D.roles), size: pick(D.sizes), rarity: pick(D.rarities) } : { role: "sniper", size: "huge", rarity: "common" };
+  if(chance(0.05)) delete ch.stats;
+  return ch;
+}
+function owned(){ const o = {}; KWS.forEach(k => { if(chance(0.3)) o[k] = ri(0, 4); }); return o; }
+function modsOwned(){ const o = {}; D.library.forEach(a => { if(chance(0.1)) o[a.id] = ri(0, 3); }); return o; }
+const modCases = [];
+for(let i = 0; i < 400; i++){
+  const ch = chance(0.03) ? null : chassis(), kw = owned(), mods = modsOwned();
+  const d = { id: "ds_" + ri(1000, 9999).toString(36), name: chance(0.1) ? "" : "Design " + i, chassis: ch ? ch.id : "ch_gone", lab: 1, modules: [] };
+  const n = ri(0, chance(0.15) ? 4 : 2);
+  for(let k = 0; k < n; k++) d.modules.push([chance(0.05) ? "Z9" : pick(ids), ri(chance(0.1) ? 0 : 1, chance(0.1) ? 4 : 3)]);
+  if(chance(0.2)) d.token = pick(D.tokens);
+  if(chance(0.3)) d.mk = ri(1, 3);
+  const legacy = { abilities: [] };
+  for(let k = 0; k < ri(0, 3); k++) legacy.abilities.push({ kind: pick(["action", "action", "passive"]), role: pick(["Melee", "Ranged", "Support", "Cyber", ""]),
+    text: pick(["[[target enemy]] takes [[damage 1]].", "[[Burst 2]].", "[[target enemy]] gains [[Rooted]] for [[turns 1]].", "[[this Unit]] gains [[HP +4]].", "[[target ally]] gains [[heal 3]].", "[[Lunge 2]].", ""]) });
+  const mid = pick(ids), sh = ri(0, 150), pr = chance(0.8) ? [0, 60, 120] : [0, ri(0, 90), ri(50, 200)];
+  modCases.push({ ch: clone(ch), d: clone(d), kw: clone(kw), mods: clone(mods), legacy: clone(legacy), mid, sh, pr,
+    out: clone({ line: ch ? L.chassisLine(ch) : L.chassisLine(null), build: L.designBuild(d, ch), points: L.designPoints(d), check: L.designCheck(d, ch, kw, mods), cost: L.designCost(d, ch),
+      card: L.designCard(d, ch), guess: L.designGuess(legacy, ch), level: L.moduleLevel(mid, kw, mods), open: [1, 2, 3].map(t => L.moduleOpen(mid, t, kw, mods)),
+      free: [L.isFreeModule("A1", 1), L.isFreeModule("A1", 2), L.isFreeModule("S1", 0), L.isFreeModule(mid, 1)],
+      research: L.moduleResearch(mid, kw, mods, sh, pr) }) });
+}
+
 const out = path.join(ROOT, "game", "tests", "fixtures", "lab_cases.json");
-fs.writeFileSync(out, JSON.stringify({ version: D.version, cases, setVersion: L.setVersion(), sets, guesses, defaults, caps: capsCases }));
+fs.writeFileSync(out, JSON.stringify({ version: D.version, cases, setVersion: L.setVersion(), sets, guesses, defaults, caps: capsCases, modules: modCases }));
 const broken = cases.filter(c => c.result.problems.length).length;
-console.log("lab cases: " + cases.length + " (" + broken + " with problems), systems " + D.version + "; the set " + L.setVersion() + " laid over " + sets.length + " lists of cards; " + guesses.length + " cards converted, " + defaults.length + " new builds, " + capsCases.length + " caps");
+console.log("lab cases: " + cases.length + " (" + broken + " with problems), systems " + D.version + "; the set " + L.setVersion() + " laid over " + sets.length + " lists of cards; " + guesses.length + " cards converted, " + defaults.length + " new builds, " + capsCases.length + " caps; " + modCases.length + " Workshop designs");

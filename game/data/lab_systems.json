@@ -3531,5 +3531,198 @@
    "the six triggers",
    "the library's passives"
   ]
- ]
+ ],
+ "modules": {
+  "free": [
+   [
+    "A1",
+    1
+   ],
+   [
+    "S1",
+    1
+   ]
+  ],
+  "keywords": {
+   "A1": [
+    "DMG"
+   ],
+   "A2": [
+    "Burst"
+   ],
+   "A3": [
+    "Lunge",
+    "Charge"
+   ],
+   "A4": [
+    "Push"
+   ],
+   "A5": [
+    "Stunned"
+   ],
+   "A6": [
+    "Slowed"
+   ],
+   "A7": [
+    "Rooted"
+   ],
+   "A8": [
+    "Poisoned",
+    "Bleed"
+   ],
+   "A9": [
+    "Weakened",
+    "Drained"
+   ],
+   "A10": [
+    "Marked",
+    "Pinned"
+   ],
+   "A11": [
+    "AoE",
+    "Line",
+    "Cone",
+    "Chain"
+   ],
+   "A12": [
+    "Burst"
+   ],
+   "A13": [
+    "Range",
+    "Pierce"
+   ],
+   "A14": [
+    "Execute",
+    "is below half HP"
+   ],
+   "A15": [
+    "DMG",
+    "takes damage"
+   ],
+   "S1": [
+    "HP"
+   ],
+   "S2": [
+    "DMG"
+   ],
+   "S3": [
+    "AC",
+    "Hardened"
+   ],
+   "S4": [
+    "NRG"
+   ],
+   "S5": [
+    "Dash"
+   ],
+   "S6": [
+    "remove"
+   ],
+   "S7": [
+    "Deploy"
+   ],
+   "S8": [
+    "Barricade"
+   ],
+   "S9": [
+    "Leap"
+   ],
+   "P1": [
+    "HP"
+   ],
+   "P2": [
+    "Hardened",
+    "Sundered"
+   ],
+   "P3": [
+    "Evasive",
+    "Flying"
+   ],
+   "P4": [
+    "Leap"
+   ],
+   "P5": [
+    "MS"
+   ],
+   "P6": [
+    "Aim"
+   ],
+   "P7": [
+    "AC"
+   ],
+   "P8": [
+    "Range"
+   ],
+   "P9": [
+    "is below half HP"
+   ],
+   "P10": [
+    "kills an enemy"
+   ],
+   "P11": [
+    "is attacked"
+   ],
+   "P12": [
+    "is Incapacitated"
+   ],
+   "P13": [
+    "the round begins"
+   ],
+   "P14": [
+    "is deployed"
+   ],
+   "P15": [
+    "gain Aether"
+   ],
+   "P16": [
+    "gain Aether"
+   ],
+   "U1": [
+    "Aura"
+   ],
+   "U2": [
+    "Aura"
+   ],
+   "U3": [
+    "Aura"
+   ],
+   "U4": [
+    "Aura"
+   ],
+   "U5": [
+    "Aura"
+   ]
+  },
+  "cost": {
+   "perPoint": 0.5,
+   "tier2": 1,
+   "tier3": 1
+  },
+  "chassisRarity": [
+   [
+    12,
+    "common"
+   ],
+   [
+    16,
+    "uncommon"
+   ],
+   [
+    24,
+    "rare"
+   ],
+   [
+    32,
+    "epic"
+   ],
+   [
+    45,
+    "legendary"
+   ],
+   [
+    9999,
+    "mythic"
+   ]
+  ]
+ }
 }

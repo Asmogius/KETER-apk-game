@@ -479,3 +479,28 @@ def suggested_aether(price):
 
 def plain(text):
     return text.replace("[[", "").replace("]]", "")
+
+
+# ---------------------------------------------------------------- W · the Workshop's modules (Phase 3)
+# A Lab design is a chassis plus modules: a module is one library ability at a tier. A module's level
+# (the highest tier open) is the highest of the keyword blueprints that open it (today's blueprints,
+# so what you have found already counts) or what you have researched of the module itself (tiers II
+# and III, for the research prices). The basic attack, Heavy Blow I and Mend I are free (W3).
+MODULE_FREE = [["A1", 1], ["S1", 1]]
+MODULE_KEYWORDS = {
+    "A1": ["DMG"], "A2": ["Burst"], "A3": ["Lunge", "Charge"], "A4": ["Push"], "A5": ["Stunned"], "A6": ["Slowed"],
+    "A7": ["Rooted"], "A8": ["Poisoned", "Bleed"], "A9": ["Weakened", "Drained"], "A10": ["Marked", "Pinned"],
+    "A11": ["AoE", "Line", "Cone", "Chain"], "A12": ["Burst"], "A13": ["Range", "Pierce"], "A14": ["Execute", "is below half HP"],
+    "A15": ["DMG", "takes damage"],
+    "S1": ["HP"], "S2": ["DMG"], "S3": ["AC", "Hardened"], "S4": ["NRG"], "S5": ["Dash"], "S6": ["remove"], "S7": ["Deploy"],
+    "S8": ["Barricade"], "S9": ["Leap"],
+    "P1": ["HP"], "P2": ["Hardened", "Sundered"], "P3": ["Evasive", "Flying"], "P4": ["Leap"], "P5": ["MS"], "P6": ["Aim"],
+    "P7": ["AC"], "P8": ["Range"], "P9": ["is below half HP"], "P10": ["kills an enemy"], "P11": ["is attacked"],
+    "P12": ["is Incapacitated"], "P13": ["the round begins"], "P14": ["is deployed"], "P15": ["gain Aether"], "P16": ["gain Aether"],
+    "U1": ["Aura"], "U2": ["Aura"], "U3": ["Aura"], "U4": ["Aura"], "U5": ["Aura"],
+}
+# W4: a copy costs the chassis's Troop parts plus half the modules' points, rounded up, in Common
+# parts; a tier II module adds an Uncommon part and a tier III module a Rare one.
+MODULE_COST = {"perPoint": 0.5, "tier2": 1, "tier3": 1}
+# a chassis made before the Lab, read as a line of the Troop table: its rarity by its power cap
+CHASSIS_RARITY = [[12, "common"], [16, "uncommon"], [24, "rare"], [32, "epic"], [45, "legendary"], [9999, "mythic"]]

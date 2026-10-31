@@ -48,6 +48,7 @@ def data():
         "equipTriggers": [{"id": i, "name": n, "text": t} for i, n, t in D.EQUIP_TRIGGERS],
         "tokens": D.TOKENS, "core": D.CORE,
         "folds": [list(f) for f in D.FOLDS],
+        "modules": {"free": D.MODULE_FREE, "keywords": D.MODULE_KEYWORDS, "cost": D.MODULE_COST, "chassisRarity": D.CHASSIS_RARITY},
     }
 
 

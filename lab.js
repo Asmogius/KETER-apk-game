@@ -447,6 +447,113 @@ function guess(card){
   return b;
 }
 
+/* ---- the Workshop's modules (Phase 3) ----
+   A Lab design is a chassis plus modules: {chassis, lab:1, modules:[[id, tier]], token, mk}. Its
+   chassis is a line of the Troop table (its role, size and rarity: the chassis's own "lab" line, or
+   read from what it was made with); a module is a library ability at a tier, open when its level
+   (the best of the keyword blueprints that open it, or what was researched of it) reaches the tier.
+   The apps pass what the player owns: kw, the level of each keyword blueprint; mods, each module's
+   researched level. */
+function MD(){ return D().modules||{}; }
+function chassisLine(ch){
+  var d=D(); ch=ch||{};
+  var own=ch.lab||{};
+  if(own && d.troop[own.role] && d.size[own.size] && d.rarity[own.rarity]) return {role:own.role, size:own.size, rarity:own.rarity};
+  var subs=(ch.subtypes||[]).map(function(x){ return String(x).toLowerCase(); }), st=ch.stats||{};
+  var role;
+  if(subs.indexOf("support")>=0 && subs.indexOf("melee")<0 && subs.indexOf("ranged")<0 && subs.indexOf("cyber")<0) role="support";
+  else if(subs.indexOf("ranged")>=0 || subs.indexOf("cyber")>=0) role="shooter";
+  else role=num0(st.move)>=5 ? "skirmisher" : "brute";
+  var hp=num0(st.hp), base=d.troop[role].hp, ratio=base>0 ? hp/base : 1;
+  var size=ratio>=1.25 ? "heavy" : (ratio<=0.6 ? "light" : "standard");
+  var cap=num0(ch.powerCap), rarity="common", rs=MD().chassisRarity||[];
+  for(var i=0;i<rs.length;i++){ if(cap<=rs[i][0]){ rarity=rs[i][1]; break; } }
+  if(size==="colossal" && rarityRank(rarity)<rarityRank("legendary")) size="heavy";
+  return {role:role, size:size, rarity:rarity};
+}
+function isFreeModule(id, tier){ return (MD().free||[]).some(function(f){ return f[0]===id && (+tier||1)<=f[1]; }); }
+function moduleLevel(id, kw, mods){
+  var lv=Math.max(0, Math.min(3, Math.floor(+((mods||{})[id])||0)));
+  ((MD().keywords||{})[id]||[]).forEach(function(k){ var o=Math.max(0, Math.min(3, Math.floor(+((kw||{})[k])||0))); if(o>lv) lv=o; });
+  (MD().free||[]).forEach(function(f){ if(f[0]===id && f[1]>lv) lv=f[1]; });
+  return lv;
+}
+function moduleOpen(id, tier, kw, mods){ return moduleLevel(id, kw, mods)>=Math.max(1, Math.floor(+tier||1)); }
+/* researching a module's next tier: from level 1, for the research prices */
+function moduleResearch(id, kw, mods, shards, prices){
+  var a=ability(id); if(!a) return {ok:false, why:"No such module"};
+  var have=moduleLevel(id, kw, mods), next=have+1, top=Math.min(3, a.tiers.length);
+  if(have<1) return {ok:false, why:"Its first tier has to be found (a blueprint that opens it)"};
+  if(next>top) return {ok:false, why:"Already at its highest tier"};
+  var price=Math.max(0, Math.floor(+((prices||[0,60,120])[next-1])||0));
+  if((+shards||0)<price) return {ok:false, why:"Needs "+price+" shards; you have "+(+shards||0), price:price};
+  return {ok:true, level:next, price:price};
+}
+function designBuild(d, ch){
+  var ln=chassisLine(ch), b={type:"troop", role:ln.role, size:ln.size, rarity:ln.rarity, abilities:JSON.parse(JSON.stringify((d&&d.modules)||[]))};
+  if(d && d.token) b.token=d.token;
+  return b;
+}
+function designPoints(d){
+  var p=0; ((d&&d.modules)||[]).forEach(function(m){ var a=ability(m[0]); if(!a) return; var t=a.tiers[clampTier(m[1], a.tiers.length)-1]; p+=t.p||0; });
+  return p;
+}
+/* what a design breaks: the build's rules, and the modules not open yet */
+function designCheck(d, ch, kw, mods){
+  if(!ch) return ["its chassis is missing"];
+  var out=check(designBuild(d, ch));
+  ((d&&d.modules)||[]).forEach(function(m){
+    var a=ability(m[0]); if(!a) return;
+    var t=Math.max(1, Math.floor(+m[1]||1)), lv=moduleLevel(m[0], kw, mods);
+    if(lv<t) out.push(a.name+" "+ROMAN[Math.min(3,t)]+" isn't open yet"+(lv?" (you have tier "+ROMAN[lv]+")":" (no blueprint for it found)"));
+  });
+  return out;
+}
+/* what a copy costs, in Troop parts by rarity */
+function designCost(d, ch){
+  var c=MD().cost||{perPoint:0.5, tier2:1, tier3:1}, p=designPoints(d), base=Math.max(0, Math.floor(+((ch&&ch.cost&&ch.cost.troop)||0)));
+  var parts=[base+Math.ceil(p*(+c.perPoint||0)),0,0,0,0,0], lines=[{label:"Chassis "+base+" + "+p+" points × "+c.perPoint, parts:[parts[0],0,0,0,0,0]}];
+  ((d&&d.modules)||[]).forEach(function(m){
+    var a=ability(m[0]); if(!a) return; var t=clampTier(m[1], a.tiers.length);
+    if(t===2 && c.tier2){ parts[1]+=c.tier2; lines.push({label:a.name+" II", parts:[0,c.tier2,0,0,0,0]}); }
+    if(t===3 && c.tier3){ parts[2]+=c.tier3; lines.push({label:a.name+" III", parts:[0,0,c.tier3,0,0,0]}); }
+  });
+  return {parts:parts, points:p, lines:lines};
+}
+/* the design as a Troop card: the build's stats and entries, Mk II and III on top */
+var DMK=[{hp:0,ac:0,move:0},{hp:3,ac:1,move:0},{hp:6,ac:2,move:1}];
+function designCard(d, ch){
+  ch=ch||{}; var r=compile(designBuild(d, ch)), cc=r.card||{stats:{}, entries:[], combatRoles:[]};
+  var mk=Math.max(1, Math.min(3, Math.floor(+(d&&d.mk)||1))), up=DMK[mk-1], st=JSON.parse(JSON.stringify(cc.stats||{}));
+  if(st.hp!=null) st.hp=String(num0(st.hp)+up.hp);
+  if(st.ac!=null){ st.ac=String(num0(st.ac)+up.ac); st["int"]=st.ac; }
+  if(st.move!=null) st.move=String(num0(st.move)+up.move);
+  var dist=String(ch.district||"");
+  var card={id:"WS-"+String((d&&d.id)||"").slice(3).toUpperCase(), cardType:"troop", name:(d&&d.name)||"Untitled design",
+    affinities:dist?[{district:dist, level:0}]:[], archetypes:[], rarity:cc.rarity||null, level:1, stats:st,
+    aetherCost:{generic:num0(ch.aether&&ch.aether.generic)||0, affinity:num0(ch.aether&&ch.aether.affinity)||0, affinity2:0},
+    combatRoles:cc.combatRoles||[], entries:cc.entries||[], design:(d&&d.id)||null, chassis:ch.id||(d&&d.chassis)||null, chassisName:ch.name||"", lab:cc.lab||null};
+  if(mk>1) card.mk=mk;
+  return card;
+}
+/* a design made before the Lab, as the nearest modules (Convert) */
+function designGuess(d, ch){
+  var ln=chassisLine(ch), b={type:"troop", role:ln.role, size:ln.size, rarity:ln.rarity, abilities:[]};
+  var cp=caps(b), seen={}, passives=0, melee=D().roleAttack[ln.role]==="melee", plain=0;
+  ((d&&d.abilities)||[]).forEach(function(a){
+    if(b.abilities.length>=cp.abilities) return;
+    var pas=a.kind==="passive", role=pas?"":String(a.role||"").toLowerCase(), att=!pas && (role==="melee"||role==="ranged"||role==="cyber");
+    var id=nearestAbility({kind:pas?"Passive":"Active", role:role, damage:att?"1":null, text:a.text||""}, melee);
+    if(id===""){ plain++; if(plain<2) return; id=melee?"A1":"A13"; }
+    var ab=ability(id);
+    if(!ab || seen[id] || ab.roles.indexOf(ln.role)<0 || (ab.min && rarityRank(ln.rarity)<rarityRank(ab.min))) return;
+    var isP=(ab.kind==="passive"||ab.kind==="aura"); if(isP && passives>=cp.passives) return;
+    seen[id]=1; if(isP) passives++;
+    b.abilities.push([id, 1]);
+  });
+  return b.abilities;
+}
+
 /* ---- what the Forge and the Workshop offer ---- */
 function abilitiesFor(role, type, rarity){
   return (D().library||[]).filter(function(a){ return a.roles.indexOf(role)>=0; });
@@ -459,6 +566,8 @@ root.KETER_LAB = {
   target:target, points:points, suggestedAether:suggestedAether, rarityPrice:rarityPrice, tierCap:tierCap,
   ability:ability, menuItem:menuItem, trigger:trigger, abilitiesFor:abilitiesFor, halfUp:halfUp, ROMAN:ROMAN,
   set:SET, setVersion:setVersion, applySet:applySet, setCard:setCard, retired:retiredNames,
-  defaultBuild:defaultBuild, caps:caps, guess:guess, stems:stems, nearestAbility:nearestAbility
+  defaultBuild:defaultBuild, caps:caps, guess:guess, stems:stems, nearestAbility:nearestAbility,
+  chassisLine:chassisLine, isFreeModule:isFreeModule, moduleLevel:moduleLevel, moduleOpen:moduleOpen, moduleResearch:moduleResearch,
+  designBuild:designBuild, designPoints:designPoints, designCheck:designCheck, designCost:designCost, designCard:designCard, designGuess:designGuess
 };
 })(typeof window!=="undefined" ? window : this);
