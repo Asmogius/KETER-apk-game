@@ -94,7 +94,19 @@ const short = comp.filter(c => ["Rictus", "Personal mounted cluster ordinance", 
   .concat([{ name: "Rictus", cardType: "hero", _src: "design", stats: { hp: "9" } }, { name: "Chaff Swarm", cardType: "troop", _src: "workshop", entries: [] }]);
 const sets = [comp, short].map(input => ({ input: clone(input), output: clone(L.applySet(clone(input))) }));
 
+/* the Forge's help: every master card's nearest build (Convert) and what that compiles to, the
+   Lab cards themselves converted again, a few odd cards; each type's new build after another;
+   and what a build may hold, for every build above */
+const odd = [{ cardType: "troop", name: "Bare", stats: { hp: "5(X)" }, entries: [] }, { cardType: "boss", name: "Big" }, { cardType: "action", rarity: "mythic", entries: [] },
+  { cardType: "enemy", skullLevel: 9, combatRoles: ["cyber", "support"], stats: { hp: " 70" }, entries: [{ kind: "Special", text: "[[Deploy 2 Scuttlebot]] [[adjacent]]." }, { kind: "Combo", role: "melee", damage: 0, text: "" }] },
+  { cardType: "equipment", rarity: "rare", entries: [{ kind: "Passive", text: "[[when]] [[attached Unit]] [[is Incapacitated]], [[all enemies within 1]] take [[damage 5]]." }] }];
+const guesses = comp.concat(L.applySet(clone(comp)).filter(c => c._lab), odd).map(c => { const g = L.guess(clone(c)); return { card: clone(c), build: clone(g), result: g ? clone(L.compile(clone(g))) : null }; });
+const prevs = [null, {}, { role: "shooter", rarity: "epic", size: "heavy", skull: 4 }, { role: "sniper", rarity: "rarest", size: "colossal", skull: 0 }, { size: "light", skull: "7" }];
+const defaults = [];
+["hero", "troop", "enemy", "elite", "miniboss", "action", "command", "aether", "equipment", "sphere", "consumable", "prototype", "boss", "worldtile"].forEach(t => prevs.forEach(pv => defaults.push({ type: t, prev: clone(pv), build: clone(L.defaultBuild(t, clone(pv))) })));
+const capsCases = cases.map(c => ({ build: c.build, caps: clone(L.caps(clone(c.build))) }));
+
 const out = path.join(ROOT, "game", "tests", "fixtures", "lab_cases.json");
-fs.writeFileSync(out, JSON.stringify({ version: D.version, cases, setVersion: L.setVersion(), sets }));
+fs.writeFileSync(out, JSON.stringify({ version: D.version, cases, setVersion: L.setVersion(), sets, guesses, defaults, caps: capsCases }));
 const broken = cases.filter(c => c.result.problems.length).length;
-console.log("lab cases: " + cases.length + " (" + broken + " with problems), systems " + D.version + "; the set " + L.setVersion() + " laid over " + sets.length + " lists of cards");
+console.log("lab cases: " + cases.length + " (" + broken + " with problems), systems " + D.version + "; the set " + L.setVersion() + " laid over " + sets.length + " lists of cards; " + guesses.length + " cards converted, " + defaults.length + " new builds, " + capsCases.length + " caps");

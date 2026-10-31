@@ -48,6 +48,7 @@ func _run() -> void:
 		return
 	if OS.get_cmdline_user_args().has("lab"):
 		_lab_set()
+		await _lab_forge_scene()
 		Kit.fresh()
 		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
 		Rules.hooks = {}
@@ -372,6 +373,7 @@ func _run() -> void:
 	_fortyone()
 	_fortytwo()
 	_lab_set()
+	await _lab_forge_scene()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -10465,3 +10467,70 @@ func _lab_set() -> void:
 	ck("Lab: switched off, the same export plays as it came", y.cards().filter(func(c): return c.has("_lab")).is_empty())
 	LabSet.reset()
 
+
+
+## (Lab) KETER Lab's Card Forge: a card is a Lab build; its numbers and text come out of it.
+func _lab_forge_scene() -> void:
+	Kit.fresh()
+	LabSet.force(true)
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	await _frames(2)
+	var fs: ForgeScreen = scene.forge_screen
+	scene.home.sandbox_btn.pressed.emit()
+	await _frames(2)
+	var rictus = scene.roster.card_named("Rictus")
+	fs.edit(rictus)
+	await _frames(1)
+	var offers := fs.offers()
+	ck("Lab forge: a Lab card opens as its build: role, rarity, trade and abilities to choose, no number or effect to type",
+		offers.has(["lab", "role", "skirmisher"]) and offers.has(["lab", "rarity", "epic"]) and offers.has(["lab", "trade", -1]) and offers.has(["lab", "tier", 0, 2]) and offers.has(["lab", "open", 0])
+		and not offers.has(["step", "stat:hp", 1]) and not offers.has(["e_build", 0]) and not offers.has(["e_add"]) and not offers.has(["role", "melee"]) and offers.has(["name"]) and offers.has(["lore"]), offers.size())
+	var dmg0 := int(fs.card["entries"][1]["damage"])
+	fs.act(["lab", "tier", 0, 2])
+	ck("Lab forge: a lower tier: Heavy Blow II, and less damage, at once on the card", str(fs.card["entries"][1]["name"]) == "Heavy Blow II" and int(fs.card["entries"][1]["damage"]) < dmg0 and fs.dirty
+		and str(fs.preview.card["entries"][1]["name"]) == "Heavy Blow II", fs.card["entries"][1])
+	fs.act(["lab", "open", 0])
+	offers = fs.offers()
+	ck("Lab forge: the slot opens on the library: what a Brute can take, and the rest shown but not offered", offers.has(["lab", "pick", 0, "A3"]) and not offers.has(["lab", "pick", 0, "A11"]))
+	fs.act(["lab", "pick", 0, "A3"])
+	ck("Lab forge: picked, it is Pounce, at the tier it had", str(fs.card["entries"][1]["name"]) == "Pounce II" and str(fs.card["entries"][1]["text"]).contains("Lunge") and not fs.offers().has(["lab", "pick", 0, "A3"]))
+	fs.act(["lab", "rarity", "common"])
+	ck("Lab forge: a build that breaks a rule can't be saved: a Common with a signature, at tier II", fs.save_btn.disabled and fs.hint.text.contains("signature"), fs.hint.text)
+	fs.act(["lab", "rarity", "legendary"])
+	ck("Lab forge: and once it keeps them, it can", not fs.save_btn.disabled, fs.hint.text)
+	fs.act(["lab", "spts", 1, 1])
+	ck("Lab forge: a signature's points are set by hand", int(fs.card["lab"]["abilities"][1][1]["points"]) == 10, fs.card["lab"]["abilities"])
+	fs.save_card()
+	await _frames(1)
+	var kept = scene.roster.card_named("Rictus")
+	ck("Lab forge: saved, the game plays it, build and all", kept != null and kept.get("lab") is Dictionary and str(kept["entries"][1]["name"]) == "Pounce II", kept.get("entries") if kept != null else null)
+	# a card made before the Lab (the test set's)
+	fs.edit(scene.roster.card_named("Test Striker"))
+	await _frames(1)
+	offers = fs.offers()
+	ck("Lab forge: a card made before is Legacy: Convert, and nothing to type", offers.has(["lab", "convert"]) and not offers.has(["step", "stat:hp", 1]) and not offers.has(["e_build", 0]))
+	fs.act(["lab", "convert"])
+	ck("Lab forge: Convert gives it the nearest build, as the Companion's Convert would", fs.card.get("lab") is Dictionary and JSON.stringify(fs.card["lab"]) == JSON.stringify(LabSystems.guess(Rules.ints(scene.roster.card_named("Test Striker"))))
+		and LabSystems.check(Rules.ints(fs.card["lab"])).is_empty() and fs.offers().has(["lab", "role", "brute"]), fs.card.get("lab"))
+	# a new card
+	fs.show_list()
+	fs.type_filter = "all"
+	fs.ask_new()
+	ck("Lab forge: a new card starts as a Lab build", fs.card.get("lab") is Dictionary and str(fs.card["lab"]["type"]) == "hero" and (fs.card["entries"] as Array).size() == 1)
+	fs.act(["type", "equipment"])
+	fs.act(["lab", "menu", "Q2"])
+	fs.act(["lab", "trig", "QT1"])
+	ck("Lab forge: a new kind is a new build: Equipment, Armour, and a trigger it is too common for", str(fs.card["cardType"]) == "equipment" and str(fs.card["lab"]["menu"]) == "Q2" and fs.save_btn.disabled
+		and str(fs.card["entries"][0]["text"]).contains("AC +1"), fs.hint.text)
+	fs.act(["lab", "rarity", "rare"])
+	fs.act(["lab", "mtier", 2])
+	fs.act(["lab", "cost"])
+	ck("Lab forge: Rare, it takes the trigger; the suggested cost is one more for it, and Use it sets it", not fs.save_btn.disabled and str(fs.card["entries"][0]["text"]).contains("Weakened")
+		and int(fs.card["aetherCost"]["generic"]) + int(fs.card["aetherCost"]["affinity"]) == 4, [fs.card.get("aetherCost"), fs.hint.text])
+	scene.queue_free()
+	await _frames(1)
+	LabSet.reset()
+	Kit.fresh()

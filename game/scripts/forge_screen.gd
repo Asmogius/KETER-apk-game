@@ -54,6 +54,7 @@ var delete_btn: Button
 var reset_btn: Button
 var _shown: Array = []         # the cards in the grid, in order
 var _rows: Array = []          # the form's rows: {text, acts}
+var lab_open := -1             # (Lab) the ability slot whose choices are showing
 
 
 func _init() -> void:
@@ -316,6 +317,7 @@ func edit(c: Dictionary, as_new := false) -> void:
 		card["entries"] = []
 	key = "" if as_new else Sandbox.key_of(c)
 	was_name = "" if as_new else str(c.get("name", ""))
+	lab_open = -1
 	dirty = as_new
 	tool_row.visible = false
 	back_btn.text = "Back"
@@ -348,6 +350,8 @@ func refresh() -> void:
 	preview.mark = "Yours" if Sandbox.is_own(key) or key == "" else ("Changed" if Sandbox.changed(key) or dirty else "")
 	preview.queue_redraw()
 	var probs := ForgeModel.problems(card, all_cards(), key)
+	if ForgeLab.on(type()) and ForgeLab.build(card) != null:
+		probs.append_array(LabSystems.check(Rules.ints(card["lab"])).map(func(p): return str(p) + "."))
 	var warns := ForgeModel.warnings(card)
 	hint.text = ("Can't be saved yet: " + " ".join(probs)) if not probs.is_empty() else (("Saved anyway, but the game can't carry out all of it: " + " ".join(warns)) if not warns.is_empty() else "Tap a chip to change it. The card is drawn as it will be.")
 	hint.add_theme_color_override("font_color", UI.SOFT_RED if not probs.is_empty() else (UI.GOLD if not warns.is_empty() else UI.PALE))
@@ -362,6 +366,9 @@ func refresh() -> void:
 func _build_form() -> void:
 	var t := type()
 	var d := ForgeModel.type_def(t)
+	if ForgeLab.on(t):
+		_build_lab_form(t, d)
+		return
 	_row("Name", [[str(card.get("name", "")) if str(card.get("name", "")) != "" else "(none)", ["name"], UI.TEXT, false]])
 	var kinds := []
 	for k in ForgeModel.TYPE_ORDER:
@@ -408,6 +415,63 @@ func _build_form() -> void:
 	if es.size() < cap:
 		_row("", [["+ Add an ability", ["e_add"], UI.CYAN, false]])
 	# the lore
+	_head("Lore")
+	var lore := str(card.get("lore", "") if card.get("lore") != null else "")
+	_row(lore if lore != "" else "(none)", [["Write", ["lore"], UI.CYAN, false], ["Shown on the card" if Rules.truthy(card.get("loreEnabled")) else "Hidden", ["lore_on"], UI.CYAN, Rules.truthy(card.get("loreEnabled"))]])
+
+
+## (Lab) KETER Lab's form: what's yours to set, then the Lab build (forge_lab.gd), then the card as built, which can't be typed.
+func _build_lab_form(t: String, d: Dictionary) -> void:
+	_row("Name", [[str(card.get("name", "")) if str(card.get("name", "")) != "" else "(none)", ["name"], UI.TEXT, false]])
+	var kinds := []
+	for k in ForgeModel.TYPE_ORDER:
+		kinds.append([ForgeModel.label(k), ["type", k], UI.CYAN, k == t])
+	_row("Kind", kinds)
+	for r in ForgeLab.rows(card, lab_open):
+		match str(r[0]):
+			"head":
+				_head(str(r[1]))
+			"rich":
+				_rich_row(str(r[1]), r[2])
+			_:
+				_row(str(r[1]), r[2])
+	# the card as built: its numbers and its abilities, read only
+	_head("As built")
+	var st := []
+	for s in d["stats"]:
+		var v = card["stats"].get(s[0], "")
+		if str(v) != "":
+			st.append("%s %s" % [s[1], str(v)])
+	if not st.is_empty():
+		_row(" · ".join(st), [])
+	for e in card["entries"]:
+		var bits := [str(e.get("name", "")) if str(e.get("name", "")) != "" else "(no name)", str(e.get("kind", ""))]
+		for n in ForgeModel.entry_numbers(t, e):
+			if e.get(n[0]) != null and str(e.get(n[0])) != "":
+				bits.append("%s %s" % [n[1], str(e[n[0]])])
+		_row(" · ".join(bits), [])
+		for sent in Keywords.sentences(str(e.get("text", ""))):
+			_rich_row("  " + str(sent), [])
+	_head("Yours to set")
+	var aff: Array = card.get("affinities", []) if card.get("affinities") is Array else []
+	var dist := str(aff[0].get("district", "")) if not aff.is_empty() and aff[0] is Dictionary else ""
+	var ds := []
+	for x in ForgeModel.DISTRICTS:
+		ds.append([str(x["name"]), ["dist", x["id"]], UI.CYAN, x["id"] == dist])
+	_row("District", ds)
+	if d.get("aether", false):
+		var ac: Dictionary = card.get("aetherCost") if card.get("aetherCost") is Dictionary else {"generic": 0, "affinity": 0, "affinity2": 0}
+		_row("Aether cost: any", _stepper("ae_generic", _num(ac.get("generic"))))
+		_row("Aether cost: its District's", _stepper("ae_affinity", _num(ac.get("affinity"))))
+	if d.get("chip", false):
+		_row("Aether it gives", _stepper("chip", _num(card.get("aetherValue"))))
+	if ForgeModel.is_unit(t):
+		_row("Origin", ForgeModel.ORIGINS.map(func(o): return [o if o != "" else "None", ["origin", o], UI.CYAN, str(card.get("origin", "") if card.get("origin") != null else "") == o]))
+	if d.get("token", false):
+		_row("A Token (put down by another card, never in a Deck)", [["Yes" if Rules.truthy(card.get("token")) else "No", ["token"], UI.CYAN, Rules.truthy(card.get("token"))]])
+	if not d.get("no_arch", false):
+		var arch: Array = card.get("archetypes", []) if card.get("archetypes") is Array else []
+		_row("Archetypes", ForgeModel.ARCHETYPES.map(func(a): return [a, ["arch", a], UI.CYAN, arch.has(a)]))
 	_head("Lore")
 	var lore := str(card.get("lore", "") if card.get("lore") != null else "")
 	_row(lore if lore != "" else "(none)", [["Write", ["lore"], UI.CYAN, false], ["Shown on the card" if Rules.truthy(card.get("loreEnabled")) else "Hidden", ["lore_on"], UI.CYAN, Rules.truthy(card.get("loreEnabled"))]])
@@ -619,6 +683,17 @@ func act(what: Array) -> void:
 			return
 		"lore_on":
 			card["loreEnabled"] = not Rules.truthy(card.get("loreEnabled"))
+		"lab":
+			# (Lab) a signature's name and text are typed; everything else is chosen
+			if str(what[1]) == "sname" or str(what[1]) == "stext":
+				var sg := ForgeLab.sig_of(card, int(what[2]))
+				var field := "name" if str(what[1]) == "sname" else "text"
+				_ask_text("Signature ability: its name" if field == "name" else "Signature ability, in the core keywords: [[target ally]] gains [[DMG +2]] for [[turns 1]].", str(sg.get(field, "")), func(v):
+					sg[field] = v.strip_edges()
+					ForgeLab.apply(card)
+					_changed())
+				return
+			lab_open = ForgeLab.act(card, what, lab_open)
 	_changed()
 
 
@@ -655,7 +730,13 @@ func _set_type(t: String) -> void:
 	for k in ["id", "createdBy", "level", "testCard", "batch", "pixelArt", "pixelToken"]:
 		if card.has(k):
 			fresh[k] = card[k]
+	# (Lab) in KETER Lab a new kind is a new build, keeping what it can of the old one
+	var old_lab = card.get("lab")
 	card = fresh
+	lab_open = -1
+	if ForgeLab.on(t):
+		card["lab"] = LabSystems.default_build(t, old_lab)
+		ForgeLab.apply(card)
 
 
 func _step(what: String, by: int) -> void:
@@ -786,7 +867,12 @@ func ask_reset() -> void:
 ## A new card: of the kind the list is showing (a Hero when it shows all); its Kind chips change it.
 func ask_new() -> void:
 	var t := type_filter if ForgeModel.TYPES.has(type_filter) else "hero"
-	edit(ForgeModel.blank(t, _free_name("New " + ForgeModel.label(t).to_lower())), true)
+	var fresh := ForgeModel.blank(t, _free_name("New " + ForgeModel.label(t).to_lower()))
+	# (Lab) in KETER Lab a new card starts as its type's Lab build
+	if ForgeLab.on(t):
+		fresh["lab"] = LabSystems.default_build(t, null)
+		ForgeLab.apply(fresh)
+	edit(fresh, true)
 	say("A new %s: choose its Kind, fill it in, and save it to keep it." % ForgeModel.label(t).to_lower())
 
 

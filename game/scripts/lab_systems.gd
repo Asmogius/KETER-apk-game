@@ -437,3 +437,288 @@ static func check(b: Dictionary) -> Array:
 
 static func points(b: Dictionary) -> Variant:
 	return compile(b)["points"]
+
+
+# ---------------------------------------------------------------- the Forge's help (lab.js's defaultBuild, caps, guess)
+## A new card's build, keeping what it can of the one before.
+static func default_build(type: String, prev = null) -> Variant:
+	var d := data()
+	var p: Dictionary = prev if prev is Dictionary else {}
+	var rarity: String = str(p.get("rarity")) if d["rarities"].has(str(p.get("rarity", ""))) else "common"
+	if UNIT.has(type):
+		var b := {"type": type, "role": str(p.get("role")) if d["roles"].has(str(p.get("role", ""))) else "brute", "abilities": []}
+		if ENEMYISH.has(type):
+			b["size"] = str(p.get("size")) if d["enemySize"].has(str(p.get("size", ""))) else "standard"
+			b["skull"] = clampi(int(floor(Rules.num(p.get("skull"), 1))) if Rules.truthy(p.get("skull")) else 1, 1, 6)
+		else:
+			b["rarity"] = rarity
+			if type == "troop":
+				b["size"] = str(p.get("size")) if (d["size"].has(str(p.get("size", ""))) and str(p.get("size")) != "colossal") else "standard"
+		return b
+	if type == "action":
+		return {"type": type, "rarity": rarity, "ability": ["A1", 1]}
+	if MENU_TYPES.has(type):
+		var l: Array = d["menus"].get(type, [])
+		return {"type": type, "rarity": rarity, "menu": str(l[0]["id"]) if l.size() > 0 else "", "tier": 1}
+	return null
+
+
+## What a build may hold: how many abilities, the highest tier, whether a signature, how many Passives or Auras.
+static func caps(b: Dictionary) -> Dictionary:
+	var d := data()
+	var type := str(b.get("type", ""))
+	if type == "hero" or type == "troop":
+		var r: Dictionary = d["rarity"].get(_rar(b), d["rarity"]["common"])
+		return {"abilities": int(r["abilities"]), "tier": int(r["tier"]), "signature": Rules.truthy(r.get("signature")), "passives": 1}
+	if ENEMYISH.has(type):
+		var i := clampi(int(Rules.num(b.get("skull"), 1)) if Rules.truthy(b.get("skull")) else 1, 1, 6) - 1
+		var g: Dictionary = d["grade"].get(grade_of(b), d["grade"]["enemy"])
+		return {"abilities": int(d["enemyAbilities"][i]) + int(g["abilities"]), "tier": mini(3, int(d["enemyTier"][i]) + int(g["tier"])), "signature": false, "passives": 2 if grade_of(b) == "miniboss" else 1}
+	return {"abilities": 1, "tier": tier_cap(b.get("rarity")), "signature": Rules.truthy(d["rarity"].get(_rar(b), {}).get("signature")), "passives": 1}
+
+
+const STOP := ["target", "all ", "turns", "this Unit", "attached Unit", "that Unit", "an ally", "an enemy", "when", "if", "while", "the round begins", "adjacent", "persistent", "within", "the target", "is ", "has ", "kills", "takes", "deals", "moves", "Troop", "Hero"]
+
+
+static func _is_number_word(w: String) -> bool:
+	var s := w
+	if s.begins_with("+") or s.begins_with("-") or s.begins_with("−"):
+		s = s.substr(1)
+	if s == "":
+		return false
+	for ch in s:
+		if not (ch >= "0" and ch <= "9"):
+			return false
+	return true
+
+
+## The words in a card's text, without their numbers.
+static func stems(text: String) -> Array:
+	var out := []
+	var parts := text.split("[[")
+	for i in range(1, parts.size()):
+		var tok: String = parts[i].split("]]")[0]
+		var keep := []
+		for w in tok.split(" "):
+			if w == "" or w == "X" or _is_number_word(w):
+				continue
+			keep.append(w)
+		var s := " ".join(keep)
+		var stop := false
+		for k in STOP:
+			if s.begins_with(k):
+				stop = true
+				break
+		if s != "" and not stop and not out.has(s):
+			out.append(s)
+	return out
+
+
+## One entry of a card made before, as the library ability nearest to it ("" for a plain attack).
+static func nearest_ability(e: Dictionary, melee: bool) -> String:
+	var t := str(e.get("text", "")) if e.get("text") != null else ""
+	var kind := str(e.get("kind", "")) if e.get("kind") != null else ""
+	var role := str(e.get("role", "")) if e.get("role") != null else ""
+	if kind == "Aura":
+		if t.contains("[[DMG +"): return "U2"
+		if t.contains("[[Aim +"): return "U3"
+		if t.contains("[[MS +"): return "U4"
+		if t.contains("[[Range +"): return "U5"
+		return "U1"
+	if kind == "Passive":
+		if t.contains("[[gain Aether"): return "P16" if t.contains("kills an enemy") else "P15"
+		if t.contains("[[Deploy "): return "P14"
+		if t.contains("kills an enemy"): return "P10"
+		if t.contains("is attacked"): return "P11"
+		if t.contains("is Incapacitated"): return "P12"
+		if t.contains("below half HP"): return "P9"
+		if t.contains("the round begins"): return "P13"
+		if t.contains("[[Hardened"): return "P2"
+		if t.contains("[[Evasive") or t.contains("[[Flying"): return "P3"
+		if t.contains("[[Leap "): return "P4"
+		if t.contains("[[MS +"): return "P5"
+		if t.contains("[[Aim +"): return "P6"
+		if t.contains("[[AC +"): return "P7"
+		if t.contains("[[Range +"): return "P8"
+		return "P1"
+	var dmg := str(e.get("damage", "")) if e.get("damage") != null else ""
+	var bdmg := str(e.get("baseDamage", "")) if e.get("baseDamage") != null else ""
+	# an attack: a Unit's hit with damage, or anything aimed at an Enemy that doesn't heal
+	var attack := ((role == "melee" or role == "ranged" or role == "cyber") and (dmg != "" or bdmg != "")) or ((t.contains("[[target enemy]]") or t.contains("[[all enemies")) and not t.contains("[[heal "))
+	if not attack:
+		if t.contains("[[heal "): return "S6" if t.contains("[[remove ") else "S1"
+		if t.contains("[[remove "): return "S6"
+		if t.contains("[[Deploy "): return "S7"
+		if t.contains("[[Barricade"): return "S8"
+		if t.contains("[[Leap "): return "S9"
+		if t.contains("[[Dash "): return "S5"
+		if t.contains("[[NRG +"): return "S4"
+		if t.contains("[[AC +") or t.contains("[[Hardened"): return "S3"
+		return "S2"
+	if t.contains("[[Burst "): return "A2" if melee else "A12"
+	if t.contains("[[Lunge ") or t.contains("[[Charge "): return "A3"
+	if t.contains("[[Push "): return "A4"
+	if t.contains("[[Stunned"): return "A5"
+	if t.contains("[[Rooted"): return "A7"
+	if t.contains("[[Slowed"): return "A6"
+	if t.contains("[[Poisoned") or t.contains("[[Bleed"): return "A8"
+	if t.contains("[[Weakened") or t.contains("[[Drained"): return "A9"
+	if t.contains("[[Marked") or t.contains("[[Pinned"): return "A10"
+	if t.contains("[[AoE ") or t.contains("[[Line ") or t.contains("[[Cone ") or t.contains("[[Chain "): return "A2" if melee else "A11"
+	if t.contains("[[Pierce"): return "A13"
+	if t.contains("[[Execute") or t.contains("below half HP"): return "A14"
+	if t.contains("[[this Unit]] takes [[damage"): return "A15"
+	return ""
+
+
+static func _num0(v) -> int:
+	var s := (str(v) if v != null else "").strip_edges()
+	if s.is_valid_int():
+		return int(s)
+	# leading digits ("5(X)")
+	var n := ""
+	var start := 0
+	if s.begins_with("-") or s.begins_with("+"):
+		n = s.substr(0, 1)
+		start = 1
+	for i in range(start, s.length()):
+		var ch := s[i]
+		if ch >= "0" and ch <= "9":
+			n += ch
+		else:
+			break
+	return int(n) if n.trim_prefix("-").trim_prefix("+") != "" else 0
+
+
+## The Lab build nearest to a card made before (Convert).
+static func guess(card: Dictionary) -> Variant:
+	var d := data()
+	var type := str(card.get("cardType", ""))
+	var rarity: String = str(card.get("rarity")) if d["rarities"].has(str(card.get("rarity", ""))) else "common"
+	var entries: Array = card.get("entries") if card.get("entries") is Array else []
+	var texts := []
+	for e in entries:
+		texts.append(str(e.get("text", "")) if e is Dictionary and e.get("text") != null else "")
+	var text := " ".join(texts)
+	if MENU_TYPES.has(type):
+		var l: Array = d["menus"].get(type, [])
+		var best = null
+		var best_n := -1
+		var mine := stems(text)
+		for m in l:
+			if m.get("min") != null and rarity_rank(rarity) < rarity_rank(m["min"]):
+				continue
+			var n := 0
+			for s in stems(str(m["tiers"][0]["text"])):
+				if mine.has(s):
+					n += 1
+			if n > best_n:
+				best_n = n
+				best = m
+		var b := {"type": type, "rarity": rarity, "menu": str(best["id"]) if best != null else (str(l[0]["id"]) if l.size() > 0 else ""),
+			"tier": maxi(1, mini(tier_cap(rarity), best["tiers"].size() if best != null else 1))}
+		if type == "equipment" and rarity_rank(rarity) >= rarity_rank("rare") and text.contains("[[when]]"):
+			var tb = null
+			var tn := 0
+			for tr in d["equipTriggers"]:
+				var n := 0
+				for s in stems(str(tr["text"])):
+					if mine.has(s):
+						n += 1
+				if n > tn:
+					tn = n
+					tb = tr
+			if tb != null:
+				b["trigger"] = str(tb["id"])
+		return b
+	if type == "action":
+		var e0: Dictionary = entries[0] if entries.size() > 0 and entries[0] is Dictionary else {}
+		var r0 := str(e0.get("role", "")) if e0.get("role") != null else ""
+		var id := nearest_ability(e0, r0 != "ranged")
+		if id == "":
+			id = "A13" if r0 == "ranged" else "A1"
+		var a = ability(id)
+		if a != null and a.get("min") != null and rarity_rank(rarity) < rarity_rank(a["min"]):
+			id = "A1"
+			a = ability(id)
+		return {"type": type, "rarity": rarity, "ability": [id, maxi(1, mini(tier_cap(rarity), a["tiers"].size() if a != null else 1))]}
+	if not UNIT.has(type):
+		return null
+	var roles: Array = card.get("combatRoles") if card.get("combatRoles") is Array else []
+	var arch: Array = card.get("archetypes") if card.get("archetypes") is Array else []
+	var st: Dictionary = card.get("stats") if card.get("stats") is Dictionary else {}
+	var attacks := 0
+	for e in entries:
+		if e is Dictionary:
+			var r := str(e.get("role", "")) if e.get("role") != null else ""
+			var dm := str(e.get("damage", "")) if e.get("damage") != null else ""
+			if (r == "melee" or r == "ranged" or r == "cyber") and dm != "":
+				attacks += 1
+	var role := "brute"
+	if roles.has("support") and not roles.has("melee") and not roles.has("ranged") and not roles.has("cyber"):
+		role = "support"
+	elif roles.has("ranged") or roles.has("cyber"):
+		role = "support" if (roles.has("support") and attacks == 0) else "shooter"
+	elif roles.has("melee"):
+		role = "skirmisher" if (_num0(st.get("move")) >= 5 or arch.has("Assassin") or arch.has("Light Infantry") or arch.has("Swarm") or arch.has("Chaff")) else "brute"
+	var b := {"type": type, "role": role, "abilities": []}
+	var hp := _num0(st.get("hp"))
+	if ENEMYISH.has(type):
+		b["skull"] = clampi(_num0(card.get("skullLevel")) if _num0(card.get("skullLevel")) != 0 else 1, 1, 6)
+		var base: float = float(d["enemy"][role]["hp"][int(b["skull"]) - 1]) * float(d["grade"].get(grade_of(b), d["grade"]["enemy"])["hp"])
+		var ratio: float = float(hp) / base if base > 0 else 1.0
+		b["size"] = "heavy" if ratio >= 1.25 else ("light" if ratio <= 0.6 else "standard")
+	else:
+		b["rarity"] = rarity
+		if type == "troop":
+			if hp >= 45 and rarity_rank(rarity) >= rarity_rank("legendary"):
+				b["size"] = "colossal"
+			elif hp >= 30:
+				b["size"] = "heavy"
+			elif hp <= 15 or arch.has("Swarm") or arch.has("Chaff") or arch.has("Drone"):
+				b["size"] = "light"
+			else:
+				b["size"] = "standard"
+	var cp := caps(b)
+	var seen := {}
+	var passives := 0
+	var plain := 0
+	var melee: bool = str(d["roleAttack"][role]) == "melee"
+	for e in entries:
+		if not (e is Dictionary) or b["abilities"].size() >= int(cp["abilities"]):
+			continue
+		var id := nearest_ability(e, melee)
+		if id == "":
+			plain += 1
+			if plain < 2:
+				continue
+			id = "A1" if melee else "A13"
+		var a = ability(id)
+		if a == null or seen.has(id) or not a["roles"].has(role):
+			continue
+		if a.get("min") != null and (ENEMYISH.has(type) or rarity_rank(rarity) < rarity_rank(a["min"])):
+			continue
+		var pas: bool = str(a["kind"]) == "passive" or str(a["kind"]) == "aura"
+		if pas and passives >= int(cp["passives"]):
+			continue
+		seen[id] = true
+		if pas:
+			passives += 1
+		b["abilities"].append([id, maxi(1, mini(int(cp["tier"]), a["tiers"].size()))])
+	# the token a Summon or Escort brings, as its text named it
+	var at := text.find("[[Deploy ")
+	if at >= 0:
+		var rest := text.substr(at + 9)
+		var end := rest.find("]]")
+		if end > 0:
+			var inner := rest.substr(0, end)
+			var sp := inner.find(" ")
+			if sp > 0 and _is_number_word(inner.substr(0, sp)) and not inner.begins_with("+") and not inner.begins_with("-") and not inner.begins_with("\u2212"):
+				var tok := inner.substr(sp + 1)
+				var takes := false
+				for x in b["abilities"]:
+					if str(x[0]) == "S7" or str(x[0]) == "P14":
+						takes = true
+				if d["tokens"].has(tok) and takes:
+					b["token"] = tok
+	return b

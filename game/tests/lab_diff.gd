@@ -68,5 +68,35 @@ func _initialize() -> void:
 							print("  first at ", i, "\n  want ", JSON.stringify(w[i]).substr(0, 500), "\n  got  ", JSON.stringify(h[i]).substr(0, 500))
 							break
 		LabSet.reset()
+	# the Forge's help: Convert's nearest build, a type's new build, what a build may hold
+	var shown2 := 0
+	for g in d.get("guesses", []):
+		var b2 = LabSystems.guess(Rules.ints(g["card"]))
+		var res = LabSystems.compile(Rules.ints(b2)) if b2 is Dictionary else null
+		if JSON.stringify(_norm(g["build"])) == JSON.stringify(_norm(b2)) and JSON.stringify(_norm(g["result"])) == JSON.stringify(_norm(res)):
+			ok += 1
+		else:
+			bad += 1
+			if shown2 < 4:
+				shown2 += 1
+				print("DIFFER converting ", str(g["card"].get("name", "?")), "\n  want ", JSON.stringify(_norm(g["build"])), "\n  got  ", JSON.stringify(_norm(b2)))
+	for g in d.get("defaults", []):
+		var b3 = LabSystems.default_build(str(g["type"]), Rules.ints(g["prev"]) if g["prev"] is Dictionary else g["prev"])
+		if JSON.stringify(_norm(g["build"])) == JSON.stringify(_norm(b3)):
+			ok += 1
+		else:
+			bad += 1
+			if shown2 < 8:
+				shown2 += 1
+				print("DIFFER a new ", g["type"], " after ", JSON.stringify(g["prev"]), "\n  want ", JSON.stringify(_norm(g["build"])), "\n  got  ", JSON.stringify(_norm(b3)))
+	for g in d.get("caps", []):
+		var c3 := LabSystems.caps(Rules.ints(g["build"]))
+		if JSON.stringify(_norm(g["caps"])) == JSON.stringify(_norm(c3)):
+			ok += 1
+		else:
+			bad += 1
+			if shown2 < 12:
+				shown2 += 1
+				print("DIFFER caps of ", JSON.stringify(g["build"]), "\n  want ", JSON.stringify(_norm(g["caps"])), "\n  got  ", JSON.stringify(_norm(c3)))
 	print("LAB MATCH %d  DIFFER %d" % [ok, bad])
 	quit(1 if bad > 0 else 0)
