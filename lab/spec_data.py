@@ -5,6 +5,11 @@ library at a tier, non-unit cards from their type's menu. compile_unit() turns a
 ordinary card (stats, entries, keyword text), so the engine plays it unchanged."""
 import math
 
+
+def half_up(x):
+    """Rounds half away from zero, as JavaScript's Math.round and Godot's round() do for these positive numbers."""
+    return int(math.floor(x + 0.5))
+
 RARITIES = ["common", "uncommon", "rare", "epic", "legendary", "mythic"]
 ROLES = ["brute", "skirmisher", "shooter", "support"]
 ROLE_NAME = {"brute": "Brute", "skirmisher": "Skirmisher", "shooter": "Shooter", "support": "Support"}
@@ -100,8 +105,8 @@ GRADE = {"enemy": {"hp": 1, "ac": 0, "dmg": 0, "ap": 0, "abilities": 0, "tier": 
 A = []
 
 
-def ab(id, name, kind, roles, does, tiers, text, line=None):
-    A.append({"id": id, "name": name, "kind": kind, "roles": roles, "does": does, "tiers": tiers, "text": text, "line": line or (lambda t: {})})
+def ab(id, name, kind, roles, does, tiers, text, line=None, min=None):
+    A.append({"id": id, "name": name, "kind": kind, "roles": roles, "does": does, "tiers": tiers, "text": text, "line": line or (lambda t: {}), "min": min})
 
 
 MELEE, RANGED, ANY_ATTACK = ["brute", "skirmisher"], ["shooter", "support"], ["brute", "skirmisher", "shooter", "support"]
@@ -214,7 +219,7 @@ ab("P13", "Warm-up", "passive", ALL, "Hits harder each round, for a while.", [{"
 ab("P14", "Escort", "passive", ALL, "Arrives with tokens (the token is chosen for the card).", [{"n": 1, "p": 4}, {"n": 2, "p": 7}, {"n": 3, "p": 10}],
    lambda t: "[[when]] [[this Unit]] [[is deployed]], [[Deploy %d {token}]] [[adjacent]]." % t["n"])
 ab("P15", "Reactor", "passive", ALL, "Makes Aether every round. One tier; Epic and rarer.", [{"p": 10}],
-   lambda t: "[[when]] [[the round begins]], [[gain Aether 1]].")
+   lambda t: "[[when]] [[the round begins]], [[gain Aether 1]].", min="epic")
 ab("P16", "Scavenger", "passive", ALL, "Makes Aether from kills. One tier.", [{"p": 4}],
    lambda t: "[[when]] [[this Unit]] [[kills an enemy]], [[gain Aether 1]].")
 
@@ -243,8 +248,9 @@ TOKENS = ["Scuttlebot", "Sentry Turret", "FALCON Drone Token", "Exo Worker Husk"
 M = {}
 
 
-def menu(type_, id, name, tiers, text, cost=None, note=""):
-    M.setdefault(type_, []).append({"id": id, "name": name, "tiers": tiers, "text": text, "cost": cost, "note": note})
+def menu(type_, id, name, tiers, text, cost=None, note="", min=None, kind=None):
+    M.setdefault(type_, []).append({"id": id, "name": name, "tiers": tiers, "text": text, "cost": cost, "note": note, "min": min,
+                                   "kind": kind or ("Passive" if type_ in ("equipment", "prototype") else "Active")})
 
 
 # Commands: an order to the whole team, for a turn
@@ -287,8 +293,8 @@ for i, (nm, kw, ns, who) in enumerate([("Ballast", "AC +%d", [1, 1, 2], "ally"),
                                        ("Mending", "heal %d", [3, 4, 5], "ally"), ("Sparking", "damage %d", [1, 2, 3], "enemy")]):
     menu("sphere", "K%d" % (i + 1), nm + " Chip", [{"n": x} for x in ns],
          (lambda kw, who: lambda t: ("[[target ally]] gains [[" + kw % t["n"] + "]]" + ("" if kw.startswith(("heal", "Dash")) else " for [[turns 1]]") + ".") if who == "ally" else "[[target enemy]] takes [[" + kw % t["n"] + "]].")(kw, who))
-menu("sphere", "K9", "Ledger Chip", [{"n": 1}], lambda t: "[[gain Aether 1]].", None, "Rare and rarer")
-menu("sphere", "K10", "Dampening Chip", [{"n": 1}], lambda t: "[[target ally]] gains [[Hardened 1]] for [[turns 1]].", None, "Epic")
+menu("sphere", "K9", "Ledger Chip", [{"n": 1}], lambda t: "[[gain Aether 1]].", None, "Rare and rarer", "rare", "Passive")
+menu("sphere", "K10", "Dampening Chip", [{"n": 1}], lambda t: "[[target ally]] gains [[Hardened 1]] for [[turns 1]].", None, "Epic", "epic")
 # Consumables: one use, packed for a deployment
 menu("consumable", "N1", "Dressing", [{"n": 6}, {"n": 8}, {"n": 10}], lambda t: "[[target ally]] gains [[heal %d]]." % t["n"])
 menu("consumable", "N2", "Cleanse Kit", [{"n": 2}, {"n": 4}, {"n": 6}], lambda t: "[[target ally]] gains [[remove Poisoned]]. [[target ally]] gains [[remove Slowed]]. [[target ally]] gains [[heal %d]]." % t["n"])
@@ -304,8 +310,8 @@ menu("consumable", "N10", "Adrenal", [{"n": 2}, {"n": 2}, {"n": 3}], lambda t: "
 menu("prototype", "R1", "Targeting Mesh", [{"n": 1}, {"n": 1}, {"n": 2}], lambda t: "[[all allies]] gain [[Aim +%d]]." % t["n"])
 menu("prototype", "R2", "Reinforced Frames", [{"n": 2}, {"n": 4}, {"n": 6}], lambda t: "[[all allies]] [[Troop]] gain [[HP +%d]]." % t["n"])
 menu("prototype", "R3", "Field Triage", [{"n": 1}, {"n": 1}, {"n": 2}], lambda t: "[[when]] [[the round begins]], [[all allies]] gain [[heal %d]]." % t["n"])
-menu("prototype", "R4", "Harmonic Damper", [{"n": 1}], lambda t: "[[all allies]] gain [[Hardened 1]].", None, "Epic")
-menu("prototype", "R5", "Ledger Core", [{"n": 1}], lambda t: "[[when]] [[the round begins]], [[gain Aether 1]].", None, "Rare and rarer")
+menu("prototype", "R4", "Harmonic Damper", [{"n": 1}], lambda t: "[[all allies]] gain [[Hardened 1]].", None, "Epic", "epic")
+menu("prototype", "R5", "Ledger Core", [{"n": 1}], lambda t: "[[when]] [[the round begins]], [[gain Aether 1]].", None, "Rare and rarer", "rare")
 menu("prototype", "R6", "Scavenger Protocol", [{"n": 1}], lambda t: "[[when]] [[an ally]] [[Troop]] [[is Incapacitated]], [[Draw 1]].")
 menu("prototype", "R7", "Kinetic Recycler", [{"n": 1}, {"n": 2}, {"n": 2}], lambda t: "[[when]] [[an ally]] [[kills an enemy]], [[that Unit]] gains [[Dash %d]]." % t["n"])
 menu("prototype", "R8", "Gantry Mapper", [{"n": 2}, {"n": 3}, {"n": 3}], lambda t: "[[all allies]] gain [[Leap %d]]." % t["n"])
@@ -341,11 +347,11 @@ def unit_line(card_type, role, size, rarity=None, skull=None, grade="enemy", tra
              "ap": b["ap"] + r["ap"], "ldr": b["ldr"] + r["ldr"], "slots": b["slots"] + r["slots"]}
     elif card_type == "troop":
         b, z, r = TROOP[role], SIZE[size], RARITY[rarity]
-        s = {"hp": int(round(b["hp"] * z["hp"])) + r["hp"], "ac": b["ac"] + z["ac"] + r["ac"], "ms": max(0, b["ms"] + z["ms"] + r["ms"]), "nrg": max(1, b["nrg"] + z["nrg"]),
+        s = {"hp": half_up(b["hp"] * z["hp"]) + r["hp"], "ac": b["ac"] + z["ac"] + r["ac"], "ms": max(0, b["ms"] + z["ms"] + r["ms"]), "nrg": max(1, b["nrg"] + z["nrg"]),
              "dmg": max(1, b["dmg"] + z["dmg"]), "rng": b["rng"], "hit": b["hit"], "ap": b["ap"] + z["ap"] + r["ap"], "uslot": z["slots"]}
     else:
         b, z, g, i = ENEMY[role], ENEMY_SIZE[size], GRADE[grade], skull - 1
-        s = {"hp": int(round(b["hp"][i] * z["hp"] * g["hp"])), "ac": b["ac"][i] + z["ac"] + g["ac"], "ms": max(1, b["ms"][i] + z["ms"]),
+        s = {"hp": half_up(b["hp"][i] * z["hp"] * g["hp"]), "ac": b["ac"][i] + z["ac"] + g["ac"], "ms": max(1, b["ms"][i] + z["ms"]),
              "dmg": max(1, b["dmg"][i] + z["dmg"] + g["dmg"]), "rng": b["rng"][i], "hit": b["hit"][i], "ap": b["ap"][i] + g["ap"]}
     if trade:
         give, gn, take, tn = trade
@@ -468,7 +474,7 @@ def check(b):
 
 
 def suggested_aether(price):
-    return max(0, int(round(price / 8.0)))
+    return max(0, half_up(price / 8.0))
 
 
 def plain(text):
