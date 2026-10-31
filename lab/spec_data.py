@@ -35,8 +35,8 @@ RARITY = {
     "uncommon":  {"steps": 1,  "hp": 2,  "ac": 0, "ap": 0, "ms": 0, "tier": 1, "abilities": 2},
     "rare":      {"steps": 3,  "hp": 4,  "ac": 1, "ap": 0, "ms": 0, "tier": 2, "abilities": 2},
     "epic":      {"steps": 5,  "hp": 5,  "ac": 1, "ap": 1, "ms": 0, "tier": 3, "abilities": 2},
-    "legendary": {"steps": 8,  "hp": 14, "ac": 2, "ap": 2, "ms": 0, "tier": 3, "abilities": 2},
-    "mythic":    {"steps": 12, "hp": 27, "ac": 3, "ap": 3, "ms": 0, "tier": 3, "abilities": 2},
+    "legendary": {"steps": 8,  "hp": 14, "ac": 2, "ap": 2, "ms": 0, "tier": 3, "abilities": 2, "signature": True},
+    "mythic":    {"steps": 12, "hp": 27, "ac": 3, "ap": 3, "ms": 0, "tier": 3, "abilities": 2, "signature": True},
 }
 STAT_PRICE = {"hp": 1, "ac": 3, "ap": 2, "ms": 2, "ldr": 2, "slots": 3}   # points a stat is worth, each
 
@@ -322,7 +322,7 @@ FIXED_WORDS = "when, if, while · turns, persistent · target enemy, target ally
 FOLDS = [
     ("Bleed", "Poisoned", "Venom"), ("Pinned", "Marked", "Mark"), ("Sundered", "AC − for a duration", "an Enemy's AC from the table"),
     ("Drained", "NRG − for a duration", "costs stated as Energy"), ("Line, Cone, Chain", "AoE", "Volley, Blast"), ("Charge", "Lunge's tiers add damage", "Pounce"),
-    ("Execute", "a Finisher's bonus damage", "Finisher"), ("Flying", "Leap and Evasive", "Agile, Elusive"), ("INT (Integrity)", "follows AC", "the stat tables"),
+    ("Execute", "a Finisher's bonus damage", "Finisher"), ("Flying", "Leap and Evasive", "Agile, Elusive"), ("INT (Integrity)", "folds into AC (Q4)", "a Cyber attack tests AC"), ("The Cyber role", "Ranged (Q4)", "the four roles"),
     ("AP as a buff", "set by the tables and rarity", "the stat tables"), ("Suppressive Fire, Overclock", "dropped", "Overclock never had rules in a fight"),
     ("Conditions: takes damage, deals damage, attacks, moves, ends its move within, gains, is at full HP, has, is within, is further than", "the six triggers", "the library's passives"),
 ]
@@ -391,7 +391,10 @@ def compile_unit(b):
     entries = [basic]
     price = 0
     for aid, tier in b.get("abilities", []):
-        e, p = ability_entry(ct, b["role"], line, aid, tier, b.get("token"))
+        if aid == "SIG":
+            e, p = signature_entry(ct, b["role"], line, tier)
+        else:
+            e, p = ability_entry(ct, b["role"], line, aid, tier, b.get("token"))
         entries.append(e)
         price += p
     stats = {"hp": str(line["hp"]), "ac": str(line["ac"]), "move": str(line["ms"]), "int": str(line["ac"])}
@@ -409,6 +412,28 @@ def compile_unit(b):
     return card, price, problems
 
 
+# ---------------------------------------------------------------- SIG · signature abilities (Q3)
+# A Legendary or Mythic card (and a Boss) may carry one ability of its own in place of one from the
+# library: hand-written in the core keywords, marked on the card, priced by hand in points and held,
+# like the rest, against its rarity's target. sig: {name, kind, role, text, points, dmg, rng, hit, e}.
+def signature_entry(card_type, role, line, sig):
+    kind_word = "Combo" if card_type in ("enemy", "elite", "miniboss", "boss") else "Active"
+    e = {"name": sig["name"], "lab": ["SIG", 0], "text": sig.get("text", ""), "signature": True}
+    k = sig.get("kind", "passive")
+    if k == "attack":
+        atk = sig.get("role") or ROLE_ATTACK[role]
+        e.update({"kind": kind_word, "role": atk, "damage": str(line["dmg"] + sig.get("dmg", 0)), "armorPenetration": str(line["ap"]), "energyCost": str(sig.get("e", 2))})
+        if atk == "ranged":
+            e.update({"attackRange": str(line["rng"] + sig.get("rng", 0)), "toHit": str(max(2, line["hit"] + sig.get("hit", 0)))})
+    elif k == "support":
+        e.update({"kind": kind_word, "role": "support", "energyCost": str(sig.get("e", 2))})
+    else:
+        e.update({"kind": "Aura" if k == "aura" else "Passive"})
+    if card_type in ("enemy", "elite", "miniboss", "boss"):
+        e.pop("energyCost", None)
+    return e, int(sig.get("points", 0))
+
+
 def check(b):
     """What a build breaks of the rules: tiers over its rarity or Skull Level, too many abilities, two passives."""
     out = []
@@ -423,13 +448,20 @@ def check(b):
         cap_n, cap_t = ENEMY_ABILITIES[i] + g["abilities"], min(3, ENEMY_TIER[i] + g["tier"])
     if len(abil) > cap_n:
         out.append("%d abilities, %d allowed" % (len(abil), cap_n))
+    sigs = [x for x in abil if x[0] == "SIG"]
+    if sigs and not (ct in ("hero", "troop") and RARITY[b["rarity"]].get("signature")) and b.get("grade") != "boss":
+        out.append("a signature ability is for Legendary and Mythic cards (and Bosses)")
+    if len(sigs) > 1:
+        out.append("more than one signature ability")
     for aid, tier in abil:
+        if aid == "SIG":
+            continue
         a = BY_ID[aid]
         if tier > cap_t:
             out.append("%s %s over the tier cap (%s)" % (a["name"], "I" * tier, "I" * cap_t))
         if b["role"] not in a["roles"]:
             out.append("%s isn't open to a %s" % (a["name"], ROLE_NAME[b["role"]]))
-    passive = [aid for aid, _ in abil if BY_ID[aid]["kind"] in ("passive", "aura")]
+    passive = [aid for aid, t in abil if (t.get("kind", "passive") in ("passive", "aura") if aid == "SIG" else BY_ID[aid]["kind"] in ("passive", "aura"))]
     if len(passive) > (2 if b.get("grade") == "miniboss" else 1):
         out.append("more than one Passive or Aura")
     return out
