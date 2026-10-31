@@ -439,6 +439,16 @@ if not SCREENS_ONLY:
     ck("0.34: and the stash: cards crafted and refused, stashes begun (new runs and old), and rare cards picked and refused",
        dks.get("craft", 0) >= 40 and dks.get("refused: craft", 0) >= 100 and dks.get("beginStash", 0) >= 60 and dks.get("pickRare", 0) >= 10 and dks.get("refused: pickRare", 0) >= 40, dks)
 
+    # (Lab) KETER Lab's card systems: the Companion's compiler (lab.js) and the game's (lab_systems.gd) build every card alike
+    gen7 = subprocess.run(["node", str(ROOT / "make_lab_cases.js")], capture_output=True, text=True, timeout=300)
+    ck("Lab: the Companion's Lab compiler gives its cases", gen7.returncode == 0 and (GAME / "tests" / "fixtures" / "lab_cases.json").exists(), (gen7.stdout + gen7.stderr)[-300:])
+    code, summary, fails, errs, out = suite("lab_diff.gd", "LAB MATCH", 1000, timeout=600)
+    match7 = int(summary[0].split()[2]) if summary else 0
+    lpg = make_game.lab_project((GAME / "project.godot").read_text(encoding="utf-8"))
+    ck("Lab: KETER Lab's project is its own app (its name, its saves) and lays the Lab set", 'config/name="KETER Lab"' in lpg and "[keter]\n\nlab=true" in lpg
+       and 'config/name="KETER Lab"' not in (GAME / "project.godot").read_text(encoding="utf-8") and "com.keter.game.lab" in pathlib.Path(make_game.__file__).read_text(encoding="utf-8"))
+    ck("Lab: the game builds every Lab card as the Companion does: " + (summary[0] if summary else "?"), code == 0 and summary and match7 >= 1200 and summary[0].endswith("DIFFER 0") and not errs, (fails or errs or [out[-300:]])[:4])
+
 # 3. the screens, drawn
 def shot(path, *args):
     if path.exists():

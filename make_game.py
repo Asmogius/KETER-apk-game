@@ -220,7 +220,7 @@ def fixture(out=GAME / "tests" / "fixtures" / "export.zip", port=9959):
 
 # The generated cases (rules, simulator and World Map) are for testing here,
 # not for the phone: 90 MB between them.
-GENERATED = ("rule_cases.json", "sim_cases.json", "world_cases.json", "workshop_cases.json", "dock_cases.json", "chunk_cases.json")
+GENERATED = ("rule_cases.json", "sim_cases.json", "world_cases.json", "workshop_cases.json", "dock_cases.json", "chunk_cases.json", "lab_cases.json")
 
 
 def make_zip(outdir=None):
@@ -287,7 +287,7 @@ runnable=true
 dedicated_server=false
 custom_features=""
 export_filter="all_resources"
-include_filter="exports/*.zip"
+include_filter="exports/*.zip, data/*.json"
 exclude_filter="tests/*, tools/*"
 export_path="KETER.apk"
 encryption_include_filters=""
@@ -342,13 +342,26 @@ permissions/vibrate=true
 """
 
 
-def make_android(outdir=None):
+def lab_project(pg):
+    """project.godot for KETER Lab: its own name (and so its own saves on a computer), and the
+    switch that lays the Lab card set over every export it reads (LabSet.active())."""
+    pg = pg.replace('config/name="KETER"', 'config/name="KETER Lab"', 1)
+    if "[keter]" not in pg:
+        pg = pg.rstrip("\n") + "\n\n[keter]\n\nlab=true\n"
+    return pg
+
+
+def make_android(outdir=None, lab=False):
     """The game as an Android app: a copy of game/ with the built-in export in exports/, signed
     with the app's key, exported by Godot (no Gradle). Needs Godot's 4.7 export templates and an
-    Android SDK with apksigner (ANDROID_SDK, or the editor's setting)."""
+    Android SDK with apksigner (ANDROID_SDK, or the editor's setting).
+
+    lab=True makes KETER Lab instead, the experimental build: its own app beside KETER
+    (com.keter.game.lab, saves of its own), which lays the Lab card set (data/lab_set.json)
+    over whatever export it plays."""
     outdir = pathlib.Path(outdir) if outdir else OUTDIR
     outdir.mkdir(parents=True, exist_ok=True)
-    work = pathlib.Path("/tmp/keter_android")
+    work = pathlib.Path("/tmp/keter_android_lab" if lab else "/tmp/keter_android")
     if work.exists():
         shutil.rmtree(work)
     proj = work / "KETER"
@@ -358,14 +371,19 @@ def make_android(outdir=None):
     pg = (proj / "project.godot").read_text(encoding="utf-8")
     if "import_etc2_astc" not in pg:
         pg = pg.replace("[rendering]\n", "[rendering]\n\ntextures/vram_compression/import_etc2_astc=true\n", 1)
-        (proj / "project.godot").write_text(pg, encoding="utf-8")
+    if lab:
+        pg = lab_project(pg)
+    (proj / "project.godot").write_text(pg, encoding="utf-8")
     (proj / "exports").mkdir(exist_ok=True)
     n = built_in_export(proj / "exports" / "KETER_export_0000_built_in.zip")
     ks = work / "keter_release.keystore"
     ks.write_bytes(base64.b64decode((GAME / "tools" / "android" / "keter_release.keystore.b64").read_text()))
     v = game_version()
     code = int(v.split(".")[0]) * 1000 + int(v.split(".")[1])
-    (proj / "export_presets.cfg").write_text(PRESET.format(keystore=str(ks), password=KEY_PASS, code=code, name=v), encoding="utf-8")
+    preset = PRESET.format(keystore=str(ks), password=KEY_PASS, code=code, name=v)
+    if lab:
+        preset = preset.replace('package/unique_name="com.keter.game"', 'package/unique_name="com.keter.game.lab"').replace('package/name="KETER"', 'package/name="KETER Lab"').replace('export_path="KETER.apk"', 'export_path="KETER_Lab.apk"')
+    (proj / "export_presets.cfg").write_text(preset, encoding="utf-8")
     sdk = os.environ.get("ANDROID_SDK")
     if sdk:
         es = pathlib.Path.home() / ".config" / "godot" / "editor_settings-4.7.tres"
@@ -375,7 +393,7 @@ def make_android(outdir=None):
             es.write_text(t, encoding="utf-8")
     import subprocess
     subprocess.run([GODOT, "--headless", "--path", str(proj), "--import"], capture_output=True, text=True, timeout=600)
-    apk = outdir / f"{tag()}_KETER.apk"
+    apk = outdir / (f"{tag()}_KETER_Lab.apk" if lab else f"{tag()}_KETER.apk")
     r = subprocess.run([GODOT, "--headless", "--path", str(proj), "--export-release", "Android", str(apk)], capture_output=True, text=True, timeout=900)
     if r.returncode != 0 or not apk.exists():
         raise SystemExit("the Android export failed:\n" + (r.stdout + r.stderr)[-3000:])
@@ -393,5 +411,7 @@ if __name__ == "__main__":
         print(make_zip())
     elif what == "android":
         print(make_android(sys.argv[2] if len(sys.argv) > 2 else None))
+    elif what == "lab":
+        print(make_android(sys.argv[2] if len(sys.argv) > 2 else None, lab=True))
     else:
         print(__doc__)

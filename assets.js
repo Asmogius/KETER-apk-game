@@ -220,7 +220,7 @@
   /* ---- the whole list: skins, card art, the map, your own ---- */
   function slug(s){ return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"")||"untitled"; }
   function cardList(){
-    var all=[]; try{ all=window.KETER_ALLCARDS?window.KETER_ALLCARDS():[]; }catch(e){}
+    var all=[]; try{ all=window.KETER_ALLCARDS_EXPORT?window.KETER_ALLCARDS_EXPORT():(window.KETER_ALLCARDS?window.KETER_ALLCARDS():[]); }catch(e){}
     var seen={}; return all.filter(function(c){ if(!c||c._src==="design"||c._src==="prebuilt") return false; var k=(c._src||"")+"|"+c.name; if(seen[k]) return false; seen[k]=1; return true; });
   }
   function isUnit(c){ return /^(hero|troop|enemy|elite|miniboss|boss)$/i.test(String(c&&c.cardType||"")); }
@@ -294,7 +294,7 @@
   function plain(o){ return JSON.parse(JSON.stringify(o==null?null:o)); }
   function content(){
     var W=window.KETER_WORLD, WS=window.KETER_WORKSHOP, PR=window.KETER_PROG, L=window.KETER_LOOT, D=window.KETER_DOCK, CH=window.KETER_CHASSIS, S=SK();
-    var cards=safe(function(){ var all=window.KETER_ALLCARDS?window.KETER_ALLCARDS():[]; return all.concat(WS&&WS.prebuiltCards?WS.prebuiltCards():[]); },[]).map(plain);
+    var cards=safe(function(){ var all=window.KETER_ALLCARDS_EXPORT?window.KETER_ALLCARDS_EXPORT():(window.KETER_ALLCARDS?window.KETER_ALLCARDS():[]); return all.concat(WS&&WS.prebuiltCards?WS.prebuiltCards():[]); },[]).map(plain);
     var levels=safe(function(){ return JSON.parse(localStorage.getItem("keter-hexmap-levels")||"{}"); },{});
     var floors=Object.keys(levels).map(function(k){ var f=plain(levels[k]); f.name=f.name||k; return f; });
     var out=[

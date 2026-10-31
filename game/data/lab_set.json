@@ -1,0 +1,3067 @@
+{
+ "format": 1,
+ "version": "S1",
+ "systems": "L1",
+ "name": "KETER Lab set",
+ "note": "Built by lab/make_lab_set.js. Each card is a build; the apps compile it with the Lab systems (lab_systems.json).",
+ "cards": [
+  {
+   "name": "Dock Hand",
+   "build": {
+    "type": "hero",
+    "role": "brute",
+    "rarity": "common",
+    "abilities": [
+     [
+      "A4",
+      1
+     ]
+    ]
+   },
+   "id": "D0-H01",
+   "change": "rebuilt",
+   "why": "A Brute with a Shove."
+  },
+  {
+   "name": "Hangar Rifleman",
+   "build": {
+    "type": "hero",
+    "role": "shooter",
+    "rarity": "common",
+    "abilities": [
+     [
+      "A13",
+      1
+     ]
+    ]
+   },
+   "id": "D0-H02",
+   "change": "rebuilt",
+   "why": "A Shooter with a longer, surer shot."
+  },
+  {
+   "name": "Field Medic",
+   "build": {
+    "type": "hero",
+    "role": "support",
+    "rarity": "common",
+    "abilities": [
+     [
+      "S1",
+      1
+     ]
+    ]
+   },
+   "id": "D0-H03",
+   "change": "rebuilt",
+   "why": "A Support who heals."
+  },
+  {
+   "name": "\"Mincer\" Cleaner Bot",
+   "build": {
+    "type": "hero",
+    "role": "brute",
+    "rarity": "rare",
+    "abilities": [
+     [
+      "A2",
+      2
+     ],
+     [
+      "P9",
+      2
+     ]
+    ]
+   },
+   "id": "D3-H03",
+   "change": "rebuilt",
+   "why": "Grinding Drum's flurry and Overdrive Teeth's fury; Mince's Bleed goes (it folds into Poisoned)."
+  },
+  {
+   "name": "Volt-Warden Ryska",
+   "build": {
+    "type": "hero",
+    "role": "shooter",
+    "rarity": "rare",
+    "abilities": [
+     [
+      "A13",
+      2
+     ],
+     [
+      "U3",
+      1
+     ]
+    ]
+   },
+   "id": "D3-H01",
+   "change": "rebuilt",
+   "why": "Arc Lance becomes Snipe; Grid Discipline is the Spotter Aura. Leadership comes from the table now (8 was the highest of any Hero)."
+  },
+  {
+   "name": "Quillon Vex",
+   "build": {
+    "type": "hero",
+    "role": "shooter",
+    "rarity": "epic",
+    "abilities": [
+     [
+      "A10",
+      3
+     ],
+     [
+      "P6",
+      3
+     ]
+    ]
+   },
+   "change": "rebuilt",
+   "why": "Mark of Debt and Light Step, as they were."
+  },
+  {
+   "name": "Ilsa Varn, Jump-Frame Pilot",
+   "build": {
+    "type": "hero",
+    "role": "skirmisher",
+    "rarity": "epic",
+    "abilities": [
+     [
+      "A3",
+      3
+     ],
+     [
+      "S9",
+      3
+     ]
+    ]
+   },
+   "id": "D3-H06",
+   "change": "rebuilt",
+   "why": "Hammerfall's lunge and Jump Jets; Shoulder Thrusters and Gyro-Stabilised go (the limit is three entries)."
+  },
+  {
+   "name": "Rictus",
+   "build": {
+    "type": "hero",
+    "role": "brute",
+    "rarity": "legendary",
+    "abilities": [
+     [
+      "A1",
+      3
+     ],
+     [
+      "SIG",
+      {
+       "name": "Spin-Up",
+       "kind": "passive",
+       "points": 9,
+       "text": "[[when]] [[the round begins]], [[this Unit]] gains [[DMG +2]] for [[turns 3]]. [[when]] [[the round begins]], [[this Unit]] gains [[MS +1]] for [[turns 3]]."
+      }
+     ]
+    ]
+   },
+   "id": "D3-H02",
+   "change": "rebuilt",
+   "why": "Grinder becomes Heavy Blow III; Spin-Up stays, as Rictus's signature."
+  },
+  {
+   "name": "Sable-Nine, Ledger Adept",
+   "build": {
+    "type": "hero",
+    "role": "support",
+    "rarity": "legendary",
+    "abilities": [
+     [
+      "P15",
+      1
+     ],
+     [
+      "SIG",
+      {
+       "name": "Foreclose",
+       "kind": "attack",
+       "points": 6,
+       "e": 2,
+       "dmg": 2,
+       "rng": 1,
+       "text": "[[target enemy]] gains [[Weakened 1]] for [[turns 1]]."
+      }
+     ]
+    ]
+   },
+   "change": "rebuilt",
+   "why": "Ledger is the Reactor (Aether every round); Foreclose, her signature, saps what it hits."
+  },
+  {
+   "name": "Dross, the Forge-Blind",
+   "build": {
+    "type": "hero",
+    "role": "brute",
+    "rarity": "legendary",
+    "abilities": [
+     [
+      "P2",
+      3
+     ],
+     [
+      "SIG",
+      {
+       "name": "Bellows",
+       "kind": "support",
+       "points": 7,
+       "e": 3,
+       "text": "[[this Unit]] gains [[HP +6]] [[persistent]]."
+      }
+     ]
+    ]
+   },
+   "change": "rebuilt",
+   "why": "Slag Armor is Plated III; Bellows stays, as his signature."
+  },
+  {
+   "name": "Aetherium Golem",
+   "build": {
+    "type": "troop",
+    "role": "shooter",
+    "size": "colossal",
+    "rarity": "mythic",
+    "abilities": [
+     [
+      "SIG",
+      {
+       "name": "Aether Eruption",
+       "kind": "attack",
+       "points": 10,
+       "e": 3,
+       "dmg": 1,
+       "text": "[[AoE 1]]. [[target enemy]] gains [[Slowed 2]] for [[turns 1]]."
+      }
+     ],
+     [
+      "A7",
+      3
+     ]
+    ]
+   },
+   "id": "D3-T20",
+   "aetherCost": {
+    "generic": 8,
+    "affinity": 5,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "The only Mythic: a Colossal Shooter. Aether eruption is its signature and Crystalline prison is Snare III; Pummel goes."
+  },
+  {
+   "name": "Augmented Weapons Specialist",
+   "build": {
+    "type": "troop",
+    "role": "shooter",
+    "size": "standard",
+    "rarity": "uncommon",
+    "abilities": [
+     [
+      "A12",
+      1
+     ],
+     [
+      "A10",
+      1
+     ]
+    ]
+   },
+   "id": "D3-T04",
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Suppressive Fire's Pinned folds into Mark; Exploit weakpoint's burst is Rapid Fire."
+  },
+  {
+   "name": "BRICK Security Bot",
+   "build": {
+    "type": "troop",
+    "role": "brute",
+    "size": "heavy",
+    "rarity": "common",
+    "abilities": [
+     [
+      "U1",
+      1
+     ]
+    ]
+   },
+   "id": "D3-T23",
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "A heavy wall with the Guard Aura (Evasive for its neighbours becomes AC); Haymaker's 15 damage goes."
+  },
+  {
+   "name": "CERBERUS Barriage Bot",
+   "build": {
+    "type": "troop",
+    "role": "shooter",
+    "size": "heavy",
+    "rarity": "legendary",
+    "abilities": [
+     [
+      "A11",
+      3
+     ],
+     [
+      "SIG",
+      {
+       "name": "Deploy Bipod",
+       "kind": "support",
+       "points": 6,
+       "e": 2,
+       "text": "[[this Unit]] gains [[Aim +2]] for [[turns 2]]. [[this Unit]] gains [[Range +1]] for [[turns 2]]."
+      }
+     ]
+    ]
+   },
+   "id": "D3-T11",
+   "aetherCost": {
+    "generic": 6,
+    "affinity": 3,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Armageddon is Volley III; Deploy bipod is its signature; Quickshot goes."
+  },
+  {
+   "name": "CERBERUS Blitz Bot",
+   "build": {
+    "type": "troop",
+    "role": "skirmisher",
+    "size": "heavy",
+    "rarity": "legendary",
+    "abilities": [
+     [
+      "A5",
+      3
+     ],
+     [
+      "SIG",
+      {
+       "name": "Blitz",
+       "kind": "support",
+       "points": 6,
+       "e": 1,
+       "text": "[[this Unit]] gains [[Dash 4]]. [[this Unit]] gains [[DMG +2]] for [[turns 1]]."
+      }
+     ]
+    ]
+   },
+   "id": "D3-T02",
+   "aetherCost": {
+    "generic": 6,
+    "affinity": 3,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Stunning swipe is Stagger III; Pounce and Bite by Bite become Blitz, its signature."
+  },
+  {
+   "name": "CERBERUS Breacher Bot",
+   "build": {
+    "type": "troop",
+    "role": "shooter",
+    "size": "heavy",
+    "rarity": "epic",
+    "trade": [
+     "rng",
+     1,
+     "hp",
+     3
+    ],
+    "abilities": [
+     [
+      "A11",
+      2
+     ],
+     [
+      "A12",
+      2
+     ]
+    ]
+   },
+   "id": "D3-T12",
+   "aetherCost": {
+    "generic": 5,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Slag spray and Clear the room: Volley and Rapid Fire at close range (it trades a tile of range for Health)."
+  },
+  {
+   "name": "CERBERUS Overlord Bot",
+   "build": {
+    "type": "troop",
+    "role": "support",
+    "size": "heavy",
+    "rarity": "legendary",
+    "abilities": [
+     [
+      "U1",
+      3
+     ],
+     [
+      "SIG",
+      {
+       "name": "Energy Transfer",
+       "kind": "support",
+       "points": 6,
+       "e": 1,
+       "text": "[[target ally]] gains [[NRG +1]] for [[turns 1]]. [[target ally]] gains [[AC +1]] for [[turns 1]]."
+      }
+     ]
+    ]
+   },
+   "id": "D3-T13",
+   "aetherCost": {
+    "generic": 7,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Battle presence is the Guard Aura; Energy transfer is its signature; Reenforce and Zap go."
+  },
+  {
+   "name": "Cyber Savant",
+   "build": {
+    "type": "troop",
+    "role": "support",
+    "size": "standard",
+    "rarity": "rare",
+    "abilities": [
+     [
+      "S4",
+      2
+     ],
+     [
+      "P1",
+      2
+     ]
+    ]
+   },
+   "id": "D3-T03",
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 3,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Cyber folds into Ranged; Sense Steel's Draw goes, and it gives Energy instead."
+  },
+  {
+   "name": "Defensive Platform Specialist",
+   "build": {
+    "type": "troop",
+    "role": "support",
+    "size": "standard",
+    "rarity": "rare",
+    "abilities": [
+     [
+      "S7",
+      2
+     ],
+     [
+      "U5",
+      1
+     ]
+    ],
+    "token": "Sentry Turret"
+   },
+   "id": "D3-T24",
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Deploy Sentry is Summon II; its double Aura is the Reach Aura; Potshot goes."
+  },
+  {
+   "name": "Entry Denial Bot",
+   "build": {
+    "type": "troop",
+    "role": "shooter",
+    "size": "standard",
+    "rarity": "uncommon",
+    "abilities": [
+     [
+      "A7",
+      1
+     ],
+     [
+      "A6",
+      1
+     ]
+    ]
+   },
+   "id": "D3-T08",
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "A Disabler: Sonic Discharge's Push (melee-only now) becomes Snare, and it slows."
+  },
+  {
+   "name": "FALCON Drone",
+   "build": {
+    "type": "troop",
+    "role": "support",
+    "size": "light",
+    "rarity": "common",
+    "abilities": [
+     [
+      "A10",
+      1
+     ]
+    ]
+   },
+   "id": "D3-T25",
+   "aetherCost": {
+    "generic": 1,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "A light spotter: Ping's Mark. Flying folds into Evasive, which it loses."
+  },
+  {
+   "name": "Foundry Sentinel",
+   "build": {
+    "type": "troop",
+    "role": "brute",
+    "size": "standard",
+    "rarity": "uncommon",
+    "abilities": [
+     [
+      "A4",
+      1
+     ],
+     [
+      "P1",
+      1
+     ]
+    ]
+   },
+   "id": "D3-T18",
+   "aetherCost": {
+    "generic": 1,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Rivet Slam's Push, and a little more Health."
+  },
+  {
+   "name": "ONYX Assassin",
+   "build": {
+    "type": "troop",
+    "role": "skirmisher",
+    "size": "standard",
+    "rarity": "rare",
+    "abilities": [
+     [
+      "A3",
+      2
+     ],
+     [
+      "P3",
+      2
+     ]
+    ]
+   },
+   "id": "D3-T31",
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Monofilament Blade's lunge and Cape's Evasive, as they were."
+  },
+  {
+   "name": "ONYX Blademaster",
+   "build": {
+    "type": "troop",
+    "role": "skirmisher",
+    "size": "standard",
+    "rarity": "rare",
+    "abilities": [
+     [
+      "A2",
+      2
+     ],
+     [
+      "P11",
+      2
+     ]
+    ]
+   },
+   "id": "D3-T27",
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Whirlwind and Riposte, as they were."
+  },
+  {
+   "name": "ONYX Breacher",
+   "build": {
+    "type": "troop",
+    "role": "shooter",
+    "size": "standard",
+    "rarity": "rare",
+    "trade": [
+     "rng",
+     1,
+     "hp",
+     3
+    ],
+    "abilities": [
+     [
+      "A11",
+      2
+     ],
+     [
+      "A6",
+      2
+     ]
+    ]
+   },
+   "id": "D3-T34",
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Breaching Charge is Volley; the shotgun's Push (melee-only now) slows instead; close range, more Health."
+  },
+  {
+   "name": "ONYX Brute",
+   "build": {
+    "type": "troop",
+    "role": "brute",
+    "size": "standard",
+    "rarity": "rare",
+    "abilities": [
+     [
+      "A4",
+      2
+     ],
+     [
+      "A5",
+      2
+     ]
+    ]
+   },
+   "id": "D3-T30",
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Power Fist's Push and Haymaker's Stun, as they were."
+  },
+  {
+   "name": "ONYX Guardian",
+   "build": {
+    "type": "troop",
+    "role": "brute",
+    "size": "standard",
+    "rarity": "rare",
+    "abilities": [
+     [
+      "A4",
+      2
+     ],
+     [
+      "U1",
+      2
+     ]
+    ]
+   },
+   "id": "D3-T29",
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Shield Bash and Shield Wall, as they were."
+  },
+  {
+   "name": "ONYX Sharpshooter",
+   "build": {
+    "type": "troop",
+    "role": "shooter",
+    "size": "standard",
+    "rarity": "rare",
+    "abilities": [
+     [
+      "A13",
+      2
+     ],
+     [
+      "P3",
+      2
+     ]
+    ]
+   },
+   "id": "D3-T28",
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Long Shot and Ghillie Cloak, as they were."
+  },
+  {
+   "name": "ONYX Stitcher",
+   "build": {
+    "type": "troop",
+    "role": "support",
+    "size": "standard",
+    "rarity": "rare",
+    "abilities": [
+     [
+      "S1",
+      2
+     ],
+     [
+      "S6",
+      2
+     ]
+    ]
+   },
+   "id": "D3-T33",
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Field Stitch and Dermal Patch, as they were."
+  },
+  {
+   "name": "ONYX Wraith",
+   "build": {
+    "type": "troop",
+    "role": "skirmisher",
+    "size": "standard",
+    "rarity": "rare",
+    "abilities": [
+     [
+      "S9",
+      2
+     ],
+     [
+      "A14",
+      2
+     ]
+    ]
+   },
+   "id": "D3-T32",
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Phase Step and Shadow Blade's Execute, as they were."
+  },
+  {
+   "name": "Scrap Caddy",
+   "build": {
+    "type": "troop",
+    "role": "brute",
+    "size": "light",
+    "rarity": "common",
+    "abilities": [
+     [
+      "U4",
+      1
+     ]
+    ]
+   },
+   "id": "D3-T19",
+   "aetherCost": {
+    "generic": 1,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "A Transport: its Aura hurries its neighbours along instead of shielding Heroes."
+  },
+  {
+   "name": "Scrap rat",
+   "build": {
+    "type": "troop",
+    "role": "shooter",
+    "size": "light",
+    "rarity": "uncommon",
+    "abilities": [
+     [
+      "P16",
+      1
+     ],
+     [
+      "A12",
+      1
+     ]
+    ]
+   },
+   "id": "D3-T14",
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Shiny! is the Scavenger; Pipeshot sprays."
+  },
+  {
+   "name": "Scrapheap Brawler",
+   "build": {
+    "type": "troop",
+    "role": "skirmisher",
+    "size": "standard",
+    "rarity": "uncommon",
+    "abilities": [
+     [
+      "A2",
+      1
+     ],
+     [
+      "A1",
+      1
+     ]
+    ]
+   },
+   "id": "D3-T15",
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Bigger Bonk's flurry and Bonk's extra hit."
+  },
+  {
+   "name": "Scuttle Overseer",
+   "build": {
+    "type": "troop",
+    "role": "support",
+    "size": "standard",
+    "rarity": "epic",
+    "abilities": [
+     [
+      "P14",
+      2
+     ],
+     [
+      "A12",
+      3
+     ]
+    ],
+    "token": "Scuttlebot"
+   },
+   "id": "D3-T10",
+   "aetherCost": {
+    "generic": 4,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Arrives with Scuttlebots; Static Lash's chain is Rapid Fire. Battlefield construct goes (the Brood mother keeps a Summon)."
+  },
+  {
+   "name": "Scuttle Swarm",
+   "build": {
+    "type": "troop",
+    "role": "skirmisher",
+    "size": "light",
+    "rarity": "rare",
+    "abilities": [
+     [
+      "A6",
+      2
+     ],
+     [
+      "S1",
+      2
+     ]
+    ]
+   },
+   "id": "D3-T07",
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Ankle shredder and Proliferate. The Lab has no variable (X) cost, so it is one swarm at one price."
+  },
+  {
+   "name": "Scuttle brood mother",
+   "build": {
+    "type": "troop",
+    "role": "brute",
+    "size": "heavy",
+    "rarity": "epic",
+    "abilities": [
+     [
+      "P14",
+      3
+     ],
+     [
+      "S7",
+      2
+     ]
+    ],
+    "token": "Scuttlebot"
+   },
+   "id": "D3-T05",
+   "aetherCost": {
+    "generic": 6,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Arrives with Scuttlebots and lays more; Slashing mandibles is its basic attack."
+  },
+  {
+   "name": "SecurMax Civilian Guard Bot",
+   "build": {
+    "type": "troop",
+    "role": "brute",
+    "size": "standard",
+    "rarity": "uncommon",
+    "abilities": [
+     [
+      "S3",
+      1
+     ],
+     [
+      "P7",
+      1
+     ]
+    ]
+   },
+   "id": "DX-T01",
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 0,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Brace, and Shoulder to Shoulder's AC kept always on."
+  },
+  {
+   "name": "Unmanned Arial Gun Platform",
+   "build": {
+    "type": "troop",
+    "role": "shooter",
+    "size": "light",
+    "rarity": "common",
+    "abilities": [
+     [
+      "A12",
+      1
+     ]
+    ]
+   },
+   "id": "D3-T01",
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Strafing run's burst; its Dash goes."
+  },
+  {
+   "name": "Ledger Runner",
+   "build": {
+    "type": "troop",
+    "role": "shooter",
+    "size": "light",
+    "rarity": "common",
+    "abilities": [
+     [
+      "P5",
+      1
+     ]
+    ]
+   },
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 0,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "A fast light Shooter. Its Draw on arriving goes (Draw is for Commands now)."
+  },
+  {
+   "name": "Slag Hauler",
+   "build": {
+    "type": "troop",
+    "role": "brute",
+    "size": "heavy",
+    "rarity": "common",
+    "abilities": [
+     [
+      "P1",
+      1
+     ]
+    ]
+   },
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "It had no ability: a heavy Brute, a little tougher."
+  },
+  {
+   "name": "Arc Technician",
+   "build": {
+    "type": "troop",
+    "role": "support",
+    "size": "standard",
+    "rarity": "uncommon",
+    "abilities": [
+     [
+      "S1",
+      1
+     ],
+     [
+      "S4",
+      1
+     ]
+    ]
+   },
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Patch Through heals; it gives Energy too."
+  },
+  {
+   "name": "Debt Collector",
+   "build": {
+    "type": "troop",
+    "role": "skirmisher",
+    "size": "standard",
+    "rarity": "uncommon",
+    "abilities": [
+     [
+      "A14",
+      1
+     ],
+     [
+      "A3",
+      1
+     ]
+    ]
+   },
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Call In collects on the hurt: Finisher, and a Pounce to reach them."
+  },
+  {
+   "name": "Chaff Swarm",
+   "build": {
+    "type": "troop",
+    "role": "skirmisher",
+    "size": "light",
+    "rarity": "common",
+    "abilities": [
+     [
+      "P3",
+      1
+     ]
+    ]
+   },
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 0,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Light and hard to hit, as it was."
+  },
+  {
+   "name": "\"Binder\" Cleaner Bot",
+   "build": {
+    "type": "enemy",
+    "role": "shooter",
+    "size": "standard",
+    "skull": 1,
+    "abilities": [
+     [
+      "A7",
+      1
+     ]
+    ]
+   },
+   "id": "D3-E06",
+   "change": "rebuilt",
+   "why": "Foam Gun's Root."
+  },
+  {
+   "name": "Exo Worker Husk",
+   "build": {
+    "type": "enemy",
+    "role": "brute",
+    "size": "standard",
+    "skull": 1,
+    "abilities": [
+     [
+      "A6",
+      1
+     ]
+    ]
+   },
+   "id": "D3-E07",
+   "change": "rebuilt",
+   "why": "Grab's Slowed. (Also the Stitcher's and the Command Center's token.)"
+  },
+  {
+   "name": "Vaccinator",
+   "build": {
+    "type": "enemy",
+    "role": "brute",
+    "size": "standard",
+    "skull": 1,
+    "abilities": [
+     [
+      "A8",
+      1
+     ]
+    ]
+   },
+   "id": "D3-E11",
+   "change": "rebuilt",
+   "why": "Moves to Skull 1: the booster shot poisons."
+  },
+  {
+   "name": "Laz Welder Husk",
+   "build": {
+    "type": "enemy",
+    "role": "shooter",
+    "size": "standard",
+    "skull": 1,
+    "abilities": [
+     [
+      "A10",
+      1
+     ]
+    ]
+   },
+   "id": "D0-E04",
+   "change": "rebuilt",
+   "why": "Moves to Skull 1. Arc Weld's Sundered folds into Mark."
+  },
+  {
+   "name": "\"Purifier\" Cleaner Bot",
+   "build": {
+    "type": "enemy",
+    "role": "shooter",
+    "size": "standard",
+    "skull": 2,
+    "trade": [
+     "rng",
+     1,
+     "hp",
+     3
+    ],
+    "abilities": [
+     [
+      "A8",
+      1
+     ]
+    ]
+   },
+   "id": "D0-E02",
+   "change": "rebuilt",
+   "why": "Sterilise poisons, at close range."
+  },
+  {
+   "name": "\"Stitcher\" Cleaner Bot",
+   "build": {
+    "type": "enemy",
+    "role": "support",
+    "size": "standard",
+    "skull": 2,
+    "abilities": [
+     [
+      "S1",
+      1
+     ]
+    ]
+   },
+   "id": "D3-E05",
+   "change": "rebuilt",
+   "why": "Suture heals; Reassemble and Needle go (one ability at Skull 2)."
+  },
+  {
+   "name": "Centibot",
+   "build": {
+    "type": "enemy",
+    "role": "skirmisher",
+    "size": "standard",
+    "skull": 2,
+    "abilities": [
+     [
+      "A7",
+      1
+     ]
+    ]
+   },
+   "id": "D0-E01",
+   "change": "rebuilt",
+   "why": "Coil's Root; Static Antenna's Drained goes."
+  },
+  {
+   "name": "Chrome Junkie",
+   "build": {
+    "type": "enemy",
+    "role": "shooter",
+    "size": "standard",
+    "skull": 2,
+    "abilities": [
+     [
+      "A11",
+      1
+     ]
+    ]
+   },
+   "id": "D3-E04",
+   "change": "rebuilt",
+   "why": "Energy Blast's AoE."
+  },
+  {
+   "name": "Skitterling",
+   "build": {
+    "type": "enemy",
+    "role": "skirmisher",
+    "size": "standard",
+    "skull": 2,
+    "abilities": [
+     [
+      "A3",
+      1
+     ]
+    ]
+   },
+   "id": "D3-E16",
+   "change": "rebuilt",
+   "why": "Weld Claw's lunge."
+  },
+  {
+   "name": "\"Hunter\" Cleaner Bot",
+   "build": {
+    "type": "enemy",
+    "role": "shooter",
+    "size": "standard",
+    "skull": 3,
+    "abilities": [
+     [
+      "A13",
+      2
+     ],
+     [
+      "A6",
+      2
+     ]
+    ]
+   },
+   "id": "D0-E03",
+   "change": "rebuilt",
+   "why": "Moves to Skull 3: Sensor Tag's long shot and Harpoon's Slowed."
+  },
+  {
+   "name": "Exo Husk",
+   "build": {
+    "type": "enemy",
+    "role": "brute",
+    "size": "standard",
+    "skull": 3,
+    "abilities": [
+     [
+      "A1",
+      2
+     ],
+     [
+      "A7",
+      2
+     ]
+    ]
+   },
+   "id": "D3-E01",
+   "change": "rebuilt",
+   "why": "Moves to Skull 3: Drill Baby Drill's big hit and Vice Grip's Root."
+  },
+  {
+   "name": "Chrome Fiend",
+   "build": {
+    "type": "enemy",
+    "role": "shooter",
+    "size": "standard",
+    "skull": 3,
+    "abilities": [
+     [
+      "A12",
+      2
+     ],
+     [
+      "P5",
+      2
+     ]
+    ]
+   },
+   "id": "D3-E03",
+   "change": "rebuilt",
+   "why": "Missile Barrage's burst; Fire and move is Fleet."
+  },
+  {
+   "name": "Long Range Vaccinator",
+   "build": {
+    "type": "enemy",
+    "role": "shooter",
+    "size": "standard",
+    "skull": 3,
+    "abilities": [
+     [
+      "A8",
+      2
+     ],
+     [
+      "P8",
+      2
+     ]
+    ]
+   },
+   "id": "D3-E10",
+   "change": "rebuilt",
+   "why": "Moves to Skull 3: The Jab poisons from far off."
+  },
+  {
+   "name": "Skitter Stalker",
+   "build": {
+    "type": "elite",
+    "role": "skirmisher",
+    "size": "standard",
+    "skull": 3,
+    "abilities": [
+     [
+      "A3",
+      3
+     ],
+     [
+      "A8",
+      2
+     ]
+    ]
+   },
+   "id": "D3-EL02",
+   "change": "rebuilt",
+   "why": "Pounce, and Rend's Bleed as Poisoned."
+  },
+  {
+   "name": "Arachnabot",
+   "build": {
+    "type": "enemy",
+    "role": "skirmisher",
+    "size": "standard",
+    "skull": 4,
+    "abilities": [
+     [
+      "A3",
+      2
+     ],
+     [
+      "A7",
+      2
+     ]
+    ]
+   },
+   "id": "D3-E02",
+   "change": "rebuilt",
+   "why": "Pounce and Entangling Spray's Root; Lethal injection goes."
+  },
+  {
+   "name": "Chrome Reaver",
+   "build": {
+    "type": "enemy",
+    "role": "skirmisher",
+    "size": "standard",
+    "skull": 4,
+    "abilities": [
+     [
+      "A2",
+      2
+     ],
+     [
+      "P3",
+      2
+     ]
+    ]
+   },
+   "id": "D3-E17",
+   "art": "Chrome Fiend",
+   "meta": {
+    "affinities": [
+     {
+      "district": "3",
+      "symbol": "€",
+      "level": 0
+     }
+    ],
+    "archetypes": [
+     "Fighter"
+    ],
+    "mechanical": false
+   },
+   "change": "new",
+   "why": "New, for Skull 4: a fast, hard-to-hit Chrome blade."
+  },
+  {
+   "name": "Husk Breaker",
+   "build": {
+    "type": "enemy",
+    "role": "brute",
+    "size": "heavy",
+    "skull": 4,
+    "abilities": [
+     [
+      "A1",
+      2
+     ],
+     [
+      "A5",
+      2
+     ]
+    ]
+   },
+   "id": "D3-E18",
+   "art": "Exo Husk",
+   "meta": {
+    "affinities": [
+     {
+      "district": "3",
+      "symbol": "€",
+      "level": 0
+     }
+    ],
+    "archetypes": [
+     "Heavy Infantry"
+    ],
+    "mechanical": false
+   },
+   "change": "new",
+   "why": "New, for Skull 4: a heavy Husk that stuns."
+  },
+  {
+   "name": "Brood Matriarch",
+   "build": {
+    "type": "miniboss",
+    "role": "skirmisher",
+    "size": "standard",
+    "skull": 4,
+    "abilities": [
+     [
+      "A3",
+      3
+     ],
+     [
+      "A2",
+      2
+     ],
+     [
+      "U4",
+      1
+     ]
+    ]
+   },
+   "id": "D3-M02",
+   "change": "rebuilt",
+   "why": "Gantry Drop, Scything Legs and Brood Call; Brood Panic and Gantry Legs go."
+  },
+  {
+   "name": "Construction Titan",
+   "build": {
+    "type": "enemy",
+    "role": "brute",
+    "size": "heavy",
+    "skull": 5,
+    "abilities": [
+     [
+      "A4",
+      3
+     ],
+     [
+      "A2",
+      2
+     ]
+    ]
+   },
+   "id": "D0-E06",
+   "change": "rebuilt",
+   "why": "Wrecking Swing's Push and Stomp's sweep."
+  },
+  {
+   "name": "Titan Command Center",
+   "build": {
+    "type": "enemy",
+    "role": "support",
+    "size": "heavy",
+    "skull": 5,
+    "abilities": [
+     [
+      "S7",
+      3
+     ],
+     [
+      "U2",
+      2
+     ]
+    ],
+    "token": "Exo Worker Husk"
+   },
+   "id": "D0-E05",
+   "change": "rebuilt",
+   "why": "Launch Bay and Command Uplink; Point Defence is its basic shot."
+  },
+  {
+   "name": "Centibot Siegeframe",
+   "build": {
+    "type": "enemy",
+    "role": "shooter",
+    "size": "heavy",
+    "skull": 5,
+    "abilities": [
+     [
+      "A11",
+      3
+     ],
+     [
+      "A7",
+      2
+     ]
+    ]
+   },
+   "id": "D3-E19",
+   "art": "Centibot",
+   "meta": {
+    "affinities": [
+     {
+      "district": "3",
+      "symbol": "€",
+      "level": 0
+     }
+    ],
+    "archetypes": [
+     "Disabler"
+    ],
+    "mechanical": false
+   },
+   "change": "new",
+   "why": "New, for Skull 5: a heavy Centibot that shells and roots."
+  },
+  {
+   "name": "Decimation Titan",
+   "build": {
+    "type": "enemy",
+    "role": "shooter",
+    "size": "heavy",
+    "skull": 6,
+    "abilities": [
+     [
+      "A12",
+      3
+     ],
+     [
+      "A11",
+      3
+     ]
+    ]
+   },
+   "id": "D3-E09",
+   "change": "rebuilt",
+   "why": "Gatling Sweep and Missile Salvo, as they were."
+  },
+  {
+   "name": "Earthshaker Titan",
+   "build": {
+    "type": "enemy",
+    "role": "brute",
+    "size": "heavy",
+    "skull": 6,
+    "abilities": [
+     [
+      "A5",
+      3
+     ],
+     [
+      "A6",
+      3
+     ]
+    ]
+   },
+   "id": "D0-E07",
+   "change": "rebuilt",
+   "why": "Hammer Fists' Stun and Quake's Slowed."
+  },
+  {
+   "name": "Starkiller Titan",
+   "build": {
+    "type": "enemy",
+    "role": "shooter",
+    "size": "heavy",
+    "skull": 6,
+    "abilities": [
+     [
+      "A13",
+      3
+     ],
+     [
+      "A9",
+      3
+     ]
+    ]
+   },
+   "id": "D3-E08",
+   "change": "rebuilt",
+   "why": "Rail Cannon pierces; Core Vent weakens."
+  },
+  {
+   "name": "Falconer Drone Pack",
+   "build": {
+    "type": "action",
+    "rarity": "rare",
+    "token": "FALCON Drone Token",
+    "ability": [
+     "P14",
+     1
+    ]
+   },
+   "id": "D3-A12",
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Arrives with a FALCON Drone, as it did."
+  },
+  {
+   "name": "Integrated Targeting System 2",
+   "build": {
+    "type": "action",
+    "rarity": "uncommon",
+    "ability": [
+     "P8",
+     1
+    ]
+   },
+   "id": "D3-A11",
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Range +1, as it was."
+  },
+  {
+   "name": "Integrated Targeting System V2",
+   "build": {
+    "type": "action",
+    "rarity": "epic",
+    "ability": [
+     "P8",
+     3
+    ]
+   },
+   "id": "D3-A10",
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Range +2, as it was."
+  },
+  {
+   "name": "Kickstart",
+   "build": {
+    "type": "action",
+    "rarity": "rare",
+    "ability": [
+     "S2",
+     2
+    ]
+   },
+   "id": "D3-A07",
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "An ally hits harder; its Move goes."
+  },
+  {
+   "name": "Overclock Surge",
+   "build": {
+    "type": "action",
+    "rarity": "rare",
+    "ability": [
+     "S4",
+     2
+    ]
+   },
+   "id": "D3-A05",
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Energy for an ally; its Drained goes."
+  },
+  {
+   "name": "Subdermal Armor Plating 2",
+   "build": {
+    "type": "action",
+    "rarity": "common",
+    "ability": [
+     "P7",
+     1
+    ]
+   },
+   "id": "D3-A09",
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "AC +1, as it was."
+  },
+  {
+   "name": "Subdermal Armor Plating V2",
+   "build": {
+    "type": "action",
+    "rarity": "rare",
+    "ability": [
+     "P7",
+     2
+    ]
+   },
+   "id": "D3-A08",
+   "aetherCost": {
+    "generic": 1,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "AC +2, as it was."
+  },
+  {
+   "name": "Overpressure",
+   "build": {
+    "type": "action",
+    "rarity": "uncommon",
+    "ability": [
+     "A15",
+     1
+    ]
+   },
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "A big hit that hurts its user, as it was."
+  },
+  {
+   "name": "Field Weld",
+   "build": {
+    "type": "action",
+    "rarity": "common",
+    "ability": [
+     "S1",
+     1
+    ]
+   },
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Heals, as it did."
+  },
+  {
+   "name": "Vault Strike",
+   "build": {
+    "type": "action",
+    "rarity": "rare",
+    "ability": [
+     "A3",
+     2
+    ]
+   },
+   "id": "D3-A16",
+   "aetherCost": {
+    "generic": 1,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "The lunge, as it was."
+  },
+  {
+   "name": "Skitter Step",
+   "build": {
+    "type": "action",
+    "rarity": "uncommon",
+    "ability": [
+     "S5",
+     1
+    ]
+   },
+   "id": "D3-A17",
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Extra tiles, as it was."
+  },
+  {
+   "name": "Burning Heart",
+   "build": {
+    "type": "action",
+    "rarity": "uncommon",
+    "ability": [
+     "P9",
+     1
+    ]
+   },
+   "id": "D3-A06",
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "retyped",
+   "why": "Was an Aether card (a Hero's Health for a turn): a Berserker's Action card now, harder hits when hurt."
+  },
+  {
+   "name": "Lay Waste",
+   "build": {
+    "type": "action",
+    "rarity": "rare",
+    "ability": [
+     "A11",
+     2
+    ]
+   },
+   "id": "D3-A18",
+   "was": "Personal mounted cluster ordinance",
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "split",
+   "why": "Equipment carries no attacks (Q2): the cluster ordnance's attack is an Action card of its own, and the Equipment goes."
+  },
+  {
+   "name": "Doom.exe",
+   "build": {
+    "type": "action",
+    "rarity": "epic",
+    "ability": [
+     "A15",
+     3
+    ]
+   },
+   "id": "D3-A19",
+   "art": "MONTU Battle Suit",
+   "meta": {
+    "affinities": [
+     {
+      "district": "3",
+      "symbol": "€",
+      "level": 0
+     }
+    ]
+   },
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 0,
+    "affinity2": 0
+   },
+   "change": "new",
+   "why": "MONTU Battle Suit's attack, an Action card of its own (Q2)."
+  },
+  {
+   "name": "Rend Asunder",
+   "build": {
+    "type": "action",
+    "rarity": "rare",
+    "ability": [
+     "A8",
+     2
+    ]
+   },
+   "id": "D3-A20",
+   "art": "Ripper Combat Suit",
+   "meta": {
+    "affinities": [
+     {
+      "district": "3",
+      "symbol": "€",
+      "level": 0
+     }
+    ]
+   },
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 0,
+    "affinity2": 0
+   },
+   "change": "new",
+   "why": "Ripper Combat Suit's attack, an Action card of its own (Q2); its Bleed is Poisoned."
+  },
+  {
+   "name": "Exorunner Leap",
+   "build": {
+    "type": "action",
+    "rarity": "uncommon",
+    "ability": [
+     "S9",
+     1
+    ]
+   },
+   "id": "D3-A21",
+   "art": "Courrier exorunners",
+   "meta": {
+    "affinities": [
+     {
+      "district": "3",
+      "symbol": "€",
+      "level": 0
+     }
+    ]
+   },
+   "aetherCost": {
+    "generic": 1,
+    "affinity": 0,
+    "affinity2": 0
+   },
+   "change": "new",
+   "why": "Courrier exorunners' Action, an Action card of its own (Q2)."
+  },
+  {
+   "name": "Identify Molecular Flaw",
+   "build": {
+    "type": "action",
+    "rarity": "rare",
+    "ability": [
+     "A10",
+     2
+    ]
+   },
+   "id": "D3-A22",
+   "art": "HALO targeting System",
+   "meta": {
+    "affinities": [
+     {
+      "district": "3",
+      "symbol": "€",
+      "level": 0
+     }
+    ]
+   },
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 0,
+    "affinity2": 0
+   },
+   "change": "new",
+   "why": "HALO targeting System's Action, an Action card of its own (Q2): a mark every shot finds."
+  },
+  {
+   "name": "Aetherium Reactive Plating",
+   "build": {
+    "type": "equipment",
+    "rarity": "rare",
+    "menu": "Q2",
+    "tier": 2,
+    "trigger": "QT1"
+   },
+   "id": "D3-EQ04",
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "AC +2 and Reactive, exactly as it was."
+  },
+  {
+   "name": "Counterweight Fist",
+   "build": {
+    "type": "equipment",
+    "rarity": "uncommon",
+    "menu": "Q3",
+    "tier": 1
+   },
+   "id": "D3-EQ14",
+   "merges": [
+    "Superheated Blades"
+   ],
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "merged",
+   "why": "DMG +1. Superheated Blades did the same and folds into it."
+  },
+  {
+   "name": "Courrier exorunners",
+   "build": {
+    "type": "equipment",
+    "rarity": "uncommon",
+    "menu": "Q4",
+    "tier": 1
+   },
+   "id": "D3-EQ09",
+   "merges": [
+    "Vantage Servo Harness"
+   ],
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "merged",
+   "why": "MS +1; its Leap is an Action card now (Exorunner Leap). Vantage Servo Harness did the same and folds into it."
+  },
+  {
+   "name": "Dragonskin lining",
+   "build": {
+    "type": "equipment",
+    "rarity": "rare",
+    "menu": "Q2",
+    "tier": 2
+   },
+   "id": "D3-EQ06",
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "AC +2 (it gave Troops +2 and Heroes +1)."
+  },
+  {
+   "name": "HALO targeting System",
+   "build": {
+    "type": "equipment",
+    "rarity": "rare",
+    "menu": "Q5",
+    "tier": 2
+   },
+   "id": "D3-EQ07",
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Range +1; its Action is a card now (Identify Molecular Flaw)."
+  },
+  {
+   "name": "MONTU Battle Suit",
+   "build": {
+    "type": "equipment",
+    "rarity": "legendary",
+    "menu": "Q1",
+    "tier": 3,
+    "trigger": "QT2"
+   },
+   "id": "D3-EQ05",
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 3,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Health, and the Spool trigger; Doom.exe is an Action card now and Brawlzall goes."
+  },
+  {
+   "name": "Redline Governor",
+   "build": {
+    "type": "equipment",
+    "rarity": "epic",
+    "menu": "Q3",
+    "tier": 3,
+    "trigger": "QT4"
+   },
+   "id": "D3-EQ12",
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 3,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "DMG +3 and the Launch trigger; Purge goes."
+  },
+  {
+   "name": "Ripper Combat Suit",
+   "build": {
+    "type": "equipment",
+    "rarity": "epic",
+    "menu": "Q4",
+    "tier": 3
+   },
+   "id": "D3-EQ02",
+   "aetherCost": {
+    "generic": 1,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Battlefield Mobility is Servos III; Rend Asunder is an Action card now."
+  },
+  {
+   "name": "Ballast Plate",
+   "build": {
+    "type": "equipment",
+    "rarity": "common",
+    "menu": "Q1",
+    "tier": 1
+   },
+   "aetherCost": {
+    "generic": 1,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Health, without the lost Move."
+  },
+  {
+   "name": "Dead Man's Grip",
+   "build": {
+    "type": "equipment",
+    "rarity": "rare",
+    "menu": "Q1",
+    "tier": 2,
+    "trigger": "QT3"
+   },
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Health, and the Dead Man's Switch trigger."
+  },
+  {
+   "name": "Spool Governor",
+   "build": {
+    "type": "equipment",
+    "rarity": "epic",
+    "menu": "Q3",
+    "tier": 2,
+    "trigger": "QT2"
+   },
+   "merges": [
+    "Overdrive Governor"
+   ],
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "merged",
+   "why": "DMG +2 and the Spool trigger. Overdrive Governor (a Prototype) did the same and folds into it."
+  },
+  {
+   "name": "Whisper Coil",
+   "build": {
+    "type": "equipment",
+    "rarity": "uncommon",
+    "menu": "Q6",
+    "tier": 1
+   },
+   "aetherCost": {
+    "generic": 1,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Aim +1, as it was."
+  },
+  {
+   "name": "Debt Ledger",
+   "build": {
+    "type": "equipment",
+    "rarity": "rare",
+    "menu": "Q2",
+    "tier": 1,
+    "trigger": "QT5"
+   },
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Aether every round is for Prototypes and the Reactor now: AC +1, and Aether for a kill."
+  },
+  {
+   "name": "Leaper Greaves",
+   "build": {
+    "type": "equipment",
+    "rarity": "uncommon",
+    "menu": "Q7",
+    "tier": 1
+   },
+   "id": "D3-EQ18",
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Leap 2, as it was."
+  },
+  {
+   "name": "Momentum Plating",
+   "build": {
+    "type": "equipment",
+    "rarity": "rare",
+    "menu": "Q8",
+    "tier": 2
+   },
+   "id": "D3-EQ19",
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Evasive, always on."
+  },
+  {
+   "name": "Hold the Line",
+   "build": {
+    "type": "command",
+    "rarity": "uncommon",
+    "menu": "C2",
+    "tier": 1
+   },
+   "id": "D3-CM01",
+   "merges": [
+    "Tighten Ranks"
+   ],
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "merged",
+   "why": "Everyone's AC +1 for a turn. Tighten Ranks did the same and folds into it."
+  },
+  {
+   "name": "Reroute Power",
+   "build": {
+    "type": "command",
+    "rarity": "uncommon",
+    "menu": "C8",
+    "tier": 1
+   },
+   "id": "D3-CM03",
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Rerouted power: Energy for every Troop."
+  },
+  {
+   "name": "Redline overdrive",
+   "build": {
+    "type": "command",
+    "rarity": "uncommon",
+    "menu": "C1",
+    "tier": 1
+   },
+   "id": "D3-CM02",
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Every ally hits harder; its Move and Drained go."
+  },
+  {
+   "name": "Call the Note",
+   "build": {
+    "type": "command",
+    "rarity": "rare",
+    "menu": "C1",
+    "tier": 2
+   },
+   "aetherCost": {
+    "generic": 1,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "DMG +2 for everyone, as it was."
+  },
+  {
+   "name": "Recall",
+   "build": {
+    "type": "command",
+    "rarity": "common",
+    "menu": "C6",
+    "tier": 1
+   },
+   "aetherCost": {
+    "generic": 1,
+    "affinity": 0,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Recover, as it was."
+  },
+  {
+   "name": "Ledger Call",
+   "build": {
+    "type": "command",
+    "rarity": "uncommon",
+    "menu": "C5",
+    "tier": 1
+   },
+   "merges": [
+    "Liquidate",
+    "Datamine"
+   ],
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 0,
+    "affinity2": 0
+   },
+   "change": "merged",
+   "why": "Draw 2. Liquidate (Draw 3 for 1) and Datamine (an Aether card) did the same and fold into it."
+  },
+  {
+   "name": "Flank Them",
+   "build": {
+    "type": "command",
+    "rarity": "common",
+    "menu": "C3",
+    "tier": 1
+   },
+   "id": "D3-CM09",
+   "merges": [
+    "Kinetic Surge"
+   ],
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "merged",
+   "why": "Everyone moves 2 more. Kinetic Surge (an Aether card) did the same and folds into it."
+  },
+  {
+   "name": "Pin the Runner",
+   "build": {
+    "type": "command",
+    "rarity": "uncommon",
+    "menu": "C7",
+    "tier": 1
+   },
+   "id": "D3-CM10",
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 0,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Roots one Enemy, as it did."
+  },
+  {
+   "name": "Frenzy Protocol",
+   "build": {
+    "type": "command",
+    "rarity": "rare",
+    "menu": "C8",
+    "tier": 2
+   },
+   "id": "D3-AE03",
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "retyped",
+   "why": "Was an Aether card; an order to every Troop is a Command."
+  },
+  {
+   "name": "Aether Bolt",
+   "build": {
+    "type": "aether",
+    "rarity": "uncommon",
+    "menu": "E1",
+    "tier": 1
+   },
+   "id": "DX-AE03",
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 0,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Damage 3, as it was."
+  },
+  {
+   "name": "Aether Discharge",
+   "build": {
+    "type": "aether",
+    "rarity": "uncommon",
+    "menu": "E2",
+    "tier": 1
+   },
+   "id": "DX-AE04",
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 0,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "A blast; it now strikes friend and foe, for less."
+  },
+  {
+   "name": "Aether Lance",
+   "build": {
+    "type": "aether",
+    "rarity": "rare",
+    "menu": "E3",
+    "tier": 2
+   },
+   "id": "D3-AE05",
+   "aetherCost": {
+    "generic": 4,
+    "affinity": 0,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Damage 6 that pierces, as it was."
+  },
+  {
+   "name": "Deploy FCB",
+   "build": {
+    "type": "aether",
+    "rarity": "epic",
+    "menu": "E4",
+    "tier": 3
+   },
+   "id": "DX-AE02",
+   "aetherCost": {
+    "generic": 4,
+    "affinity": 0,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Full cover; Epic now (Full cover is tier III)."
+  },
+  {
+   "name": "Deploy HCB",
+   "build": {
+    "type": "aether",
+    "rarity": "uncommon",
+    "menu": "E4",
+    "tier": 1
+   },
+   "id": "DX-AE01",
+   "aetherCost": {
+    "generic": 3,
+    "affinity": 0,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Half cover, as it was."
+  },
+  {
+   "name": "Deploy Sentry",
+   "build": {
+    "type": "aether",
+    "rarity": "uncommon",
+    "menu": "E5",
+    "tier": 1
+   },
+   "id": "D3-AE11",
+   "aetherCost": {
+    "generic": 1,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "A Sentry Turret, as it was."
+  },
+  {
+   "name": "Deploy ordinance drone swarm",
+   "build": {
+    "type": "aether",
+    "rarity": "rare",
+    "menu": "E2",
+    "tier": 2
+   },
+   "id": "D3-AE02",
+   "merges": [
+    "Overrun"
+   ],
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 2,
+    "affinity2": 0
+   },
+   "change": "merged",
+   "why": "A blast. Overrun did the same and folds into it."
+  },
+  {
+   "name": "Emergency Overdrive",
+   "build": {
+    "type": "aether",
+    "rarity": "rare",
+    "menu": "E8",
+    "tier": 2
+   },
+   "id": "D3-AE04",
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "NRG +3 for a Troop, as it was."
+  },
+  {
+   "name": "Scavenge Parts",
+   "build": {
+    "type": "aether",
+    "rarity": "uncommon",
+    "menu": "E6",
+    "tier": 1
+   },
+   "id": "D3-AE01",
+   "merges": [
+    "Salvage Aether Core",
+    "Salvage Hard Drive",
+    "Alchemical Chip"
+   ],
+   "aetherCost": {
+    "generic": 0,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "merged",
+   "why": "A Troop spent for Aether; the Recover goes (Commands and Consumables have it). The two Salvage cards and Alchemical Chip did the same and fold into it."
+  },
+  {
+   "name": "Gravity Well",
+   "build": {
+    "type": "aether",
+    "rarity": "rare",
+    "menu": "E7",
+    "tier": 2
+   },
+   "id": "D3-AE15",
+   "aetherCost": {
+    "generic": 2,
+    "affinity": 1,
+    "affinity2": 0
+   },
+   "change": "rebuilt",
+   "why": "Slows everything near a tile, as it did."
+  },
+  {
+   "name": "Ballast Chip",
+   "build": {
+    "type": "sphere",
+    "rarity": "common",
+    "menu": "K1",
+    "tier": 1
+   },
+   "merges": [
+    "Bolstering Chip",
+    "Static Veil"
+   ],
+   "change": "merged",
+   "why": "AC +1 for a turn. Bolstering Chip and Static Veil (an Aether card) did the same and fold into it."
+  },
+  {
+   "name": "Bastion Chip",
+   "build": {
+    "type": "sphere",
+    "rarity": "epic",
+    "menu": "K1",
+    "tier": 3
+   },
+   "id": "D0-AS04",
+   "change": "rebuilt",
+   "why": "AC +2 for a turn, as it was; Epic now (AC +2 is tier III)."
+  },
+  {
+   "name": "Barbed Chip",
+   "build": {
+    "type": "sphere",
+    "rarity": "rare",
+    "menu": "K2",
+    "tier": 2
+   },
+   "id": "D0-AS03",
+   "change": "rebuilt",
+   "why": "DMG +1, as it was."
+  },
+  {
+   "name": "Surge Chip",
+   "build": {
+    "type": "sphere",
+    "rarity": "uncommon",
+    "menu": "K3",
+    "tier": 1
+   },
+   "merges": [
+    "Invigorating Chip"
+   ],
+   "change": "merged",
+   "why": "NRG +1. Invigorating Chip did the same and folds into it."
+  },
+  {
+   "name": "Quiet Chip",
+   "build": {
+    "type": "sphere",
+    "rarity": "uncommon",
+    "menu": "K4",
+    "tier": 1
+   },
+   "change": "rebuilt",
+   "why": "Evasive for a turn (2, from 4)."
+  },
+  {
+   "name": "Spring Chip",
+   "build": {
+    "type": "sphere",
+    "rarity": "uncommon",
+    "menu": "K5",
+    "tier": 1
+   },
+   "id": "D3-AS06",
+   "change": "rebuilt",
+   "why": "Dash 1, as it was."
+  },
+  {
+   "name": "Gyro Chip",
+   "build": {
+    "type": "sphere",
+    "rarity": "rare",
+    "menu": "K6",
+    "tier": 2
+   },
+   "id": "D3-AS07",
+   "change": "rebuilt",
+   "why": "Leap for a turn."
+  },
+  {
+   "name": "Mending Chip",
+   "build": {
+    "type": "sphere",
+    "rarity": "rare",
+    "menu": "K7",
+    "tier": 2
+   },
+   "id": "D3-AS02",
+   "change": "rebuilt",
+   "why": "Heals 4 (from 5)."
+  },
+  {
+   "name": "Sparking chip",
+   "build": {
+    "type": "sphere",
+    "rarity": "rare",
+    "menu": "K8",
+    "tier": 2
+   },
+   "id": "D3-AS01",
+   "change": "rebuilt",
+   "why": "Damage 2 (from 1)."
+  },
+  {
+   "name": "Ledger Chip",
+   "build": {
+    "type": "sphere",
+    "rarity": "rare",
+    "menu": "K9",
+    "tier": 1
+   },
+   "change": "rebuilt",
+   "why": "Aether, as it was."
+  },
+  {
+   "name": "Dampening Chip",
+   "build": {
+    "type": "sphere",
+    "rarity": "epic",
+    "menu": "K10",
+    "tier": 1
+   },
+   "id": "D3-AS04",
+   "change": "rebuilt",
+   "why": "Hardened for a turn, as it was."
+  },
+  {
+   "name": "Field Dressing",
+   "build": {
+    "type": "consumable",
+    "rarity": "common",
+    "menu": "N1",
+    "tier": 1
+   },
+   "merges": [
+    "Repair Kit"
+   ],
+   "change": "merged",
+   "why": "Heals 6. Repair Kit did the same and folds into it."
+  },
+  {
+   "name": "Medical Supplies",
+   "build": {
+    "type": "consumable",
+    "rarity": "uncommon",
+    "menu": "N7",
+    "tier": 1
+   },
+   "change": "rebuilt",
+   "why": "Recover, as it was."
+  },
+  {
+   "name": "Smoke Canister",
+   "build": {
+    "type": "consumable",
+    "rarity": "uncommon",
+    "menu": "N5",
+    "tier": 1
+   },
+   "change": "rebuilt",
+   "why": "Evasive 2, as it was."
+  },
+  {
+   "name": "Adrenal Shot",
+   "build": {
+    "type": "consumable",
+    "rarity": "common",
+    "menu": "N10",
+    "tier": 1
+   },
+   "change": "rebuilt",
+   "why": "NRG +2, as it was."
+  },
+  {
+   "name": "Breach Charge",
+   "build": {
+    "type": "consumable",
+    "rarity": "rare",
+    "menu": "N6",
+    "tier": 2
+   },
+   "change": "rebuilt",
+   "why": "Damage 6, as it was."
+  },
+  {
+   "name": "Signal Flare",
+   "build": {
+    "type": "consumable",
+    "rarity": "common",
+    "menu": "N9",
+    "tier": 1
+   },
+   "change": "rebuilt",
+   "why": "Aim +1 for everyone, as it was."
+  },
+  {
+   "name": "Coolant Flush",
+   "build": {
+    "type": "consumable",
+    "rarity": "uncommon",
+    "menu": "N2",
+    "tier": 1
+   },
+   "change": "rebuilt",
+   "why": "Clears Poisoned (Bleed folds into it) and Slowed, and heals a little."
+  },
+  {
+   "name": "Ration Pack",
+   "build": {
+    "type": "consumable",
+    "rarity": "common",
+    "menu": "N8",
+    "tier": 1
+   },
+   "change": "rebuilt",
+   "why": "HP +4 for the fight, as it was."
+  },
+  {
+   "name": "Grapple Line",
+   "build": {
+    "type": "consumable",
+    "rarity": "uncommon",
+    "menu": "N3",
+    "tier": 1
+   },
+   "merges": [
+    "Adrenal Overdrive"
+   ],
+   "change": "merged",
+   "why": "Dash 3. Adrenal Overdrive did the same (and a little damage) and folds into it."
+  },
+  {
+   "name": "Grav-Boot Charge",
+   "build": {
+    "type": "consumable",
+    "rarity": "common",
+    "menu": "N4",
+    "tier": 1
+   },
+   "id": "D3-CN05",
+   "change": "rebuilt",
+   "why": "Leap 3, as it was."
+  },
+  {
+   "name": "Ledger Core",
+   "build": {
+    "type": "prototype",
+    "rarity": "rare",
+    "menu": "R5",
+    "tier": 1
+   },
+   "change": "rebuilt",
+   "why": "Aether every round, as it was."
+  },
+  {
+   "name": "Harmonic Damper",
+   "build": {
+    "type": "prototype",
+    "rarity": "epic",
+    "menu": "R4",
+    "tier": 1
+   },
+   "change": "rebuilt",
+   "why": "Hardened for everyone, as it was; Epic now."
+  },
+  {
+   "name": "Field Triage",
+   "build": {
+    "type": "prototype",
+    "rarity": "uncommon",
+    "menu": "R3",
+    "tier": 1
+   },
+   "change": "rebuilt",
+   "why": "Heals everyone a little each round."
+  },
+  {
+   "name": "Targeting Mesh",
+   "build": {
+    "type": "prototype",
+    "rarity": "uncommon",
+    "menu": "R1",
+    "tier": 1
+   },
+   "change": "rebuilt",
+   "why": "Aim +1 for everyone, as it was."
+  },
+  {
+   "name": "Reinforced Frames",
+   "build": {
+    "type": "prototype",
+    "rarity": "common",
+    "menu": "R2",
+    "tier": 1
+   },
+   "change": "rebuilt",
+   "why": "HP +2 for every Troop, as it was."
+  },
+  {
+   "name": "Scavenger Protocol",
+   "build": {
+    "type": "prototype",
+    "rarity": "uncommon",
+    "menu": "R6",
+    "tier": 1
+   },
+   "change": "rebuilt",
+   "why": "A card when a Troop falls, as it was."
+  },
+  {
+   "name": "Kinetic Recycler",
+   "build": {
+    "type": "prototype",
+    "rarity": "rare",
+    "menu": "R7",
+    "tier": 2
+   },
+   "id": "D3-PR02",
+   "change": "rebuilt",
+   "why": "Dash after a kill (2, from 1)."
+  },
+  {
+   "name": "Gantry Mapper",
+   "build": {
+    "type": "prototype",
+    "rarity": "uncommon",
+    "menu": "R8",
+    "tier": 1
+   },
+   "id": "D3-PR03",
+   "change": "rebuilt",
+   "why": "Leap 2 for everyone."
+  }
+ ],
+ "retired": [
+  {
+   "name": "Superheated Blades",
+   "into": "Counterweight Fist",
+   "why": null
+  },
+  {
+   "name": "Vantage Servo Harness",
+   "into": "Courrier exorunners",
+   "why": null
+  },
+  {
+   "name": "Overdrive Governor",
+   "into": "Spool Governor",
+   "why": null
+  },
+  {
+   "name": "Tighten Ranks",
+   "into": "Hold the Line",
+   "why": null
+  },
+  {
+   "name": "Liquidate",
+   "into": "Ledger Call",
+   "why": null
+  },
+  {
+   "name": "Datamine",
+   "into": "Ledger Call",
+   "why": null
+  },
+  {
+   "name": "Kinetic Surge",
+   "into": "Flank Them",
+   "why": null
+  },
+  {
+   "name": "Overrun",
+   "into": "Deploy ordinance drone swarm",
+   "why": null
+  },
+  {
+   "name": "Salvage Aether Core",
+   "into": "Scavenge Parts",
+   "why": null
+  },
+  {
+   "name": "Salvage Hard Drive",
+   "into": "Scavenge Parts",
+   "why": null
+  },
+  {
+   "name": "Alchemical Chip",
+   "into": "Scavenge Parts",
+   "why": null
+  },
+  {
+   "name": "Bolstering Chip",
+   "into": "Ballast Chip",
+   "why": null
+  },
+  {
+   "name": "Static Veil",
+   "into": "Ballast Chip",
+   "why": null
+  },
+  {
+   "name": "Invigorating Chip",
+   "into": "Surge Chip",
+   "why": null
+  },
+  {
+   "name": "Repair Kit",
+   "into": "Field Dressing",
+   "why": null
+  },
+  {
+   "name": "Adrenal Overdrive",
+   "into": "Grapple Line",
+   "why": null
+  },
+  {
+   "name": "Aether battery",
+   "into": null,
+   "why": "Deploy X batteries for X: the Lab has no variable cost, and Aether every round is for Prototypes and the Reactor."
+  }
+ ],
+ "kept": [
+  "Scuttlebot",
+  "Sentry Turret",
+  "FALCON Drone Token",
+  "Aether Battery"
+ ]
+}

@@ -46,6 +46,13 @@ func _run() -> void:
 		Rules.hooks = {}
 		quit(1 if bad > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("lab"):
+		_lab_set()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("fortyone"):
 		_fortyone()
 		await _fortyone_scene()
@@ -364,6 +371,7 @@ func _run() -> void:
 	_forty()
 	_fortyone()
 	_fortytwo()
+	_lab_set()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -10395,3 +10403,65 @@ func _fortytwo() -> void:
 	ck("0.42 test Elites: on a deployment, Instability sends District 3's own Elites and Mini-Bosses, never the test set's", not dep_names.is_empty() and not dep_names.values().has(true), dep_names)
 	ck("0.42 test Elites: a practice Battle may still draw the test set's", free_names.values().has(true), free_names)
 	Kit.fresh()
+
+
+## (Lab) KETER Lab's card set: laid over an export only in KETER Lab; each set card a
+## build the checks accept, compiled as the master card it replaces; retired cards out,
+## new ones in with pictures borrowed; and every Skull Level has Enemies of its own.
+func _lab_set() -> void:
+	Kit.fresh()
+	LabSet.reset()
+	ck("Lab: the main game doesn't lay the set (keter/lab is off)", not LabSet.active() and LabSet.version() == "" and not bool(ProjectSettings.get_setting("keter/lab", false)))
+	var plain := KeterExport.new()
+	plain.open(FIXTURE)
+	var before: Array = plain.cards()
+	ck("Lab: and the export's cards are as they came", before.filter(func(c): return c.has("_lab")).is_empty() and before.any(func(c): return c.get("name") == "Superheated Blades"))
+	LabSet.force(true)
+	var s := LabSet.data()
+	ck("Lab: KETER Lab reads its set (data/lab_set.json) for the systems it compiles with", LabSet.active() and LabSet.version() == str(s.get("version")) and str(s.get("systems")) == LabSystems.version(), [LabSet.version(), s.get("systems"), LabSystems.version()])
+	var bad_builds := []
+	for lc in s["cards"]:
+		var probs := LabSystems.check(Rules.ints(lc["build"]))
+		if not probs.is_empty():
+			bad_builds.append([lc["name"], probs])
+	ck("Lab: every set card is a build the checks accept (%d)" % s["cards"].size(), bad_builds.is_empty() and s["cards"].size() >= 140, bad_builds.slice(0, 4))
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var cs: Array = x.cards()
+	var by := {}
+	for c in cs:
+		if str(c.get("_src", "")) == "master":
+			by[str(c["name"])] = c
+	var gone: Array = LabSet.retired().keys()
+	ck("Lab: the retired cards are left out (%d)" % gone.size(), gone.size() >= 10 and gone.all(func(n): return not by.has(n)), gone.filter(func(n): return by.has(n)))
+	ck("Lab: the test set's cards and the tokens are left as they were", cs.filter(func(c): return Roster.is_test(c) and c.has("_lab")).is_empty()
+		and by.has("Scuttlebot") and not by["Scuttlebot"].has("_lab") and by.has("Sentry Turret") and not by["Sentry Turret"].has("_lab"))
+	var r = by.get("Rictus", {})
+	ck("Lab: Rictus is a Legendary Brute: Strike, Heavy Blow III and his signature, Spin-Up; his District and Affinity stay his",
+		r.get("cardType") == "hero" and r.get("entries", []).size() == 3 and str(r["entries"][1].get("name")) == "Heavy Blow III" and r["entries"][2].get("signature") == true
+		and str(r["entries"][2].get("name")) == "Spin-Up" and int(Rules.num(r["affinities"][0].get("level"), 0)) == 4 and r.get("_lab") == "rebuilt", r.get("entries"))
+	var lw = by.get("Lay Waste", {})
+	ck("Lab: the cluster ordnance's attack is Lay Waste, an Action card, and shows the ordnance's pictures (Q2)",
+		lw.get("cardType") == "action" and not by.has("Personal mounted cluster ordinance") and lw.get("_artName") == "Personal mounted cluster ordinance" and lw.get("_lab") == "split")
+	var cr = by.get("Chrome Reaver", {})
+	ck("Lab: a new Enemy comes in with its District and borrowed pictures", cr.get("cardType") == "enemy" and int(Rules.num(cr.get("skullLevel"), 0)) == 4 and Roster.district_of(cr) == "3" and cr.get("_artName") == "Chrome Fiend" and cr.get("_lab") == "new")
+	ck("Lab: a merged card's survivor stays, under its own name", by.has("Counterweight Fist") and by["Counterweight Fist"].get("_lab") == "merged" and not by.has("Superheated Blades"))
+	ck("Lab: a Troop carries the typed cost (Q6); Scuttle Swarm's X is gone", by["Scuttle Swarm"].get("aetherCost") is Dictionary and str(by["Scuttle Swarm"]["aetherCost"].get("generic")) != "X"
+		and by["Scuttle Swarm"].get("hasVariableCost") == null and str(by["Scuttle Swarm"]["stats"]["hp"]).is_valid_int())
+	var unit_over := []
+	for c in by.values():
+		if c.has("_lab") and str(c.get("cardType")) in ["hero", "troop", "enemy", "elite", "miniboss"] and c.get("entries", []).size() > (4 if c.get("cardType") == "miniboss" else 3):
+			unit_over.append(c["name"])
+	ck("Lab: no unit has more than three entries (a Mini-Boss four), the basic attack among them", unit_over.is_empty(), unit_over)
+	var rr := Roster.new(x)
+	var levels := {}
+	for lv in range(1, 7):
+		levels[lv] = rr.enemies().filter(func(c): return not Roster.is_test(c) and Roster.foe_level(c) == lv).size()
+	ck("Lab: every Skull Level has three Enemies of its own or more", levels.values().all(func(n): return n >= 3), levels)
+	# the main game's own path: the set laid only while KETER Lab says so
+	LabSet.force(false)
+	var y := KeterExport.new()
+	y.open(FIXTURE)
+	ck("Lab: switched off, the same export plays as it came", y.cards().filter(func(c): return c.has("_lab")).is_empty())
+	LabSet.reset()
+

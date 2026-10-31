@@ -687,7 +687,7 @@ def patch_tool(src_html: str) -> str:
     """
     head = src_html.find("</head>")
     if head != -1:
-        src_html = src_html[:head] + SHARED_GLYPHS + SHARED_BEHAVIORS + SHARED_TOOLKIT + SHARED_KEYWORDS + _read_keywords() + _read_pixelart() + _read_scoring() + _read_js('builder.js','loot.js','workshop.js','progress.js','chunkgen.js') + src_html[head:]
+        src_html = src_html[:head] + SHARED_GLYPHS + SHARED_BEHAVIORS + SHARED_TOOLKIT + SHARED_KEYWORDS + _read_keywords() + _read_pixelart() + _read_scoring() + _read_js('builder.js','loot.js','workshop.js','progress.js','chunkgen.js','lab_data.js','lab_set.js','lab.js') + src_html[head:]
     idx = src_html.rfind("</body>")
     if idx == -1:
         return src_html + MOBILE_PATCH
@@ -1336,7 +1336,7 @@ if _head != -1:
     _body_end = shell.rfind("</body>")
     shell = shell[:_body_end] + _read_studio() + _read_js('studio_tabs.js','chassis_ui.js','loot_ui.js','workshop_ui.js','codex_ui.js','world_ui.js','dock_ui.js') + shell[_body_end:]
     _head = shell.find("</head>") if shell.find("</head>")>=0 else _head
-    shell = shell[:_head] + SHARED_BEHAVIORS + _read_keywords() + _read_pixelart() + _read_test_maps() + _read_test_pictures() + _read_game_art() + _read_scoring() + _read_js('builder.js','chassis.js','test_chassis.js','keter_frames.js','loot.js','workshop.js','progress.js','world.js','deploy.js','dock.js','skins.js','assets.js') + _read_rules() + shell[_head:]
+    shell = shell[:_head] + SHARED_BEHAVIORS + _read_keywords() + _read_pixelart() + _read_test_maps() + _read_test_pictures() + _read_game_art() + _read_scoring() + _read_js('builder.js','chassis.js','test_chassis.js','keter_frames.js','loot.js','workshop.js','progress.js','world.js','deploy.js','dock.js','skins.js','assets.js','lab_data.js','lab_set.js','lab.js') + _read_rules() + shell[_head:]
 out = (shell
        .replace("__GLOSS__", gloss_payload)
        .replace("__MASTER__", master_payload)

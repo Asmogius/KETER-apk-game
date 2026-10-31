@@ -18,6 +18,7 @@ const sb = { Math, JSON, String, Object, Array, parseInt, isNaN, console, localS
 sb.window = sb;
 vm.createContext(sb);
 vm.runInContext(fs.readFileSync(path.join(ROOT, "lab_data.js"), "utf8"), sb);
+vm.runInContext(fs.readFileSync(path.join(ROOT, "lab_set.js"), "utf8"), sb);
 vm.runInContext(fs.readFileSync(path.join(ROOT, "lab.js"), "utf8"), sb);
 const L = sb.KETER_LAB, D = sb.KETER_LAB_DATA;
 const clone = o => JSON.parse(JSON.stringify(o === undefined ? null : o));
@@ -84,7 +85,16 @@ for(let i = 0; i < 40; i++){
 }
 add({ type: "boss", role: "brute" });
 
+/* the Lab card set laid over the master cards: all of them, as the Companion holds them; and an
+   export short of a few (a new card and a split one then come in on their own), with cards that
+   aren't master cards among them, which the set leaves alone */
+const comp = JSON.parse(fs.readFileSync(path.join(ROOT, "compendium_full.json"), "utf8")).cards
+  .map(c => Object.assign({}, c, { _src: c.testCard ? "test" : "master" }));
+const short = comp.filter(c => ["Rictus", "Personal mounted cluster ordinance", "Chrome Fiend", "Datamine"].indexOf(c.name) < 0)
+  .concat([{ name: "Rictus", cardType: "hero", _src: "design", stats: { hp: "9" } }, { name: "Chaff Swarm", cardType: "troop", _src: "workshop", entries: [] }]);
+const sets = [comp, short].map(input => ({ input: clone(input), output: clone(L.applySet(clone(input))) }));
+
 const out = path.join(ROOT, "game", "tests", "fixtures", "lab_cases.json");
-fs.writeFileSync(out, JSON.stringify({ version: D.version, cases }));
+fs.writeFileSync(out, JSON.stringify({ version: D.version, cases, setVersion: L.setVersion(), sets }));
 const broken = cases.filter(c => c.result.problems.length).length;
-console.log("lab cases: " + cases.length + " (" + broken + " with problems), systems " + D.version);
+console.log("lab cases: " + cases.length + " (" + broken + " with problems), systems " + D.version + "; the set " + L.setVersion() + " laid over " + sets.length + " lists of cards");

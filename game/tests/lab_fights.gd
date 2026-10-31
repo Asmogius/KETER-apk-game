@@ -7,7 +7,7 @@
 ## The team is one a player would have at that point of a run (the stage):
 ## starter (Skull 1-2), mid (3-4), late (5-6). The fight is an ambush, a POI's
 ## floor, or a District Core's last floor (a Boss's where one fits).
-##   godot --headless --path . --script res://tests/lab_fights.gd -- export=<zip> skull=<n> kind=<ambush|poi|core> bot=<careful|casual> n=<runs> seed=<n> out=<file> [stage=<starter|mid|late>] [inst=<Instability %>] [district=<1-6>] [tile=<q,r>: that POI's own floors, every run]
+##   godot --headless --path . --script res://tests/lab_fights.gd -- export=<zip> skull=<n> kind=<ambush|poi|core> bot=<careful|casual> n=<runs> seed=<n> out=<file> [stage=<starter|mid|late>] [inst=<Instability %>] [district=<1-6>] [tile=<q,r>: that POI's own floors, every run] [lab=1: KETER Lab's card set]
 extends SceneTree
 
 const Kit := preload("res://tests/team_kit.gd")
@@ -45,6 +45,9 @@ func _run() -> void:
 	var o := _args()
 	Kit.fresh()
 	Deployment.common_designs_free = true
+	# (KETER Lab) lab=1: the Lab card set laid over the export, as KETER Lab plays it
+	if str(o.get("lab", "")) == "1":
+		LabSet.force(true)
 	var x := KeterExport.new()
 	if not x.open(o["export"]):
 		printerr("can't open the export: " + str(o["export"]))

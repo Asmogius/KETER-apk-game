@@ -46,5 +46,27 @@ func _initialize() -> void:
 			if shown < 4:
 				shown += 1
 				print("DIFFER ", JSON.stringify(c["build"]), "\n  want ", JSON.stringify(want).substr(0, 600), "\n  got  ", JSON.stringify(have).substr(0, 600))
+	# the Lab card set, laid over the same cards as the Companion laid it
+	if d.get("sets") is Array:
+		LabSet.force(true)
+		if str(d.get("setVersion")) != str(LabSet.data().get("version", "")):
+			bad += 1
+			print("DIFFER the cases lay set %s, the game reads %s" % [d.get("setVersion"), LabSet.data().get("version", "")])
+		else:
+			for sc in d["sets"]:
+				var want = _norm(sc["output"])
+				var have = _norm(LabSet.apply_cards(sc["input"]))
+				if JSON.stringify(want) == JSON.stringify(have):
+					ok += 1
+				else:
+					bad += 1
+					var w: Array = want
+					var h: Array = have
+					print("DIFFER the set laid over %d cards: %d cards, the game %d" % [sc["input"].size(), w.size(), h.size()])
+					for i in mini(w.size(), h.size()):
+						if JSON.stringify(w[i]) != JSON.stringify(h[i]):
+							print("  first at ", i, "\n  want ", JSON.stringify(w[i]).substr(0, 500), "\n  got  ", JSON.stringify(h[i]).substr(0, 500))
+							break
+		LabSet.reset()
 	print("LAB MATCH %d  DIFFER %d" % [ok, bad])
 	quit(1 if bad > 0 else 0)

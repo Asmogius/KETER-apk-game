@@ -153,12 +153,18 @@ func floors() -> Array[FloorData]:
 ## The export's cards, with the Sandbox's laid over them (0.26): yours made
 ## and changed there, those deleted there left out.
 func cards() -> Array:
-	return Sandbox.apply(content("cards").get("cards", []))
+	return Sandbox.apply(own_cards())
 
 
-## The export's own cards, as they came.
+## The export's own cards, as they came; (Lab) in KETER Lab, with the Lab card set laid over them.
 func own_cards() -> Array:
-	return content("cards").get("cards", [])
+	var raw: Array = content("cards").get("cards", []) if content("cards").get("cards") is Array else []
+	if not LabSet.active():
+		return raw
+	var k := "lab|" + LabSet.version()
+	if not _content.has(k):
+		_content[k] = LabSet.apply_cards(raw)
+	return _content[k]
 
 
 ## What the manifest says about each file.

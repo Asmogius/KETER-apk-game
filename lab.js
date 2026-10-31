@@ -228,6 +228,55 @@ function check(b){
   return ["no Lab build for a "+type];
 }
 
+/* ---- the Lab card set (lab_set.js, made by lab/make_lab_set.js) ----
+   With the switch on, the master cards are the Lab set: a build for each, laid
+   over the master card of its name (or the one it "was"), which keeps what the
+   build doesn't decide (District, archetypes, loot, lore, pictures). New cards
+   bring their own "meta" and show the pictures of the card they name ("art");
+   retired cards are left out; the test set's, the tokens and everything that
+   isn't a master card stay as they are. The game does the same (scripts/lab_set.gd). */
+function SET(){ return root.KETER_LAB_SET || null; }
+function setVersion(){ var s=SET(); return s ? String(s.version||"") : ""; }
+function retiredNames(){
+  var out={}, s=SET(); ((s&&s.retired)||[]).forEach(function(r){ var n=(r&&typeof r==="object")?String(r.name||""):String(r); out[n]=r; });
+  return out;
+}
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function setCard(lc, was){
+  var e=was ? clone(was) : {};
+  if(lc.meta && typeof lc.meta==="object") Object.keys(lc.meta).forEach(function(k){ e[k]=clone(lc.meta[k]); });
+  var r=compile(clone(lc.build||{})), cc=r.card;
+  if(cc) ["cardType","rarity","skullLevel","combatRoles","stats","entries","lab"].forEach(function(k){ if(Object.prototype.hasOwnProperty.call(cc,k)) e[k]=cc[k]; });
+  delete e.abilities;
+  e.name=String(lc.name||"");
+  if(lc.id) e.id=String(lc.id);
+  e.aetherCost=(lc.aetherCost && typeof lc.aetherCost==="object") ? clone(lc.aetherCost) : null;
+  e.hasVariableCost=null;
+  e._src="master";
+  e._lab=String(lc.change||"rebuilt");
+  var art=String(lc.art||"");
+  if(!art && was) art=String(was._artName||was.name||"");
+  if(art && art!==e.name) e._artName=art;
+  return e;
+}
+function applySet(cards){
+  var s=SET(); if(!s || !Array.isArray(s.cards)) return cards;
+  var by={}, gone=retiredNames(), out=[], placed={};
+  s.cards.forEach(function(lc){ if(lc && typeof lc==="object") by[String(lc.was!=null?lc.was:(lc.name||""))]=lc; });
+  (cards||[]).forEach(function(c){
+    if(!c || typeof c!=="object") return;
+    if(String(c._src!=null?c._src:"master")!=="master"){ out.push(c); return; }
+    var nm=String(c.name!=null?c.name:"");
+    if(Object.prototype.hasOwnProperty.call(gone,nm)) return;
+    var lc=Object.prototype.hasOwnProperty.call(by,nm) ? by[nm] : null;
+    if(!lc || placed[String(lc.name||"")]){ out.push(c); return; }
+    placed[String(lc.name||"")]=1;
+    out.push(setCard(lc, c));
+  });
+  s.cards.forEach(function(lc){ if(lc && typeof lc==="object" && !placed[String(lc.name||"")]){ placed[String(lc.name||"")]=1; out.push(setCard(lc, null)); } });
+  return out;
+}
+
 /* ---- what the Forge and the Workshop offer ---- */
 function abilitiesFor(role, type, rarity){
   return (D().library||[]).filter(function(a){ return a.roles.indexOf(role)>=0; });
@@ -238,6 +287,7 @@ root.KETER_LAB = {
   KEY:KEY, data:D, on:on, setOn:setOn, version:function(){ return D().version||""; },
   line:line, compile:compile, compileUnit:compileUnit, compileOther:compileOther, check:check, norm:norm,
   target:target, points:points, suggestedAether:suggestedAether, rarityPrice:rarityPrice, tierCap:tierCap,
-  ability:ability, menuItem:menuItem, trigger:trigger, abilitiesFor:abilitiesFor, halfUp:halfUp, ROMAN:ROMAN
+  ability:ability, menuItem:menuItem, trigger:trigger, abilitiesFor:abilitiesFor, halfUp:halfUp, ROMAN:ROMAN,
+  set:SET, setVersion:setVersion, applySet:applySet, setCard:setCard, retired:retiredNames
 };
 })(typeof window!=="undefined" ? window : this);

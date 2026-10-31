@@ -1499,7 +1499,7 @@ function pageById(id){
 }
 var cur="home";
 /* the Pixel Studio opens pages and reads the card list from outside */
-try{ window.KETER_GO=function(n){ go(n); }; window.KETER_ALLCARDS=function(){ return allCards(); }; }catch(e){}
+try{ window.KETER_GO=function(n){ go(n); }; window.KETER_ALLCARDS=function(){ return allCards(); }; window.KETER_ALLCARDS_EXPORT=function(){ return masterCards(true).concat(mineCards(), designCards()); }; }catch(e){}
 function go(name){
   if(!VIEWS[name]) name="home";
   cur=name;
@@ -10044,11 +10044,16 @@ try{
 }catch(e){}
 /* v13.0: art drawn for a design before skins becomes a skin it goes on wearing */
 try{ if(window.KETER_SKINS) window.KETER_SKINS.migrate(); }catch(e){}
-function masterCards(){
-  return (MASTER.cards||[]).map(function(c,i){
+function masterCards(real){
+  var out=(MASTER.cards||[]).map(function(c,i){
     var d=Object.assign({},c); d._src=c.testCard?"test":"master"; d._idx=i; return d;
   });
+  /* (Lab) with the Lab switch on, the master cards are the Lab card set (lab.js, lab_set.js);
+     an export still carries the real ones (KETER Lab lays the set over any export itself) */
+  if(!real && labOn()) out=window.KETER_LAB.applySet(out);
+  return out;
 }
+function labOn(){ try{ return !!(window.KETER_LAB && window.KETER_LAB.on() && window.KETER_LAB.set()); }catch(e){ return false; } }
 /* v12.7: designs from the Workshop are Troop cards too */
 function designCards(){ try{ return window.KETER_WORKSHOP ? window.KETER_WORKSHOP.cards() : []; }catch(e){ return []; } }
 function allCards(){ return masterCards().concat(mineCards(), designCards()); }
@@ -11447,12 +11452,13 @@ function paintDev(){
   var b=$("devBtn"), f=$("devflag");
   b.classList.toggle("on",devUnlocked());
   b.textContent = devUnlocked() ? (previewing()?"Dev Mode \u00b7 previewing":"Dev Mode \u00b7 on") : "Dev Mode";
-  f.classList.toggle("on",devUnlocked());
+  f.classList.toggle("on",devUnlocked()||labOn());
+  var lab = labOn() ? " <b>KETER Lab card systems are on</b> (set "+window.KETER_LAB.setVersion()+"): the master cards are the Lab set. Dev Mode turns them off." : "";
   if(devUnlocked()){
-    f.innerHTML = previewing()
+    f.innerHTML = (previewing()
       ? "<b>Previewing as a friend.</b> Dev tools are hidden so you can see what everyone else sees. Tap Dev Mode to come back."
-      : "<b>Dev Mode is on.</b> You can curate and edit the Master Schema, and Repair lives in Updates. Remember to export and publish, or nobody else sees your changes.";
-  }
+      : "<b>Dev Mode is on.</b> You can curate and edit the Master Schema, and Repair lives in Updates. Remember to export and publish, or nobody else sees your changes.") + lab;
+  } else if(lab) f.innerHTML = lab.trim();
   if(typeof renderComp==="function") renderComp();
   if(typeof docIdx!=="undefined" && docIdx!=null && $("mbody") && $("mbody").innerHTML)
     renderDoc(docIdx);
@@ -11472,7 +11478,14 @@ function devPanel(){
     "<p><b>Preview as a friend</b> hides every dev tool so you can see the app the way everyone else does. Nothing is locked or lost \u2014 come back the same way.</p>"+
     '<button class="ghost" id="pvToggle" style="margin-right:8px;">'+
       (previewing()?"Stop previewing":"Preview as a friend")+"</button>"+
-    '<button class="ghost" id="devOff">Lock Dev Mode</button>');
+    '<button class="ghost" id="devOff">Lock Dev Mode</button>'+
+    (window.KETER_LAB && window.KETER_LAB.set()
+      ? "<h4 style=\"margin:18px 0 6px;\">KETER Lab card systems</h4>"+
+        "<p>The experimental card systems: abilities from a library at a tier, stats from tables, one job for each card type. "+
+        "With them on, the master cards everywhere in the Companion are the Lab set ("+window.KETER_LAB.set().cards.length+" cards, set "+window.KETER_LAB.setVersion()+", systems "+window.KETER_LAB.version()+"). "+
+        "Your own cards and saves are the same either way, and an export still carries the real master cards: the KETER Lab app lays the set over any export itself.</p>"+
+        '<button class="ghost" id="labToggle">'+(labOn()?"Turn the Lab off":"Turn the Lab on")+"</button>"
+      : ""));
 }
 $("devBtn").addEventListener("click",devPanel);
 document.addEventListener("click",function(e){
@@ -11494,6 +11507,10 @@ paintUser();
     try{ localStorage.setItem(PREVIEW_KEY, previewing()?"0":"1"); }catch(e){}
     paintDev();
 paintUser(); devPanel();
+  }
+  if(id==="labToggle" && window.KETER_LAB){
+    window.KETER_LAB.setOn(!window.KETER_LAB.on());
+    paintDev(); paintUser(); devPanel();
   }
   if(id==="devOff"){
     try{ localStorage.removeItem(DEV_KEY); localStorage.removeItem(PREVIEW_KEY); }catch(e){}
