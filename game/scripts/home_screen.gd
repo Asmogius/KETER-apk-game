@@ -60,6 +60,12 @@ func _init(ver: String) -> void:
 	col.add_theme_constant_override("separation", 10)
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	m.add_child(col)
+	# (Lab) KETER Lab says what it is, under the sign
+	if LabSet.active():
+		var lab := UI.label("KETER LAB  \u00b7  experimental card systems  \u00b7  set %s" % LabSet.version(), 20, UI.CYAN)
+		lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lab.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		col.add_child(lab)
 	world_btn = Button.new()
 	world_btn.text = "Play"
 	world_btn.theme_type_variation = "MainButton"

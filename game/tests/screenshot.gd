@@ -1,6 +1,7 @@
 ## Renders a screen from the test export and saves a PNG:
 ##   godot --path . --script res://tests/screenshot.gd -- <out.png> [key=value ...]
 ##     screen=home|teams|editor|battle|dock|deploy|map    which screen (default battle)
+##     lab=1                              as KETER Lab: the Lab card set laid over the export
 ##     map=<op>;<op>                      on the World Map (screen=map), with the test team
 ##                                        sent out: tap a tile (sel:<q,r>), walk to one
 ##                                        (walk:<q,r>), press one of the panel's buttons
@@ -87,6 +88,9 @@ func _run() -> void:
 		var kv: PackedStringArray = a.split("=", true, 1)
 		if kv.size() == 2:
 			o[kv[0]] = kv[1]
+	# (Lab) lab=1: as KETER Lab, the Lab card set laid over the export
+	if o.get("lab", "") == "1":
+		LabSet.force(true)
 	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
 	root.add_child(scene)
 	await process_frame

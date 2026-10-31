@@ -113,7 +113,7 @@ func _row(title: String, under: String, choices: Array, into: Dictionary, pick: 
 
 ## (0.15) From Home: the game's version and the export it read, and Look again.
 func show_about(version: String, source: String) -> void:
-	about.text = "KETER · the game · version %s" % version + ("\n" + source if source != "" else "")
+	about.text = ("KETER Lab · the experimental build · version %s · Lab set %s, systems %s" % [version, LabSet.version(), LabSystems.version()] if LabSet.active() else "KETER · the game · version %s" % version) + ("\n" + source if source != "" else "")
 	about.visible = true
 	again_btn.visible = true
 
