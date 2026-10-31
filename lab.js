@@ -277,6 +277,176 @@ function applySet(cards){
   return out;
 }
 
+/* ---- the Forge's help: a new card's build, what a build may hold, and the nearest build to a card made before ---- */
+function defaultBuild(type, prev){
+  var d=D(); prev=(prev&&typeof prev==="object")?prev:{};
+  var rarity=(d.rarities||[]).indexOf(prev.rarity)>=0 ? prev.rarity : "common";
+  if(UNIT[type]){
+    var b={type:type, role:(d.roles||[]).indexOf(prev.role)>=0 ? prev.role : "brute", abilities:[]};
+    if(ENEMYISH[type]){ b.size=(d.enemySize||{})[prev.size] ? prev.size : "standard"; b.skull=Math.max(1, Math.min(6, Math.floor(+prev.skull||1))); }
+    else { b.rarity=rarity; if(type==="troop") b.size=((d.size||{})[prev.size] && prev.size!=="colossal") ? prev.size : "standard"; }
+    return b;
+  }
+  if(type==="action") return {type:type, rarity:rarity, ability:["A1",1]};
+  if(MENU_OF[type]){ var l=(d.menus||{})[type]||[]; return {type:type, rarity:rarity, menu:l.length?l[0].id:"", tier:1}; }
+  return null;
+}
+/* What a build may hold: how many abilities, the highest tier, whether a signature, how many Passives or Auras. */
+function caps(b){
+  var d=D(), type=b.type;
+  if(type==="hero"||type==="troop"){ var r=d.rarity[b.rarity||"common"]||d.rarity.common; return {abilities:r.abilities, tier:r.tier, signature:!!r.signature, passives:1}; }
+  if(ENEMYISH[type]){
+    var i=Math.max(1,Math.min(6,+b.skull||1))-1, g=d.grade[gradeOf(b)]||d.grade.enemy;
+    return {abilities:d.enemyAbilities[i]+g.abilities, tier:Math.min(3, d.enemyTier[i]+g.tier), signature:false, passives:gradeOf(b)==="miniboss"?2:1};
+  }
+  return {abilities:1, tier:tierCap(b.rarity), signature:!!((d.rarity[b.rarity||"common"]||{}).signature), passives:1};
+}
+
+/* The words in a card's text, without their numbers: "[[AC +1]]" is "AC", "[[Deploy 1 Sentry Turret]]" "Deploy Sentry Turret". */
+var STOP=["target","all ","turns","this Unit","attached Unit","that Unit","an ally","an enemy","when","if","while","the round begins","adjacent","persistent","within","the target","is ","has ","kills","takes","deals","moves","Troop","Hero"];
+function stems(text){
+  var out=[], parts=String(text||"").split("[[");
+  for(var i=1;i<parts.length;i++){
+    var tok=parts[i].split("]]")[0], ws=tok.split(" "), keep=[];
+    for(var j=0;j<ws.length;j++){ var w=ws[j]; if(w==="" || w==="X" || /^[+\-−]?[0-9]+$/.test(w)) continue; keep.push(w); }
+    var s=keep.join(" ");
+    var stop=false; for(var k=0;k<STOP.length;k++) if(s.indexOf(STOP[k])===0){ stop=true; break; }
+    if(s!=="" && !stop && out.indexOf(s)<0) out.push(s);
+  }
+  return out;
+}
+function has(t, w){ return String(t).indexOf(w)>=0; }
+/* One entry of a card made before, as the library ability nearest to it ("" for none: a plain attack). */
+function nearestAbility(e, melee){
+  var t=e.text==null?"":String(e.text), kind=e.kind==null?"":String(e.kind), role=e.role==null?"":String(e.role);
+  if(kind==="Aura"){
+    if(has(t,"[[DMG +")) return "U2"; if(has(t,"[[Aim +")) return "U3"; if(has(t,"[[MS +")) return "U4"; if(has(t,"[[Range +")) return "U5"; return "U1";
+  }
+  if(kind==="Passive"){
+    if(has(t,"[[gain Aether")) return has(t,"kills an enemy") ? "P16" : "P15";
+    if(has(t,"[[Deploy ")) return "P14";
+    if(has(t,"kills an enemy")) return "P10";
+    if(has(t,"is attacked")) return "P11";
+    if(has(t,"is Incapacitated")) return "P12";
+    if(has(t,"below half HP")) return "P9";
+    if(has(t,"the round begins")) return "P13";
+    if(has(t,"[[Hardened")) return "P2";
+    if(has(t,"[[Evasive")||has(t,"[[Flying")) return "P3";
+    if(has(t,"[[Leap ")) return "P4";
+    if(has(t,"[[MS +")) return "P5";
+    if(has(t,"[[Aim +")) return "P6";
+    if(has(t,"[[AC +")) return "P7";
+    if(has(t,"[[Range +")) return "P8";
+    return "P1";
+  }
+  var dmg=e.damage==null?"":String(e.damage), bdmg=e.baseDamage==null?"":String(e.baseDamage);
+  /* an attack: a Unit's hit with damage, or anything aimed at an Enemy that doesn't heal */
+  var attack=((role==="melee"||role==="ranged"||role==="cyber") && (dmg!=="" || bdmg!=="")) || ((has(t,"[[target enemy]]")||has(t,"[[all enemies")) && !has(t,"[[heal "));
+  if(!attack){
+    if(has(t,"[[heal ")) return has(t,"[[remove ") ? "S6" : "S1";
+    if(has(t,"[[remove ")) return "S6";
+    if(has(t,"[[Deploy ")) return "S7";
+    if(has(t,"[[Barricade")) return "S8";
+    if(has(t,"[[Leap ")) return "S9";
+    if(has(t,"[[Dash ")) return "S5";
+    if(has(t,"[[NRG +")) return "S4";
+    if(has(t,"[[AC +")||has(t,"[[Hardened")) return "S3";
+    return "S2";
+  }
+  if(has(t,"[[Burst ")) return melee ? "A2" : "A12";
+  if(has(t,"[[Lunge ")||has(t,"[[Charge ")) return "A3";
+  if(has(t,"[[Push ")) return "A4";
+  if(has(t,"[[Stunned")) return "A5";
+  if(has(t,"[[Rooted")) return "A7";
+  if(has(t,"[[Slowed")) return "A6";
+  if(has(t,"[[Poisoned")||has(t,"[[Bleed")) return "A8";
+  if(has(t,"[[Weakened")||has(t,"[[Drained")) return "A9";
+  if(has(t,"[[Marked")||has(t,"[[Pinned")) return "A10";
+  if(has(t,"[[AoE ")||has(t,"[[Line ")||has(t,"[[Cone ")||has(t,"[[Chain ")) return melee ? "A2" : "A11";
+  if(has(t,"[[Pierce")) return "A13";
+  if(has(t,"[[Execute")||has(t,"below half HP")) return "A14";
+  if(has(t,"[[this Unit]] takes [[damage")) return "A15";
+  return "";
+}
+function num0(v){ var n=parseInt(String(v==null?"":v),10); return isNaN(n)?0:n; }
+/* The Lab build nearest to a card made before (Convert): its role and size from its roles, archetypes and
+   numbers, its rarity or Skull Level as they are, and its entries as the library abilities nearest them. */
+function guess(card){
+  var d=D(), type=String(card.cardType||"");
+  var rarity=(d.rarities||[]).indexOf(card.rarity)>=0 ? card.rarity : "common";
+  var text=(card.entries||[]).map(function(e){ return (e&&e.text!=null)?String(e.text):""; }).join(" ");
+  if(MENU_OF[type]){
+    var l=d.menus[type]||[], best=null, bestN=-1, mine=stems(text);
+    l.forEach(function(m){
+      if(m.min && rarityRank(rarity)<rarityRank(m.min)) return;
+      var n=0, theirs=stems(m.tiers[0].text); theirs.forEach(function(s){ if(mine.indexOf(s)>=0) n++; });
+      if(n>bestN){ bestN=n; best=m; }
+    });
+    var b={type:type, rarity:rarity, menu:best?best.id:(l.length?l[0].id:""), tier:Math.max(1, Math.min(tierCap(rarity), best?best.tiers.length:1))};
+    if(type==="equipment" && rarityRank(rarity)>=rarityRank("rare") && has(text,"[[when]]")){
+      var tb=null, tn=0;
+      (d.equipTriggers||[]).forEach(function(tr){ var n=0, ts=stems(tr.text); ts.forEach(function(s){ if(mine.indexOf(s)>=0) n++; }); if(n>tn){ tn=n; tb=tr; } });
+      if(tb) b.trigger=tb.id;
+    }
+    return b;
+  }
+  if(type==="action"){
+    var e0=(card.entries||[])[0]||{}, r0=e0.role==null?"":String(e0.role), id=nearestAbility(e0, r0!=="ranged") || (r0==="ranged" ? "A13" : "A1");
+    var a=ability(id);
+    if(a && a.min && rarityRank(rarity)<rarityRank(a.min)) { id="A1"; a=ability(id); }
+    return {type:type, rarity:rarity, ability:[id, Math.max(1, Math.min(tierCap(rarity), a?a.tiers.length:1))]};
+  }
+  if(!UNIT[type]) return null;
+  var roles=card.combatRoles||[], arch=card.archetypes||[], st=card.stats||{};
+  var isR=function(r){ return roles.indexOf(r)>=0; }, isA=function(x){ return arch.indexOf(x)>=0; };
+  var attacks=(card.entries||[]).filter(function(e){ var r=e.role==null?"":String(e.role); return (r==="melee"||r==="ranged"||r==="cyber") && e.damage!=null && String(e.damage)!==""; });
+  var role;
+  if(isR("support") && !isR("melee") && !isR("ranged") && !isR("cyber")) role="support";
+  else if(isR("ranged")||isR("cyber")) role=(isR("support") && !attacks.length) ? "support" : "shooter";
+  else if(isR("melee")) role=(num0(st.move)>=5 || isA("Assassin") || isA("Light Infantry") || isA("Swarm") || isA("Chaff")) ? "skirmisher" : "brute";
+  else role="brute";
+  var b={type:type, role:role, abilities:[]}, hp=num0(st.hp);
+  if(ENEMYISH[type]){
+    b.skull=Math.max(1, Math.min(6, num0(card.skullLevel)||1));
+    var base=d.enemy[role].hp[b.skull-1]*(d.grade[gradeOf(b)]||d.grade.enemy).hp, ratio=base>0 ? hp/base : 1;
+    b.size=ratio>=1.25 ? "heavy" : (ratio<=0.6 ? "light" : "standard");
+  } else {
+    b.rarity=rarity;
+    if(type==="troop"){
+      if(hp>=45 && rarityRank(rarity)>=rarityRank("legendary")) b.size="colossal";
+      else if(hp>=30) b.size="heavy";
+      else if(hp<=15 || isA("Swarm") || isA("Chaff") || isA("Drone")) b.size="light";
+      else b.size="standard";
+    }
+  }
+  var cp=caps(b), seen={}, passives=0, plain=0, melee=d.roleAttack[role]==="melee";
+  (card.entries||[]).forEach(function(e){
+    if(b.abilities.length>=cp.abilities) return;
+    var id=nearestAbility(e, melee);
+    if(id===""){ plain++; if(plain<2) return; id=melee ? "A1" : "A13"; }
+    var a=ability(id);
+    if(!a || seen[id] || a.roles.indexOf(role)<0) return;
+    if(a.min && (ENEMYISH[type] || rarityRank(rarity)<rarityRank(a.min))) return;
+    var pas=(a.kind==="passive"||a.kind==="aura");
+    if(pas && passives>=cp.passives) return;
+    seen[id]=1; if(pas) passives++;
+    b.abilities.push([id, Math.max(1, Math.min(cp.tier, a.tiers.length))]);
+  });
+  /* the token a Summon or Escort brings, as its text named it */
+  var at=text.indexOf("[[Deploy ");
+  if(at>=0){
+    var rest=text.slice(at+9), end=rest.indexOf("]]");
+    if(end>0){
+      var inner=rest.slice(0,end), sp=inner.indexOf(" ");
+      if(sp>0 && /^[0-9]+$/.test(inner.slice(0,sp))){
+        var tk=inner.slice(sp+1);
+        if((d.tokens||[]).indexOf(tk)>=0 && b.abilities.some(function(x){ return x[0]==="S7"||x[0]==="P14"; })) b.token=tk;
+      }
+    }
+  }
+  return b;
+}
+
 /* ---- what the Forge and the Workshop offer ---- */
 function abilitiesFor(role, type, rarity){
   return (D().library||[]).filter(function(a){ return a.roles.indexOf(role)>=0; });
@@ -288,6 +458,7 @@ root.KETER_LAB = {
   line:line, compile:compile, compileUnit:compileUnit, compileOther:compileOther, check:check, norm:norm,
   target:target, points:points, suggestedAether:suggestedAether, rarityPrice:rarityPrice, tierCap:tierCap,
   ability:ability, menuItem:menuItem, trigger:trigger, abilitiesFor:abilitiesFor, halfUp:halfUp, ROMAN:ROMAN,
-  set:SET, setVersion:setVersion, applySet:applySet, setCard:setCard, retired:retiredNames
+  set:SET, setVersion:setVersion, applySet:applySet, setCard:setCard, retired:retiredNames,
+  defaultBuild:defaultBuild, caps:caps, guess:guess, stems:stems, nearestAbility:nearestAbility
 };
 })(typeof window!=="undefined" ? window : this);

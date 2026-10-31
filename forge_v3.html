@@ -136,6 +136,18 @@ textarea{resize:vertical;min-height:56px;line-height:1.45;font-size:11.5px;}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
 .grid3 input{text-align:center;padding:6px 2px;}
 .hint{font-size:10px;color:var(--dim);line-height:1.55;margin:8px 0 0;}
+/* (Lab) the Lab build */
+#labBuild .labrow{display:flex;gap:6px;align-items:flex-end;margin-bottom:6px;}
+#labBuild .labrow .field{flex:1;min-width:0;margin-bottom:0;}
+#labBuild .labrow .tier{flex:0 0 64px;}
+#labBuild .labrow .btn{flex:0 0 auto;}
+#labBuild .labhead{font-size:8.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);margin:10px 0 4px;}
+#labBuild .labsig{border:1px solid var(--line);border-radius:4px;padding:8px;margin-bottom:6px;}
+#labBuild textarea{min-height:52px;}
+#labBuild .labprob{font-size:10.5px;color:var(--danger,#e0566b);line-height:1.5;margin:6px 0 0;}
+#labBuild .labok{font-size:10.5px;color:var(--cyan);line-height:1.5;margin:6px 0 0;}
+#labBuild .labpts{font-size:10.5px;color:var(--dim);line-height:1.6;margin:6px 0 0;}
+.lablocked{pointer-events:none;opacity:.6;}
 .stack{display:flex;flex-direction:column;gap:5px;}
 
 .ability{border:1px solid var(--line);border-radius:4px;padding:9px;margin-bottom:8px;background:var(--panel-2);}
@@ -407,6 +419,13 @@ textarea{resize:vertical;min-height:56px;line-height:1.45;font-size:11.5px;}
             <button class="btn sm" id="autoNum">Auto</button>
           </div></div>
         <p class="hint">A second Affinity sweeps the card colour diagonally, first Affinity at the top-left. Levels are capped at 6 across both.</p>
+      </div>
+    </details>
+
+    <details class="sec" data-sec="lab" id="labSec" open style="display:none">
+      <summary><span class="arrow">▶</span>Lab build</summary>
+      <div class="body">
+        <div id="labBuild" data-help="Lab build|KETER Lab's card systems (the Lab switch is in the Companion's Dev Mode). A unit is a role, a size and a rarity (an Enemy a Skull Level) and up to two abilities from the library at a tier; every other card is one item from its type's menu. The stats, numbers and text come out of the build and can't be typed. Name, art, lore, District and the Aether cost stay yours."></div>
       </div>
     </details>
 
@@ -3060,7 +3079,11 @@ function optionsHTML(list,current){
   return list.map(o=>'<option value="'+esc(o.k)+'"'+
     (String(o.k)===String(current)?' selected':'')+'>'+esc(o.label)+'</option>').join('');
 }
+/* A new type from the card itself, as the Card type list makes it (it had no function to call). */
+function setType(v){ const sel=$('fType'); if(!sel||!TYPES[v]) return; sel.value=v; sel.dispatchEvent(new Event('change')); }
 function openField(r){
+  /* (Lab) what the Lab build decides can't be typed on the card either */
+  if(labLocked()&&(r.field==='stat'||r.field==='effect')){ setStatus('The Lab build sets this: change it in the Lab build section.'); return; }
   if(r.field==='name')
     return inlineEdit(r,C.name,v=>{ C.name=String(v).trim(); });
   if(r.field==='num')
@@ -3403,6 +3426,8 @@ $('fType').addEventListener('change',e=>{
   const allow=TYPES[t].entryTags;
   C.abilities=(C.abilities||[]).map(a=>
     Object.assign({},a,{tag:allow.indexOf(a.tag)>=0?a.tag:allow[0]}));
+  /* (Lab) with the Lab on, a new type is a new build: its stats and entries come from it */
+  if(labMode()) { C.lab=labType(t)?window.KETER_LAB.defaultBuild(t, C.lab):null; if(C.lab) labApply(); }
   refreshAutoNumber(); syncForm(); markDirty(); drawPreview();
 });
 SUBTYPES.forEach(t=>{ const o=document.createElement('option'); o.value=t.k;
@@ -3999,6 +4024,178 @@ $('addAbility').addEventListener('click',()=>{
   markDirty(); renderAbilities(); drawPreview();
 });
 
+/* ============================================================
+   (Lab) KETER Lab: the Lab build. With the Lab switch on (the
+   Companion's Dev Mode), a unit is a role, a size and a rarity (an
+   Enemy a Skull Level) and up to two abilities from the library at a
+   tier; every other card is one item from its type's menu (lab.js).
+   Its stats, numbers and text come out of the build, so the Stat Bar
+   and the Effects can't be typed; name, art, lore, District and the
+   Aether cost stay yours. A card made before is Legacy: Convert offers
+   the nearest build, to change and keep.
+   ============================================================ */
+const LAB_TYPES=['hero','troop','enemy','elite','miniboss','action','command','aether','equipment','sphere','consumable','prototype'];
+let LAB_LAST=null;
+function labMode(){ try{ return !!(window.KETER_LAB&&window.KETER_LAB.on()); }catch(e){ return false; } }
+function labType(t){ return LAB_TYPES.indexOf(t)>=0; }
+function labLocked(){ return labMode()&&labType(C.type); }
+/* What the build compiles to goes into the card: its type, rarity, Skull Level, roles, stats and entries. */
+function labApply(){
+  if(!C.lab||!window.KETER_LAB) return;
+  const r=window.KETER_LAB.compile(JSON.parse(JSON.stringify(C.lab))); LAB_LAST=r;
+  if(!r.card) return;
+  const cc=r.card;
+  const n=fromSchema({cardType:cc.cardType, rarity:cc.rarity, skullLevel:cc.skullLevel, combatRoles:cc.combatRoles, stats:cc.stats, entries:cc.entries});
+  C.type=n.type; C.stats=n.stats; C.abilities=n.abilities;
+  if(cc.rarity) C.rarity=cc.rarity; else if(TYPES[C.type].corner==='skulls') C.rarity='';
+  if(cc.skullLevel!=null) C.skull=String(cc.skullLevel);
+  if(cc.combatRoles) C.roles=n.roles;
+}
+function labSuggested(){
+  const r=LAB_LAST; if(!r) return null;
+  if(C.lab&&C.lab.type==='troop'&&r.points!=null) return window.KETER_LAB.suggestedAether(r.points);
+  return r.cost!=null?r.cost:null;
+}
+function labUseCost(n){
+  const aff=Math.min(Math.max(0,parseInt(C.aeAff,10)||0), n);
+  C.aeGen=String(n-aff); C.aeAff=String(aff); C.aeAff2='0';
+}
+function labSel(cls, opts, cur, extra){
+  return '<select class="'+cls+'"'+(extra||'')+'>'+opts.map(o=>'<option value="'+esc(o[0])+'"'+(String(o[0])===String(cur)?' selected':'')+(o[2]?' disabled':'')+'>'+esc(o[1])+'</option>').join('')+'</select>';
+}
+function labTierOpts(n){ const o=[]; for(let i=1;i<=n;i++) o.push([i, window.KETER_LAB.ROMAN[i]]); return o; }
+function renderLabBuild(){
+  const sec=$('labSec'), box=$('labBuild'); if(!sec||!box) return;
+  const on=labMode();
+  sec.style.display=on?'':'none';
+  labLockForm(on&&labType(C.type));
+  if(!on){ box.innerHTML=''; return; }
+  const L=window.KETER_LAB, D=L.data();
+  if(!labType(C.type)){ box.innerHTML='<p class="hint" style="margin-top:0">This kind of card has no Lab build: it is made as before.</p>'; return; }
+  /* a card made before the Lab: Legacy until it is converted */
+  if(!C.lab){
+    const empty=!(C.abilities||[]).length&&!Object.keys(C.stats||{}).some(k=>String(C.stats[k]||'').trim());
+    if(empty){ C.lab=L.defaultBuild(C.type, null); labApply(); syncForm(); drawPreview(); return; }
+    box.innerHTML='<p class="hint" style="margin-top:0"><b>Legacy card.</b> It was made before the Lab and plays as it is; with the Lab on it can\'t be changed the old way. Convert gives it the nearest Lab build, to change and keep.</p>'+
+      '<button class="btn primary sm" id="labConvert" type="button">Convert to a Lab build</button>';
+    $('labConvert').onclick=()=>{ C.lab=L.guess(toSchema(C)); labApply(); markDirty(); syncForm(); drawPreview(); };
+    return;
+  }
+  const b=C.lab, r=LAB_LAST||L.compile(JSON.parse(JSON.stringify(b))); LAB_LAST=r;
+  const unit=['hero','troop','enemy','elite','miniboss'].indexOf(b.type)>=0, foe=['enemy','elite','miniboss'].indexOf(b.type)>=0;
+  const rar=D.rarities.map(x=>[x, x.charAt(0).toUpperCase()+x.slice(1)]);
+  let h='';
+  if(unit){
+    h+='<div class="labrow"><div class="field"><label>Role</label>'+labSel('lb-role', D.roles.map(x=>[x, D.roleName[x]]), b.role)+'</div>';
+    if(b.type==='troop') h+='<div class="field"><label>Size</label>'+labSel('lb-size', D.sizes.map(x=>[x, x.charAt(0).toUpperCase()+x.slice(1)+(x==='colossal'?' (Legendary+)':'')]), b.size||'standard')+'</div>';
+    if(foe) h+='<div class="field"><label>Size</label>'+labSel('lb-size', Object.keys(D.enemySize).map(x=>[x, x.charAt(0).toUpperCase()+x.slice(1)]), b.size||'standard')+'</div>';
+    h+='</div><div class="labrow">';
+    if(foe) h+='<div class="field"><label>Skull Level</label>'+labSel('lb-skull', [1,2,3,4,5,6].map(x=>[x, String(x)]), b.skull||1)+'</div>';
+    else h+='<div class="field"><label>Rarity</label>'+labSel('lb-rarity', rar, b.rarity||'common')+'</div>';
+    const trades=[['', 'No trade']]; (D.trades||[]).forEach(t=>{ trades.push([t.join(','), '−'+t[1]+' '+t[0].toUpperCase()+', +'+t[3]+' '+t[2].toUpperCase()]); trades.push([[t[2],t[3],t[0],t[1]].join(','), '−'+t[3]+' '+t[2].toUpperCase()+', +'+t[1]+' '+t[0].toUpperCase()]); });
+    h+='<div class="field"><label>Trade</label>'+labSel('lb-trade', trades, b.trade?b.trade.join(','):'')+'</div></div>';
+    const cap=L.caps(b);
+    h+='<div class="labhead">Abilities · up to '+cap.abilities+', tier '+L.ROMAN[cap.tier]+' at most'+(cap.passives>1?', two Passives or Auras':', one Passive or Aura')+'</div>';
+    (b.abilities||[]).forEach((x,i)=>{
+      if(x[0]==='SIG'){
+        const sg=x[1]||{};
+        h+='<div class="labsig" data-i="'+i+'"><div class="labrow"><div class="field"><label>Signature · name</label><input type="text" class="lb-sname" value="'+esc(sg.name||'')+'"></div>'+
+          '<div class="field"><label>Kind</label>'+labSel('lb-skind', [['attack','Attack'],['support','Support'],['passive','Passive'],['aura','Aura']], sg.kind||'passive')+'</div>'+
+          '<button class="btn sm lb-rm" type="button" title="Remove">×</button></div>'+
+          '<div class="field"><label>Text (core keywords)</label><textarea class="lb-stext">'+esc(sg.text||'')+'</textarea></div>'+
+          '<div class="labrow"><div class="field"><label>Points</label><input type="text" inputmode="numeric" class="lb-snum" data-k="points" value="'+esc(sg.points!=null?sg.points:'')+'"></div>'+
+          ((sg.kind==='attack'||sg.kind==='support')?'<div class="field"><label>Energy</label><input type="text" inputmode="numeric" class="lb-snum" data-k="e" value="'+esc(sg.e!=null?sg.e:'')+'"></div>':'')+
+          (sg.kind==='attack'?'<div class="field"><label>DMG ±</label><input type="text" class="lb-snum" data-k="dmg" value="'+esc(sg.dmg!=null?sg.dmg:'')+'"></div><div class="field"><label>Range ±</label><input type="text" class="lb-snum" data-k="rng" value="'+esc(sg.rng!=null?sg.rng:'')+'"></div>':'')+
+          '</div></div>';
+        return;
+      }
+      const opts=[]; ['attack','support','passive','aura'].forEach(k=>D.library.filter(a=>a.kind===k).forEach(a=>{
+        const shut=a.roles.indexOf(b.role)<0||(a.min&&(foe||D.rarities.indexOf(b.rarity||'common')<D.rarities.indexOf(a.min)));
+        opts.push([a.id, a.id+' · '+a.name+(a.roles.indexOf(b.role)<0?' (not for a '+D.roleName[b.role]+')':(a.min&&shut?' ('+a.min+'+)':'')), shut&&a.id!==x[0]]);
+      }));
+      const a=L.ability(x[0]), nt=a?Math.min(3,a.tiers.length):3;
+      h+='<div class="labrow" data-i="'+i+'"><div class="field"><label>'+(a?esc(a.does):'Ability')+'</label>'+labSel('lb-ab', opts, x[0])+'</div>'+
+        '<div class="field tier"><label>Tier</label>'+labSel('lb-tier', labTierOpts(nt), x[1])+'</div>'+
+        '<button class="btn sm lb-rm" type="button" title="Remove">×</button></div>';
+    });
+    if((b.abilities||[]).length<cap.abilities){
+      h+='<div class="labrow"><button class="btn sm" id="lbAdd" type="button">Add an ability</button>'+
+        (cap.signature&&!(b.abilities||[]).some(x=>x[0]==='SIG')?'<button class="btn sm" id="lbAddSig" type="button">Add a signature ability</button>':'')+'</div>';
+    }
+    if((b.abilities||[]).some(x=>x[0]!=='SIG'&&L.ability(x[0])&&/\{token\}/.test(L.ability(x[0]).tiers[0].text)))
+      h+='<div class="field"><label>Token it brings</label>'+labSel('lb-token', D.tokens.map(t=>[t,t]), b.token||'Scuttlebot')+'</div>';
+  } else if(b.type==='action'){
+    const x=b.ability||['A1',1], sig=x[0]==='SIG';
+    h+='<div class="labrow"><div class="field"><label>Rarity</label>'+labSel('lb-rarity', rar, b.rarity||'common')+'</div></div>';
+    const opts=D.library.map(a=>[a.id, a.id+' · '+a.name+' ('+a.kind+')', !!(a.min&&D.rarities.indexOf(b.rarity||'common')<D.rarities.indexOf(a.min))&&a.id!==x[0]]);
+    if(L.caps(b).signature) opts.unshift(['SIG','Signature (its own)']);
+    const a=sig?null:L.ability(x[0]);
+    h+='<div class="labrow"><div class="field"><label>Ability</label>'+labSel('lb-aab', opts, x[0])+'</div>'+
+      (sig?'':'<div class="field tier"><label>Tier</label>'+labSel('lb-atier', labTierOpts(a?Math.min(3,a.tiers.length):3), x[1])+'</div>')+'</div>';
+    if(sig){ const sg=x[1]||{};
+      h+='<div class="labsig"><div class="labrow"><div class="field"><label>Name</label><input type="text" class="lb-aname" value="'+esc(sg.name||'')+'"></div>'+
+        '<div class="field"><label>Kind</label>'+labSel('lb-akind', [['attack','Attack'],['support','Support'],['passive','Passive'],['aura','Aura']], sg.kind||'support')+'</div></div>'+
+        '<div class="field"><label>Text (core keywords)</label><textarea class="lb-atext">'+esc(sg.text||'')+'</textarea></div></div>'; }
+    if(!sig&&a&&/\{token\}/.test(a.tiers[0].text)) h+='<div class="field"><label>Token it brings</label>'+labSel('lb-token', D.tokens.map(t=>[t,t]), b.token||'Scuttlebot')+'</div>';
+  } else {
+    const items=(D.menus[b.type]||[]), m=L.menuItem(b.type, b.menu);
+    h+='<div class="labrow"><div class="field"><label>Rarity</label>'+labSel('lb-rarity', rar, b.rarity||'common')+'</div></div>';
+    h+='<div class="labrow"><div class="field"><label>Card</label>'+labSel('lb-menu', items.map(it=>[it.id, it.id+' · '+it.name+(it.min?' ('+it.min+'+)':''), !!(it.min&&D.rarities.indexOf(b.rarity||'common')<D.rarities.indexOf(it.min))&&it.id!==b.menu]), b.menu)+'</div>'+
+      '<div class="field tier"><label>Tier</label>'+labSel('lb-mtier', labTierOpts(m?m.tiers.length:3), b.tier||1)+'</div></div>';
+    if(b.type==='equipment') h+='<div class="field"><label>Trigger (Rare and rarer)</label>'+labSel('lb-trig', [['','None']].concat(D.equipTriggers.map(t=>[t.id, t.id+' · '+t.name])), b.trigger||'')+'</div>';
+  }
+  /* what it is worth, what it costs, what it breaks */
+  const probs=(r.problems||[]);
+  if(r.points!=null) h+='<p class="labpts">'+r.points+' points'+(r.target!=null?' · '+(b.rarity||'common').replace(/^./,c=>c.toUpperCase())+' target '+r.target+(Math.abs(r.points-r.target)<=4?' · on target':(r.points>r.target?' · '+(r.points-r.target)+' over':' · '+(r.target-r.points)+' under')):'')+'</p>';
+  const sug=labSuggested();
+  if(sug!=null&&TYPES[C.type].aether){
+    const now=(parseInt(C.aeGen,10)||0)+(parseInt(C.aeAff,10)||0)+(parseInt(C.aeAff2,10)||0);
+    h+='<div class="labrow"><p class="labpts" style="flex:1;margin:0">Suggested cost: '+sug+' Aether'+(now===sug?' (it costs that)':' (it costs '+now+')')+'</p>'+(now!==sug?'<button class="btn sm" id="lbCost" type="button">Use it</button>':'')+'</div>';
+  }
+  h+=probs.length?probs.map(p=>'<p class="labprob">'+esc(p)+'</p>').join(''):'<p class="labok">The build keeps every rule.</p>';
+  box.innerHTML=h;
+  labWire(box);
+}
+/* Every control changes the build, then the card. */
+function labChanged(){ labApply(); markDirty(); syncForm(); drawPreview(); }
+function labWire(box){
+  const L=window.KETER_LAB, b=C.lab;
+  const on=(sel,ev,fn)=>box.querySelectorAll(sel).forEach(el=>el.addEventListener(ev,()=>fn(el)));
+  const row=el=>parseInt((el.closest('[data-i]')||{}).getAttribute?el.closest('[data-i]').getAttribute('data-i'):-1,10);
+  on('.lb-role','change',el=>{ b.role=el.value; labChanged(); });
+  on('.lb-size','change',el=>{ b.size=el.value; labChanged(); });
+  on('.lb-skull','change',el=>{ b.skull=parseInt(el.value,10)||1; labChanged(); });
+  on('.lb-rarity','change',el=>{ b.rarity=el.value; labChanged(); });
+  on('.lb-trade','change',el=>{ if(el.value){ const p=el.value.split(','); b.trade=[p[0],+p[1],p[2],+p[3]]; } else delete b.trade; labChanged(); });
+  on('.lb-ab','change',el=>{ const i=row(el); b.abilities[i]=[el.value, Math.min(b.abilities[i][1]||1, L.caps(b).tier)]; labChanged(); });
+  on('.lb-tier','change',el=>{ const i=row(el); b.abilities[i][1]=parseInt(el.value,10)||1; labChanged(); });
+  on('.lb-rm','click',el=>{ const i=row(el); b.abilities.splice(i,1); labChanged(); });
+  on('.lb-token','change',el=>{ b.token=el.value; labChanged(); });
+  on('.lb-sname','change',el=>{ b.abilities[row(el)][1].name=el.value; labChanged(); });
+  on('.lb-skind','change',el=>{ b.abilities[row(el)][1].kind=el.value; labChanged(); });
+  on('.lb-stext','change',el=>{ b.abilities[row(el)][1].text=el.value; labChanged(); });
+  on('.lb-snum','change',el=>{ const sg=b.abilities[row(el)][1], k=el.getAttribute('data-k'), v=String(el.value).trim(); if(v===''||isNaN(+v)) delete sg[k]; else sg[k]=parseInt(v,10); labChanged(); });
+  on('.lb-aab','change',el=>{ b.ability=el.value==='SIG'?['SIG',{name:C.name||'Signature',kind:'support',text:'',points:0}]:[el.value, Math.min((b.ability&&b.ability[0]!=='SIG'&&b.ability[1])||1, L.tierCap(b.rarity))]; labChanged(); });
+  on('.lb-atier','change',el=>{ b.ability[1]=parseInt(el.value,10)||1; labChanged(); });
+  on('.lb-aname','change',el=>{ b.ability[1].name=el.value; labChanged(); });
+  on('.lb-akind','change',el=>{ b.ability[1].kind=el.value; labChanged(); });
+  on('.lb-atext','change',el=>{ b.ability[1].text=el.value; labChanged(); });
+  on('.lb-menu','change',el=>{ b.menu=el.value; labChanged(); });
+  on('.lb-mtier','change',el=>{ b.tier=parseInt(el.value,10)||1; labChanged(); });
+  on('.lb-trig','change',el=>{ if(el.value) b.trigger=el.value; else delete b.trigger; labChanged(); });
+  const add=$('lbAdd'); if(add) add.onclick=()=>{ const id=(L.abilitiesFor(b.role)||[])[0]; b.abilities=b.abilities||[]; b.abilities.push([id?id.id:'A1',1]); labChanged(); };
+  const sig=$('lbAddSig'); if(sig) sig.onclick=()=>{ b.abilities.push(['SIG',{name:'Signature',kind:'passive',text:'',points:0}]); labChanged(); };
+  const cost=$('lbCost'); if(cost) cost.onclick=()=>{ const n=labSuggested(); if(n!=null){ labUseCost(n); markDirty(); syncForm(); drawPreview(); } };
+}
+/* With the Lab on, what the build decides can't be typed. */
+function labLockForm(lock){
+  ['statGrid','abilityList'].forEach(id=>{ const el=$(id); if(!el) return;
+    el.classList.toggle('lablocked',lock);
+    el.querySelectorAll('input,select,textarea,button,.rm').forEach(x=>{ if('disabled' in x) x.disabled=lock; else x.style.display=lock?'none':''; }); });
+  ['addAbility'].forEach(id=>{ const el=$(id); if(el) el.style.display=lock?'none':''; });
+  ['fRarity','fSkull','fRoleMelee','fRoleRanged','fRoleSupport','fRoleCyber'].forEach(id=>{ const el=$(id); if(el) el.disabled=lock; });
+}
+
 function syncForm(){
   $('fName').value=C.name||''; $('fAff').value=C.aff||''; $('fAff2').value=C.aff2||'';
   $('fNum').value=C.num||''; renderArchChips();
@@ -4087,6 +4284,7 @@ function syncForm(){
   $('fLore').value=C.lore||''; $('fLoreOn').checked=C.loreOn!==false;
   buildStatInputs(); syncScaleUI();
   renderAbilities(); renderNameTag();
+  renderLabBuild();
 }
 
 /* options */
@@ -4141,6 +4339,11 @@ function writeAll(o){
 function storeAs(name,previous){
   name=String(name||'').trim();
   if(!name){ setStatus('A card needs a name before it can be saved.'); return; }
+  /* (Lab) a Lab build that breaks a rule isn't kept: what it breaks is in the Lab build section */
+  if(labLocked()&&C.lab&&window.KETER_LAB){
+    const probs=window.KETER_LAB.check(JSON.parse(JSON.stringify(C.lab)));
+    if(probs.length){ setStatus('Not saved: '+probs[0]+(probs.length>1?' (and '+(probs.length-1)+' more)':'')+'.'); return; }
+  }
   C.name=name; stampAuthor(C); syncForm();
   const all=readAll();
   /* #7: Save As is a rename, not a copy. Dropping the old key is what stops a
@@ -4496,6 +4699,8 @@ function toSchema(card){
     testCovers:card.testCard?(card.testCovers||[]):undefined,
     testExpect:card.testCard?(card.testExpect||[]):undefined,
     stats:stats,
+    /* (Lab) a Lab card carries its build, so the Forge can open it again as one */
+    lab:card.lab?JSON.parse(JSON.stringify(card.lab)):undefined,
     baseStats:card.base?card.base.stats:null,
     entries:(card.abilities||[]).map((a,i)=>({
       name:a.name||'', kind:a.tag||'', energyCost:(a.cost||'')||null,
@@ -4510,6 +4715,8 @@ function toSchema(card){
     power:(a.power===''||a.power===undefined)?null:a.power,
     needsReview:a.needsReview||null,
       baseDamage:(card.base&&card.base.dmg&&card.base.dmg[i]!=null)?card.base.dmg[i]:null,
+      lab:Array.isArray(a.lab)?a.lab.slice():undefined,
+      signature:a.sig?true:undefined,
       text:a.text||''
     })),
     lore:(card.loreOn!==false&&(card.lore||'').trim())?card.lore:null,
@@ -4607,8 +4814,12 @@ function fromSchema(o){
     dmg:e.damage==null?'':String(e.damage),
     role:roleOK(e.role)?String(e.role):'',
     proj:projOK(e.projectile)?String(e.projectile):'',
+    lab:Array.isArray(e.lab)?e.lab.slice():undefined,
+    sig:e.signature?true:undefined,
     text:String(e.text||'')
   }));
+  /* (Lab) the build it was made from, if it was */
+  card.lab=(o.lab&&typeof o.lab==='object'&&!Array.isArray(o.lab))?JSON.parse(JSON.stringify(o.lab)):null;
   if(o.baseStats||entries.some(e=>e.baseDamage!=null)){
     const b={stats:{},dmg:{}};
     if(o.baseStats) Object.keys(o.baseStats).forEach(k=>b.stats[k]=String(o.baseStats[k]));
