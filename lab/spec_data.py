@@ -27,15 +27,37 @@ SIZE = {   # hp multiplier and the steps added to the Standard line; slots taken
     "heavy":    {"hp": 1.5, "ac": 2, "ms": -1, "nrg": 0, "dmg": 3, "ap": 1, "slots": 2, "base": 4, "price": 30, "note": "bots and walkers"},
     "colossal": {"hp": 2.0, "ac": 3, "ms": -1, "nrg": 0, "dmg": 5, "ap": 2, "slots": 3, "base": 6, "price": 42, "note": "Legendary and Mythic only"},
 }
-# Rarity: a little more of everything (Q1), and how far the abilities may go
+# Rarity (Q1, decided 31 Oct): Common - Uncommon -- Rare -- Epic --- Legendary ---- Mythic, each dash
+# a step of power. The low three sit close; Epic, Legendary and Mythic pull away. "steps" is the dash
+# count from Common; the bonus and the ability allowance are sized so a typical card lands on its target.
 RARITY = {
-    "common":    {"hp": 0, "ac": 0, "ap": 0, "tier": 1, "abilities": 1, "price": 0},
-    "uncommon":  {"hp": 2, "ac": 0, "ap": 0, "tier": 2, "abilities": 2, "price": 2},
-    "rare":      {"hp": 4, "ac": 1, "ap": 1, "tier": 2, "abilities": 2, "price": 5},
-    "epic":      {"hp": 6, "ac": 1, "ap": 1, "tier": 3, "abilities": 2, "price": 8},
-    "legendary": {"hp": 8, "ac": 2, "ap": 2, "tier": 3, "abilities": 2, "price": 11},
-    "mythic":    {"hp": 10, "ac": 2, "ap": 2, "tier": 3, "abilities": 2, "price": 13},
+    "common":    {"steps": 0,  "hp": 0,  "ac": 0, "ap": 0, "ms": 0, "tier": 1, "abilities": 1},
+    "uncommon":  {"steps": 1,  "hp": 2,  "ac": 0, "ap": 0, "ms": 0, "tier": 1, "abilities": 2},
+    "rare":      {"steps": 3,  "hp": 4,  "ac": 1, "ap": 0, "ms": 0, "tier": 2, "abilities": 2},
+    "epic":      {"steps": 5,  "hp": 5,  "ac": 1, "ap": 1, "ms": 0, "tier": 3, "abilities": 2},
+    "legendary": {"steps": 8,  "hp": 14, "ac": 2, "ap": 2, "ms": 0, "tier": 3, "abilities": 2},
+    "mythic":    {"steps": 12, "hp": 27, "ac": 3, "ap": 3, "ms": 0, "tier": 3, "abilities": 2},
 }
+STAT_PRICE = {"hp": 1, "ac": 3, "ap": 2, "ms": 2, "ldr": 2, "slots": 3}   # points a stat is worth, each
+
+
+def rarity_price(bonus):
+    return sum(STAT_PRICE.get(k, 0) * v for k, v in bonus.items() if k in STAT_PRICE)
+
+
+TIER_PRICE = {1: 3, 2: 5, 3: 8}       # a typical ability at each tier
+
+
+def target(card_type, rarity, size="standard"):
+    """The points a typical card of this rarity comes to: the yardstick the Forge holds a card against."""
+    r = RARITY[rarity]
+    if card_type == "hero":
+        base, bonus = 30, rarity_price(HERO_RARITY[rarity])
+    else:
+        base, bonus = SIZE[size]["price"], rarity_price(r)
+    return base + bonus + r["abilities"] * TIER_PRICE[r["tier"]]
+
+
 # One trade a card, either way
 TRADES = [("hp", 4, "ms", 1), ("hp", 3, "ac", 1), ("hp", 3, "rng", 1), ("hp", 4, "nrg", 1)]
 
@@ -47,11 +69,12 @@ HERO = {
     "support":    {"hp": 24, "ac": 11, "ms": 3, "nrg": 4, "dmg": 3, "rng": 3, "hit": 9, "ap": 2, "ldr": 3, "slots": 1},
 }
 HERO_RARITY = {
-    "common":    {"hp": 0, "ac": 0, "ap": 0, "ldr": 0, "slots": 0},
-    "uncommon":  {"hp": 3, "ac": 0, "ap": 0, "ldr": 0, "slots": 0},
-    "rare":      {"hp": 6, "ac": 1, "ap": 1, "ldr": 0, "slots": 1},
-    "epic":      {"hp": 9, "ac": 1, "ap": 1, "ldr": 1, "slots": 1},
-    "legendary": {"hp": 12, "ac": 2, "ap": 2, "ldr": 1, "slots": 1},
+    "common":    {"hp": 0,  "ac": 0, "ap": 0, "ldr": 0, "slots": 0},
+    "uncommon":  {"hp": 3,  "ac": 0, "ap": 0, "ldr": 0, "slots": 0},
+    "rare":      {"hp": 4,  "ac": 1, "ap": 0, "ldr": 0, "slots": 1},
+    "epic":      {"hp": 5,  "ac": 1, "ap": 1, "ldr": 1, "slots": 1},
+    "legendary": {"hp": 16, "ac": 2, "ap": 2, "ldr": 1, "slots": 1},
+    "mythic":    {"hp": 30, "ac": 3, "ap": 3, "ldr": 2, "slots": 1},
 }
 
 # Enemies by Skull Level 1-6, Standard size. Enemies have no rarity.
@@ -318,7 +341,7 @@ def unit_line(card_type, role, size, rarity=None, skull=None, grade="enemy", tra
              "ap": b["ap"] + r["ap"], "ldr": b["ldr"] + r["ldr"], "slots": b["slots"] + r["slots"]}
     elif card_type == "troop":
         b, z, r = TROOP[role], SIZE[size], RARITY[rarity]
-        s = {"hp": int(round(b["hp"] * z["hp"])) + r["hp"], "ac": b["ac"] + z["ac"] + r["ac"], "ms": max(0, b["ms"] + z["ms"]), "nrg": max(1, b["nrg"] + z["nrg"]),
+        s = {"hp": int(round(b["hp"] * z["hp"])) + r["hp"], "ac": b["ac"] + z["ac"] + r["ac"], "ms": max(0, b["ms"] + z["ms"] + r["ms"]), "nrg": max(1, b["nrg"] + z["nrg"]),
              "dmg": max(1, b["dmg"] + z["dmg"]), "rng": b["rng"], "hit": b["hit"], "ap": b["ap"] + z["ap"] + r["ap"], "uslot": z["slots"]}
     else:
         b, z, g, i = ENEMY[role], ENEMY_SIZE[size], GRADE[grade], skull - 1
@@ -374,10 +397,10 @@ def compile_unit(b):
     stats = {"hp": str(line["hp"]), "ac": str(line["ac"]), "move": str(line["ms"]), "int": str(line["ac"])}
     if ct == "troop":
         stats.update({"nrg": str(line["nrg"]), "uslot": str(line["uslot"])})
-        price += SIZE[b.get("size", "standard")]["price"] + RARITY[b["rarity"]]["price"]
+        price += SIZE[b.get("size", "standard")]["price"] + rarity_price(RARITY[b["rarity"]])
     elif ct == "hero":
         stats.update({"apT": str(line["nrg"]), "ldr": str(line["ldr"]), "slots": str(line["slots"])})
-        price += 30 + RARITY[b["rarity"]]["price"]
+        price += 30 + rarity_price(HERO_RARITY[b["rarity"]])
     else:
         price += 10 + 8 * b["skull"]
     card = {"cardType": ct, "name": b["name"], "rarity": b.get("rarity"), "skullLevel": b.get("skull"), "combatRoles": [atk if b["role"] != "support" else "support"],
