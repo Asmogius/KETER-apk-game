@@ -687,14 +687,15 @@ static func is_limited(c) -> bool:
 ## dock's; a Troop is yours if Common or your design; a test card ("Test ...")
 ## only once you hold one.
 func holds(c) -> int:
-	if every_card or not (c is Dictionary):
-		return -1
-	if Rules.truthy(c.get("basic")):
+	if not (c is Dictionary) or Rules.truthy(c.get("basic")):
 		return -1
 	var nm := str(c.get("name", ""))
 	var t := Roster.type_of(c)
+	# a Hero is yours as recruiting has it (every_hero for the tests made before it)
 	if t == "hero":
 		return -1 if owns(nm) else 0
+	if every_card:
+		return -1
 	if nm.begins_with("Test "):
 		return owned(nm)
 	match t:

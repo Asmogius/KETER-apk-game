@@ -8347,8 +8347,9 @@ func _twentyfive_scene() -> void:
 	ck("0.25 screen: the Recruit tab: nobody on offer yet, the free Heroes, none recruited", dk.tab == "recruit" and dk.tabs["recruit"].button_pressed and dk.row_texts().has("Nobody on offer.") and dk.row_texts().has("Free Heroes")
 		and dk.row_texts().has("No Heroes recruited yet.") and FREE_HEROES.all(func(n): return dk.row_texts().has(n)), dk.row_texts())
 	var fr: int = dk.row_texts().find("Dock Hand")
-	ck("0.25 screen: a free Hero's tile: its token, its rarity and numbers, its abilities, Always yours, no price", fr >= 0 and dk._rows[fr].get("tile", false) and _labels(dk._rows[fr]["row"]).has("Always yours")
-		and _labels(dk._rows[fr]["row"]).any(func(l): return str(l).begins_with("Common · any District · melee") and "HP 32" in str(l) and "Wrench Swing" in str(l)) and dk._rows[fr]["acts"].is_empty() and _first_icon(dk._rows[fr]["row"], "shards") == null,
+	ck("0.25 screen: a free Hero's tile (0.43: its card, which has its numbers and abilities): its rarity, Always yours, no price", fr >= 0 and dk._rows[fr].get("tile", false) and _labels(dk._rows[fr]["row"]).has("Always yours")
+		and _labels(dk._rows[fr]["row"]).has("Common · any District · melee") and _first_of(dk._rows[fr]["row"], func(n): return n is CardTile and n.card.get("name") == "Dock Hand") != null
+		and dk._rows[fr]["acts"].is_empty() and _first_icon(dk._rows[fr]["row"], "shards") == null,
 		_labels(dk._rows[fr]["row"]) if fr >= 0 else dk.row_texts())
 	ck("0.25 screen: teams that can't leave as they stand are named", dk.row_texts().any(func(l): return str(l).begins_with("Can't deploy until their Heroes are recruited") and "Test Vanguard (Test Warden, Test Striker, Quillon Vex)" in str(l)), dk.row_texts())
 	ck("0.25 screen: its \"?\" says what it is for", "yours until a team it goes out with is wiped out" in dk.hint.text and "Free Heroes: Always yours" in dk.help_text, [dk.hint.text, dk.help_text])
