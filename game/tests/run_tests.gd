@@ -39,6 +39,13 @@ func _run() -> void:
 		Rules.hooks = {}
 		quit(1 if bad > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("fortyfive"):
+		await _fortyfive()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("fortyfour"):
 		await _fortyfour()
 		Kit.fresh()
@@ -389,6 +396,7 @@ func _run() -> void:
 	_fortytwo()
 	await _fortythree()
 	await _fortyfour()
+	await _fortyfive()
 	_lab_set()
 	await _lab_forge_scene()
 	await _lab_workshop_scene()
@@ -10671,20 +10679,97 @@ func _fortyfour() -> void:
 	g.set_items(items, false)
 	ck("0.44 grid: and starting over makes them anew too", not is_same(g.tiles[0], tiles[0]) or g.tiles.size() == 12)
 	g.queue_free()
-	# the sounds, made off the main thread
-	var snd := Sound.new()
-	root.add_child(snd)
-	ck("0.44 sounds: a sound asked for before the thread is done is made there and then", Sound.stream("hit") is AudioStreamWAV and Sound.stream("nonsense") == null)
-	for i in 120:
-		if snd._task < 0:
-			break
-		await process_frame
-	ck("0.44 sounds: and the thread makes the rest", snd._task < 0 and Sound.NAMES.keys().all(func(n): return Sound.streams.get(n) is AudioStreamWAV), Sound.streams.keys())
-	snd.queue_free()
-	await process_frame
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- 0.45: a fight that opens safely; the black box
+func _fortyfive() -> void:
+	Kit.fresh()
+	# the music and sounds come made: the same as the game would make them, loaded, no thread
+	var sfx_ok := Sound.NAMES.keys().all(func(n):
+		var kept = load(Sound.made_path(n)) if ResourceLoader.exists(Sound.made_path(n)) else null
+		var made := Sound._make(n)
+		return kept is AudioStreamWAV and kept.data == made.data and kept.mix_rate == made.mix_rate and kept.format == made.format)
+	ck("0.45 sounds: each is kept made (res://audio), the same as the game makes it", sfx_ok)
+	var music_ok := Music.TRACKS.keys().all(func(n):
+		var kept := Music.load_made(n)
+		var made := Music.make(n)
+		return kept != null and kept.data == made.data and kept.mix_rate == made.mix_rate and kept.loop_mode == made.loop_mode and kept.loop_end == made.loop_end)
+	ck("0.45 music: each loop is kept made, the same as the game makes it", music_ok)
+	var probe := Sound.new()
+	var threadless := not ("_task" in probe)
+	probe.free()
 	Sound.load_all()
-	# the screen drawn only when something changes
-	ck("0.44 project: the screen is drawn only when something on it changes (low processor mode)", bool(ProjectSettings.get_setting("application/run/low_processor_mode", false)))
+	ck("0.45 sounds: loaded, not made, as the game starts (no thread)", threadless and Sound.NAMES.keys().all(func(n): return Sound.streams.get(n) is AudioStreamWAV and (Sound.streams[n] as AudioStreamWAV).resource_path == Sound.made_path(n)))
+	var mu := Music.new()
+	root.add_child(mu)
+	Music.auto = true
+	mu.want("fight")
+	ck("0.45 music: a fight's loop is loaded as it is wanted, and plays; nothing made, no thread", mu.streams.has("fight") and mu._making.is_empty() and mu.player.stream == mu.streams["fight"])
+	Music.auto = false
+	mu.queue_free()
+	await process_frame
+	ck("0.45 project: the screen is drawn every frame again (low processor mode off: 0.44 had it on); the engine keeps a log", not bool(ProjectSettings.get_setting("application/run/low_processor_mode", false))
+		and bool(ProjectSettings.get_setting("debug/file_logging/enable_file_logging", false)))
+	ck("0.45 transition: the screen is read back for the still only where it isn't a phone", Transition.read_screen == (not OS.has_feature("mobile")))
+	# the black box
+	BlackBox.enabled = true
+	SafeFile.remove(BlackBox.path)
+	ck("0.45 black box: a first start has nothing to say", BlackBox.begin("0.45") == "")
+	BlackBox.mark("fight opening: the floor drawn (TEST Floor, 61 tiles)")
+	BlackBox.mark("fight opening: the Units placed")
+	var kept: Dictionary = BlackBox.read()
+	ck("0.45 black box: each step is kept at once, the run marked open", kept.get("state") == "open" and kept["trail"].size() == 3 and str(kept["trail"][-1]["step"]) == "fight opening: the Units placed")
+	# the last run never closed: the next start says what it was doing
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("user://test_logs"))
+	BlackBox.log_dir = "user://test_logs"
+	var lf := FileAccess.open("user://test_logs/godot2026-11-01T10.00.00.log", FileAccess.WRITE)
+	lf.store_string("Godot Engine v4.7.2\nsome line\nERROR: Something went wrong in the renderer.\n   at: draw (servers/rendering.cpp:12)\n")
+	lf.close()
+	var said := BlackBox.begin("0.45")
+	ck("0.45 black box: a run that never closed is reported at the next start: its last steps and the engine's last errors", said.contains("the Units placed") and said.contains("the floor drawn") and said.contains("ERROR: Something went wrong in the renderer.")
+		and said.contains("at: draw"), said)
+	BlackBox.set_state("paused")
+	ck("0.45 black box: put away (paused) is no closing all at once", BlackBox.begin("0.45") == "")
+	BlackBox.set_state("closed")
+	ck("0.45 black box: nor is closing the usual way", BlackBox.begin("0.45") == "")
+	BlackBox.trail = []
+	# the game: a fight's opening marked, step by step, and the report shown at the start
+	SafeFile.remove(BlackBox.path)
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	await process_frame
+	scene.open_setup("quick")
+	var s: SetupScreen = scene.setup
+	s.choose_floor(0)
+	s._go(1)
+	for c in scene.roster.heroes().slice(0, 1):
+		s.toggle_hero(c["name"])
+	s._go(1)
+	s._go(1)
+	for i in 4:
+		await process_frame
+	var steps: Array = BlackBox.read().get("trail", []).map(func(t): return str(t["step"]))
+	ck("0.45 black box: a fight's opening is kept step by step: its music, the screen changing, the floor, the Units, its first frame", scene.battle != null and ["fight opening: its music", "fight opening: the screen changing", "fight opening: the Units placed", "fight opening: its first frame shown"].all(func(x): return steps.has(x))
+		and steps.any(func(x): return x.begins_with("a Quick battle: begun by the rules")), steps)
+	scene.queue_free()
+	await process_frame
+	# the last run (that one) closed all at once? (the tests drop it: _exit_tree marks it closed)
+	var after: Dictionary = BlackBox.read()
+	ck("0.45 black box: the game taken down the usual way is marked closed", after.get("state") == "closed", after.get("state"))
+	BlackBox.set_state("open")
+	var scene2: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene2)
+	await process_frame
+	await process_frame
+	ck("0.45 black box: and a run that never closed is said at the next start, on Home, to copy", scene2.dialog != null and scene2.dialog.title_label.text == "KETER closed unexpectedly" and scene2.dialog.buttons[0].text == "Copy"
+		and scene2.dialog.text_label.text.contains("the World Map") == false and scene2.dialog.text_label.text.contains("Last time, KETER closed"), scene2.dialog.title_label.text if scene2.dialog != null else null)
+	scene2.queue_free()
+	await process_frame
+	BlackBox.enabled = false
+	BlackBox.log_dir = "user://logs"
 	Kit.fresh()
 
 

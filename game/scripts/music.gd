@@ -1,9 +1,12 @@
 ## (0.39) The game's music: short chiptune loops it makes for itself, as it
 ## makes its sounds (sound.gd): a square-wave bass, a triangle arpeggio over
 ## it, and noise for drums. One for Home, one for the World Map and the dock,
-## one for a fight and one for a Boss's floor. Each is made the first time it
-## is wanted, off the main thread, and then kept; the change from one to
-## another fades. Options' Music sets Off, Low or High.
+## one for a fight and one for a Boss's floor. The change from one to another
+## fades. Options' Music sets Off, Low or High.
+## (0.45) The loops come made, as resources in res://audio (music_<name>.res,
+## tools/audio/make_audio.gd), and are loaded when first wanted: nothing is
+## made as a fight opens, and no other thread runs. Only a loop that isn't
+## there is made as before, off the main thread.
 class_name Music
 extends Node
 
@@ -42,6 +45,16 @@ func _ready() -> void:
 	add_child(player)
 
 
+## (0.45) The game going: its loops are let go.
+func _exit_tree() -> void:
+	if player != null:
+		player.stop()
+		player.stream = null
+	streams = {}
+	if host == self:
+		host = null
+
+
 ## Plays this loop (or, with "", none), fading from the one before.
 func want(name: String) -> void:
 	if not auto:
@@ -53,6 +66,10 @@ func want(name: String) -> void:
 	if name == "" or Motion.music == "off":
 		_fade_to(-80.0, true)
 		return
+	if not streams.has(name):
+		var made := load_made(name)
+		if made != null:
+			streams[name] = made
 	if streams.has(name):
 		_start(name)
 	elif not _making.has(name):
@@ -99,6 +116,22 @@ func _fade_to(db: float, stop: bool) -> void:
 	_fade.tween_property(player, "volume_db", db, 0.8)
 	if stop:
 		_fade.tween_callback(player.stop)
+
+
+## (0.45) Where a loop is kept, made.
+static func made_path(name: String) -> String:
+	return "res://audio/music_%s.res" % name
+
+
+## The loop kept, made, or null.
+static func load_made(name: String) -> AudioStreamWAV:
+	var p := made_path(name)
+	if ResourceLoader.exists(p):
+		# (not kept in the engine's cache: the game holds what it loads, and lets it go)
+		var w = ResourceLoader.load(p, "", ResourceLoader.CACHE_MODE_IGNORE)
+		if w is AudioStreamWAV:
+			return w
+	return null
 
 
 func _make_into(name: String) -> void:

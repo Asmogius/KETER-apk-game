@@ -29,6 +29,8 @@ static func fresh() -> void:
 	Motion.coached = true
 	# (0.39) and no music: making a loop takes a moment
 	Music.auto = false
+	BlackBox.enabled = false             # (0.45) the tests make and drop the game many times over
+	BlackBox.path = "user://test_black_box.json"
 	# (0.25) the tests' teams lead with Heroes nobody has recruited: they count as yours, unless a test says not
 	Dock.every_hero = true
 	# (0.34) and every card they take counts as held: a test that is about the stash says not

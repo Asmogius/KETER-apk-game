@@ -1,9 +1,8 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.44 is faster: the
-World Map, card grids and the team editor do a fraction of the work, and the
-screen is drawn only when something changes; v0.43 shows a card as itself
-wherever you deal with one.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.45 opens a fight
+without the risks a phone may not survive, and keeps a black box that says what
+the game was doing if it ever closes all at once; v0.44 was faster.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -13,6 +12,33 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.45 (the game alone; Companion 14.26 as before): **a fight that opens
+safely, and a black box**. On the phone, 0.44 closed during deployment fights,
+as they opened. It could not be made to happen here (deployments played through
+the screen, in the release engine too), so the things done as a fight opens that
+a phone may not survive are gone, and if it happens still the game says where.
+
+- **The music and the sounds come made.** The game made its loops and blips as
+  it played, on other threads: a fight's loop as the fight opened, and (0.44)
+  the sounds as the game started. They are made once now (tools/audio) and
+  shipped in res://audio; the game loads them. No thread runs at all.
+- **No screen read back on a phone.** The pixel dissolve into a fight (and the
+  hex wipe between menus) held a still of the old screen, read back from the
+  GPU whole: tens of megabytes, as the fight opened. On a phone the still is
+  dark now; elsewhere, as before.
+- **The screen is drawn every frame again**: 0.44's low processor mode is off,
+  until the crash is known not to be it.
+- **The black box.** The game keeps its last dozen steps in a small file, each
+  written as it happens (a fight's opening step by step: its music, the screen
+  changing, the floor, the Units, its first frame; turns, attacks, cards played,
+  results), and marks it closed when the game is put away or shut. Started after
+  a run that never closed, Home says what it was doing then, with the engine's
+  last errors from that run's log (kept on the phone now too), and Copy puts it
+  on the clipboard to send.
+- tests/soak_deploy.gd plays deployments through the screen, as on the phone:
+  music and sounds on, things moving, the field guide shown; fidget=1 keeps a
+  finger busy (taps, the hand, a card read, the Log, Back) while it plays.
 
 New in 0.44 (the game alone; Companion 14.26 as before): **speed**. Measured
 first (tests/perf.gd, below), then the slowest things made cheaper; nothing
@@ -38,11 +64,11 @@ pixel, before and after).
   chosen; now the tiles stay and only those that changed are drawn again
   (110 ms to 15).
 - **The game's sounds** are made on another thread as it starts, not before
-  its first frame (some 70 ms).
+  its first frame (some 70 ms). (0.45: they come made, and no thread runs.)
 - **The screen is drawn only when something on it changes** (Godot's low
   processor mode): a menu, the dock or a quiet board no longer redraws 60
   times a second, which spares the phone's battery and keeps it cool, so it
-  doesn't slow itself down.
+  doesn't slow itself down. (0.45: off again, until the crash is known not to be it.)
 
 How to measure: `godot --headless --path . --script res://tests/perf.gd --
 export=<zip>` times the boot, the dock's tabs, the team editor, a grid of

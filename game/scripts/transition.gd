@@ -68,11 +68,17 @@ func play(how: String) -> void:
 	view.queue_redraw()
 
 
+## (0.45) Whether the screen is read back for the still: not on a phone, where
+## reading the whole screen back from the GPU (tens of megabytes, as a fight
+## opens) is a risk some phones don't survive. There the still is dark.
+static var read_screen := not OS.has_feature("mobile")
+
+
 ## A still of the screen as it is. (Without a screen to read, as when the tests
-## run headless, a dark one the size of the window.)
+## run headless, or on a phone (0.45), a dark one the size of the window.)
 func _grab() -> Texture2D:
 	var img: Image = null
-	if DisplayServer.get_name() != "headless":
+	if DisplayServer.get_name() != "headless" and read_screen:
 		img = get_viewport().get_texture().get_image()
 	if img == null or img.is_empty():
 		var vs := get_viewport().get_visible_rect().size

@@ -57,6 +57,7 @@ extends Node2D
 
 ## (0.33) the project's own version: it was written out by hand here, and fell behind
 var VERSION: String = str(ProjectSettings.get_setting("application/config/version", ""))
+var _black_report := ""                  # (0.45) what the black box said of the last run, if it closed all at once
 const TAP_MOVE := 14.0        # a touch that moves further than this is a drag
 const TAP_TIME := 450         # ms; longer is a press, not a tap
 const ZOOM_MIN := 0.25
@@ -175,6 +176,8 @@ var _cam_tween: Tween = null
 
 
 func _ready() -> void:
+	# (0.45) the black box: what the last run was doing if it never closed, read before this one writes
+	_black_report = BlackBox.begin(VERSION)
 	# (0.12) the speed, shake and sound you chose, and the game's sounds; a tap on any button is heard
 	Motion.settings()
 	# (0.32) the save file last played: its run and its Strike Teams
@@ -207,6 +210,23 @@ func _ready() -> void:
 		OS.request_permission("android.permission.MANAGE_EXTERNAL_STORAGE")
 	get_viewport().size_changed.connect(_fit)
 	load_export()
+	# (0.45) the last run closed all at once: say what it was doing, to copy and send
+	if _black_report != "":
+		show_black_box(_black_report)
+
+
+## (0.45) What the black box says of the last run, closed all at once.
+func show_black_box(text: String) -> void:
+	var d := Dialog.new("KETER closed unexpectedly", text + "\n\nIf it keeps happening, tap Copy and send what it says.", ["Copy", "Close"], Color("#d6a851"))
+	d.text_label.custom_minimum_size = Vector2(1080, 0)
+	d.text_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	Look.size_to(d.text_label, 15)
+	_open_dialog(d, func(i):
+		if i == 0:
+			DisplayServer.clipboard_set(text)
+			d.buttons[0].text = "Copied"
+			return
+		_close_dialog())
 
 
 ## (0.32) The phone's Back button goes back a step, as the screen's own Back,
@@ -216,6 +236,10 @@ func _notification(what: int) -> void:
 		go_back()
 	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_keep_sandbox()
+		# (0.45) put away, or closed the usual way: the black box says so
+		BlackBox.set_state("paused" if what == NOTIFICATION_APPLICATION_PAUSED else "closed")
+	elif what == NOTIFICATION_APPLICATION_RESUMED:
+		BlackBox.set_state("open")
 
 
 ## (0.33) The game going to the background or closing: what the Sandbox has
@@ -311,6 +335,7 @@ func go_back() -> void:
 
 
 func _exit_tree() -> void:
+	BlackBox.set_state("closed")  # (0.45) closed the usual way
 	Rules.hooks = {}              # the rules let go of the battle
 	if get_tree().node_added.is_connected(_on_node_added):
 		get_tree().node_added.disconnect(_on_node_added)
@@ -457,6 +482,7 @@ func load_export(p: String = "") -> bool:
 	Art.load_from(data if found != "" and data.manifest is Dictionary and not data.manifest.is_empty() else null)
 	if not ok:
 		setup.show_message(home_note)
+	BlackBox.mark("the export read: %s (%d cards)" % [source_text, roster.cards.size() if roster != null else 0])
 	show_home()
 	return ok
 
@@ -615,6 +641,7 @@ func _music(n: String) -> void:
 
 
 func show_home() -> void:
+	BlackBox.mark("Home")
 	_music("home")
 	if forge_screen != null and _sandbox_tools().any(func(p): return p[1].visible):
 		_remember_sandbox()
@@ -646,6 +673,7 @@ func show_home() -> void:
 func open_setup(mode: String) -> void:
 	if roster == null:
 		return
+	BlackBox.mark("a fight's setup (%s)" % mode)
 	_turn()
 	_leave_battle()
 	_hide_world()
@@ -700,6 +728,7 @@ func open_world() -> void:
 
 
 func open_dock() -> void:
+	BlackBox.mark("the dock")
 	_music("map")
 	if campaign == null:
 		return
@@ -726,6 +755,7 @@ func open_workshop() -> void:
 
 ## The map, with the Strike Team where it stands (or nobody out, to look around).
 func show_map() -> void:
+	BlackBox.mark("the World Map")
 	_music("map")
 	if campaign == null:
 		return
@@ -782,6 +812,7 @@ func start_deploy_fight() -> void:
 	var team = campaign.deploy.team_now()
 	if sp == null or team == null:
 		return
+	BlackBox.mark("a deployment fight: its floor read (%s, District %s, Skull %s, %s)" % [str(sp["floor"]), str(sp["district"]), str(sp["skull"]), str(sp["kind"])])
 	var f: FloorData = null
 	for x in floors:
 		if x.key == str(sp["floor"]):
@@ -813,7 +844,10 @@ func _on_deploy_start(_team: Dictionary, team_setup: Dictionary, seed = null) ->
 	last_setup = ["deploy"]
 	map_view.visible = false
 	board.visible = true
-	show_battle(Battle.begin_team(setup.deploy_floor, roster, team_setup, seed))
+	BlackBox.mark("a deployment fight: begun by the rules (%s)" % (setup.deploy_floor.name if setup.deploy_floor != null else "?"))
+	var fight := Battle.begin_team(setup.deploy_floor, roster, team_setup, seed)
+	BlackBox.mark("a deployment fight: shown (%d Units, waves %d)" % [fight.units.size(), fight.waves_total])
+	show_battle(fight)
 	# (0.39) the first deployment fight: QM-7's field guide, beside the board
 	if not Motion.coached:
 		show_coach()
@@ -831,6 +865,7 @@ func _on_team_start(fi: int, team: Dictionary, team_setup: Dictionary) -> void:
 ## Chips and Enemies, and rolls the same dice, each time.
 func start_team_battle(fi: int, team: Dictionary, team_setup: Dictionary, seed = null) -> void:
 	last_setup = ["team", fi, team, team_setup]
+	BlackBox.mark("a Strike Team's Battle: begun by the rules (%s)" % floors[fi].name)
 	show_battle(Battle.begin_team(floors[fi], roster, team_setup, seed))
 
 
@@ -855,6 +890,7 @@ func _back_to_setup() -> void:
 
 func start_battle(fi: int, hero_cards: Array, troop_cards: Array, seed = null) -> void:
 	last_setup = ["quick", fi, hero_cards, troop_cards]
+	BlackBox.mark("a Quick battle: begun by the rules (%s)" % floors[fi].name)
 	show_battle(Battle.begin(floors[fi], roster, hero_cards, troop_cards, seed))
 
 
@@ -862,7 +898,9 @@ func start_battle(fi: int, hero_cards: Array, troop_cards: Array, seed = null) -
 func show_battle(fight: Battle) -> void:
 	# (0.39) a fight's loop, or a Boss's on a Boss floor
 	var bossy := fight.floor_data != null and (str(fight.floor_data.raw.get("type", "")) + str(fight.floor_data.raw.get("poiType", ""))).to_lower().contains("boss")
+	BlackBox.mark("fight opening: its music")
 	_music("boss" if bossy else "fight")
+	BlackBox.mark("fight opening: the screen changing")
 	_turn(true)
 	_close_dialog()
 	battle = fight
@@ -899,12 +937,14 @@ func show_battle(fight: Battle) -> void:
 	overlay.clear_tags()
 	overlay.clear_readout()
 	overlay.clear_floats()
+	BlackBox.mark("fight opening: the floor drawn (%s, %d tiles)" % [battle.floor_data.name, battle.floor_data.tiles.size()])
 	board.show_floor(battle.floor_data)
 	var loot_at := {}
 	for h in battle.floor_data.tiles:
 		if battle.kind_at(h) == "loot":
 			loot_at[h] = true
 	board.set_loot_tiles(loot_at)
+	BlackBox.mark("fight opening: the Units placed")
 	board.show_units(battle)
 	floor_label.text = battle.floor_data.name
 	_update_bar()
@@ -915,8 +955,20 @@ func show_battle(fight: Battle) -> void:
 	else:
 		_say("%d of your Units and %d Enem%s. Tap one of yours to move it or use its Actions. %s" % [battle.side_units("ally").size(), foes, "y" if foes == 1 else "ies", " ".join(battle.notes)])
 	_layout_info()
+	BlackBox.mark("fight opening: the view set")
 	_start_view()
 	_show_halts()
+	_mark_fight_on.call_deferred(fight)
+
+
+## (0.45) The black box: the fight's first frames shown, then under way.
+func _mark_fight_on(fight: Battle) -> void:
+	await get_tree().process_frame
+	if battle == fight:
+		BlackBox.mark("fight opening: its first frame shown")
+	await get_tree().create_timer(2.0).timeout
+	if battle == fight and is_inside_tree():
+		BlackBox.mark("a fight under way, round %d" % fight.round)
 
 
 ## "Dimensional Instability 9%: a spawn may bring an Elite or a Mini-Boss. ", or "".
@@ -1611,6 +1663,7 @@ func _show_halts() -> void:
 ## and what the Action's text says is carried out. A Burst then makes the next
 ## attack: by itself when one target is in reach, else it waits for your tap.
 func attack_with(u: Dictionary, a: Dictionary, t: Dictionary, burst_left := -1) -> void:
+	BlackBox.mark("an attack: %s's %s at %s" % [str(u.get("name", "?")), str(a.get("name", "?")), str(t.get("name", "?"))])
 	busy = true
 	overlay.clear_tags()
 	board.clear_blast()
@@ -1973,6 +2026,7 @@ func run_auto_phase() -> bool:
 	auto_phase = true
 	fast = false
 	_update_bar()
+	BlackBox.mark("Auto, round %d" % battle.round)
 	_say("Auto: %d of your Units take%s their turn%s. Tap the board to hurry them." % [queue.size(), "s" if queue.size() == 1 else "", "" if queue.size() == 1 else "s"])
 	# (0.40) a Unit that arrives meanwhile (a Troop another put down) takes its turn too
 	var seen := {}
@@ -2035,6 +2089,7 @@ func run_enemy_phase() -> void:
 	enemy_phase = true
 	fast = false
 	_update_bar()
+	BlackBox.mark("the Enemies' turn, round %d" % battle.round)
 	# Handbook 15.9: your turn is over, so what arrived in the Enemies' turn ticks now
 	var m0 := _mark()
 	battle.end_player_turn()
@@ -2079,6 +2134,7 @@ func run_enemy_phase() -> void:
 		show_result()
 		return
 	_say("Round %d: your turn. Energy is refilled.%s" % [battle.round, ("  " + said) if said != "" else ""])
+	BlackBox.mark("your turn, round %d" % battle.round)
 	# (0.39) the camera comes back to your Units for your turn (not waited for)
 	var mine: Array = battle.side_units("ally").filter(func(u): return not Rules.truthy(u.get("down")) and u.get("pos") is Dictionary)
 	if not mine.is_empty():
@@ -2237,6 +2293,7 @@ func _follow_point(p: Vector2) -> void:
 func show_result() -> void:
 	if battle == null or not battle.over:
 		return
+	BlackBox.mark("a fight's result (%s)" % str(battle.winner))
 	# (0.19) Victory or Defeat powers on first; then the tally
 	if _neon_first():
 		return
@@ -2397,6 +2454,7 @@ func show_deploy_result() -> void:
 
 ## Back on the map after a fight, with the board put away.
 func _from_fight() -> void:
+	BlackBox.mark("back on the map from a fight")
 	play = {}
 	burst = {}
 	show_map()
@@ -2708,6 +2766,7 @@ func begin_play(kind: String, i: int, x = null) -> void:
 				x = null
 			st = battle.play_state(battle.hand[i], x)
 			nm = str(battle.hand[i]["name"])
+			BlackBox.mark("a card played from the hand: %s" % nm)
 		"cons":
 			if i < 0 or i >= battle.consumables.size():
 				return
