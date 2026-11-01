@@ -17,6 +17,7 @@
 ##     tab=heroes|deck|carried|pouch|protos|checks   the builder's tab (screen=editor)
 ##     card=<name>                        a card opened to read, in the builder
 ##     deckonly=1                         the builder's See Deck
+##     held=1                             (0.43) as a new campaign has it: only your cards
 ##     empty=1                            the test team with nothing in it yet
 ##     mode=quick|team                    a Quick battle (default) or a Strike Team's
 ##     step=floor|team|heroes|troops|battle   how far into setting up (default battle)
@@ -171,6 +172,11 @@ func _run() -> void:
 		await _shoot(out)
 		return
 	if o["screen"] == "teams" or o["screen"] == "editor":
+		# (0.43) held=1: as a new campaign has it, its teams built from what is yours (the starter stash)
+		if o.get("held", "") == "1" and scene.campaign != null:
+			Dock.every_card = false
+			Dock.every_hero = false
+			scene.campaign.dock.begin_stash(false)
 		scene.open_teams()
 		if o["screen"] == "editor":
 			var ts: TeamsScreen = scene.teams_screen

@@ -680,6 +680,36 @@ static func is_limited(c) -> bool:
 	return c is Dictionary and LIMITED.has(str(c.get("cardType", "") if c.get("cardType") != null else "")) and hero_rarity(c) > 0
 
 
+## (0.43) How much of a card is yours, as a campaign's Strike Teams show it:
+## -1 for one with no limit (a Common card, a free or recruited Hero, your own
+## Workshop design, a Basic Chip), else the copies you hold (0: not yours).
+## Uncommon and rarer cards are the stash's; Consumables and Prototypes the
+## dock's; a Troop is yours if Common or your design; a test card ("Test ...")
+## only once you hold one.
+func holds(c) -> int:
+	if every_card or not (c is Dictionary):
+		return -1
+	if Rules.truthy(c.get("basic")):
+		return -1
+	var nm := str(c.get("name", ""))
+	var t := Roster.type_of(c)
+	if t == "hero":
+		return -1 if owns(nm) else 0
+	if nm.begins_with("Test "):
+		return owned(nm)
+	match t:
+		"troop":
+			var src := str(c.get("_src", ""))
+			if src == "workshop":
+				return -1
+			return -1 if src != "design" and src != "prebuilt" and hero_rarity(c) == 0 else 0
+		"consumable", "prototype":
+			return owned(nm)
+	if is_limited(c):
+		return owned(nm)
+	return -1
+
+
 ## What one copy of a card costs to craft: {name, rarity, type, n (parts), shards}; null for one that isn't crafted.
 func craft_cost(name: String, t = null) -> Variant:
 	var tb: Dictionary = t if t is Dictionary else tables

@@ -631,14 +631,29 @@ func come_home() -> void:
 	else:
 		if not Loot.is_empty(h["haul"]):
 			text += "\n\nInto the stockpile: %s." % campaign.loot.text(h["haul"])
-		if not h["items"].is_empty():
-			text += "\n\nNow yours: %s." % ", ".join(h["items"].map(func(it): return "%s %s" % [Progress.kind_word(it).to_lower(), campaign.progress.item_name(it, true)]))
+		# (0.43) a card found is kept at the dock, and shown as itself; blueprints and chassis are the Workshop's
+		var found_cards: Array = h["items"].filter(func(it): return str(it).begins_with("cd:"))
+		var others: Array = h["items"].filter(func(it): return not str(it).begins_with("cd:"))
+		if not others.is_empty():
+			text += "\n\nNow yours: %s." % ", ".join(others.map(func(it): return "%s %s" % [Progress.kind_word(it).to_lower(), campaign.progress.item_name(it, true)]))
 			text += "\nThey are in the Workshop now."
+		if not found_cards.is_empty():
+			text += "\n\n%s found: %s, kept at the dock." % ["A card" if found_cards.size() == 1 else "Cards", ", ".join(found_cards.map(func(it): return campaign.progress.item_name(it, true)))]
 	var more := campaign.end_lines(h, false)
 	if not more.is_empty():
 		text += "\n\n" + "\n".join(more)
 	refresh()
-	_open_dialog(Dialog.new("Home", text, ["To the dock", "Stay on the map"], UI.GREEN), func(i):
+	var hd := Dialog.new("Home", text, ["To the dock", "Stay on the map"], UI.GREEN)
+	# (0.43) the cards found, as themselves (at most a row of them)
+	var shown_cards := []
+	for it in h.get("items", []):
+		var cnm := campaign.progress.item_name(it, true) if str(it).begins_with("cd:") else ""
+		var cc = campaign.roster.card_named(cnm) if cnm != "" and campaign.roster != null else null
+		if cc is Dictionary and shown_cards.size() < 6:
+			shown_cards.append([cc, campaign.roster.art_for(cc)])
+	if not shown_cards.is_empty():
+		hd.add_cards(shown_cards, "Found")
+	_open_dialog(hd, func(i):
 		_close_dialog()
 		if i == 0:
 			dock_requested.emit())

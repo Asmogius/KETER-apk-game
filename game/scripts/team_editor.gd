@@ -28,6 +28,12 @@ var roster: Roster
 ## one, or one recruited at the dock); the others are marked, and fight only
 ## practice battles.
 var owns: Callable = Callable()
+## (0.43) How much of a card is yours (Dock.holds: -1 no limit, else the copies
+## held); unset, every card is. With only_held (a campaign's teams) only yours
+## are shown, and those the team has already, marked, so they can come out;
+## without it (a practice fight's) every card is, the others marked.
+var holds: Callable = Callable()
+var only_held := false
 var team: Dictionary = {}
 var tab := "heroes"
 var deck_filter := "all"
@@ -258,6 +264,54 @@ func _item(c: Dictionary, extra: Dictionary = {}) -> Dictionary:
 	return it
 
 
+## (0.43) How much of a card is yours: -1 no limit, else the copies held (0: not yours).
+func _held(c: Dictionary) -> int:
+	if holds.is_valid():
+		return int(holds.call(c))
+	if owns.is_valid() and Roster.type_of(c) == "hero":
+		return -1 if owns.call(str(c["name"])) else 0
+	return -1
+
+
+## Whether a card is shown: every card, or (only_held) one that is yours or that the team has already.
+func _shows(c: Dictionary, in_team: bool) -> bool:
+	return in_team or not only_held or _held(c) != 0
+
+
+## The ribbon on a card that isn't yours ("" for one that is).
+func _not_held(c: Dictionary) -> String:
+	if _held(c) != 0:
+		return ""
+	return "Not recruited" if Roster.type_of(c) == "hero" else "Not yours"
+
+
+## A tile with the ribbon of a card that isn't yours, in red, in place of its own
+## (one in the team is outlined still).
+func _mark_held(it: Dictionary, c: Dictionary) -> Dictionary:
+	var nh := _not_held(c)
+	if nh != "":
+		it["mark"] = nh
+		it["mark_colour"] = UI.SOFT_RED
+	return it
+
+
+## What the sheet says of how much of a card is yours ("" when it has no limit).
+func _held_note(c: Dictionary) -> String:
+	var h := _held(c)
+	if h < 0:
+		return ""
+	var t := Roster.type_of(c)
+	if h == 0:
+		match t:
+			"hero": return "Not recruited: it fights practice battles; to deploy with it, recruit it at the dock."
+			"troop": return "Not yours: a Troop deploys if it is Common, or your own Workshop design."
+			"consumable", "prototype": return "Not yours: the dock's Exchange sells them."
+		return "Not yours: craft it at the dock, or find one on a deployment."
+	match t:
+		"consumable", "prototype": return "You own %d at the dock; the Pack takes up to that many." % h
+	return "You hold %d in the stash; more copies are crafted as the team leaves." % h
+
+
 ## Cards the team names that the export no longer has, as tiles that say so.
 func _gone_items(names: Array, extra: Callable = Callable()) -> Array:
 	var out := []
@@ -274,17 +328,19 @@ func _gone_items(names: Array, extra: Callable = Callable()) -> Array:
 func _show_heroes(keep: bool) -> void:
 	var n: int = team["heroes"].size()
 	hint.text = "Up to 3 Heroes share the team's Deck. A floor lets in 1, 2 or 3 of them by its size; the rest wait in reserve. Tap a Hero to read it and add it. %s" % (("%d in the team." % n) if n > 0 else "None in the team yet.")
-	if owns.is_valid():
+	if only_held:
+		hint.text += " These are your Heroes: the free ones, and those recruited at the dock."
+	elif owns.is_valid() or holds.is_valid():
 		hint.text += " A Hero marked Not recruited fights practice battles; to deploy with them, recruit them at the dock."
 	var items := _gone_items(team["heroes"], func(_n): return {"mark": "In team"})
 	for c in roster.heroes():
 		var at: int = team["heroes"].find(c["name"])
+		if not _shows(c, at >= 0):
+			continue
 		var mark := ("In team · %d" % (at + 1)) if at >= 0 else ""
-		if owns.is_valid() and not owns.call(str(c["name"])):
-			mark = (mark + " · " if mark != "" else "") + "Not recruited"
-		items.append(_item(c, {"chosen": at >= 0, "mark": mark}))
+		items.append(_mark_held(_item(c, {"chosen": at >= 0, "mark": mark}), c))
 		_shown.append({"card": c})
-	grid.empty_text = "The export has no Hero cards."
+	grid.empty_text = "No Heroes are yours yet: recruit one at the dock." if only_held else "The export has no Hero cards."
 	grid.set_items(items, keep)
 
 
@@ -307,14 +363,16 @@ func _show_deck(keep: bool) -> void:
 	_chip("See Deck", deck_only, func(): set_deck_only(not deck_only), 150)
 	var n := StrikeTeams.deck_count(team)
 	hint.text = "The Deck holds %d card%s; a Deck is 10 to 60, and 4 copies of a card at most. Troop, Equipment, Command and Aether cards go in it. Tap a card to read it and set how many copies." % [n, "" if n == 1 else "s"]
+	if only_held:
+		hint.text += " These are your cards: every Common card, your Workshop's designs, and what the stash holds."
 	var items := _gone_items(team["deck"].keys(), func(nm): return {"count": StrikeTeams.copies(team, nm)})
 	for c in roster.of_types(StrikeTeams.DECK_TYPES):
 		var k := StrikeTeams.copies(team, c["name"])
-		if (deck_filter != "all" and Roster.type_of(c) != deck_filter) or (deck_only and k == 0):
+		if (deck_filter != "all" and Roster.type_of(c) != deck_filter) or (deck_only and k == 0) or not _shows(c, k > 0):
 			continue
-		items.append(_item(c, {"count": k, "chosen": k > 0}))
+		items.append(_mark_held(_item(c, {"count": k, "chosen": k > 0}), c))
 		_shown.append({"card": c})
-	grid.empty_text = "The Deck is empty. Turn off See Deck to choose cards." if deck_only else "The export has no cards of this kind."
+	grid.empty_text = "The Deck is empty. Turn off See Deck to choose cards." if deck_only else ("None of your cards is of this kind yet: craft them at the dock, or find them on deployments." if only_held else "The export has no cards of this kind.")
 	grid.set_items(items, keep)
 
 
@@ -347,9 +405,11 @@ func _show_carried(keep: bool) -> void:
 	var items := _gone_items(has, func(_n): return {"mark": "Carried"})
 	for c in roster.of_types(["action"]):
 		var on := has.has(c["name"])
-		items.append(_item(c, {"chosen": on, "mark": "Carried" if on else ""}))
+		if not _shows(c, on):
+			continue
+		items.append(_mark_held(_item(c, {"chosen": on, "mark": "Carried" if on else ""}), c))
 		_shown.append({"card": c})
-	grid.empty_text = "The export has no Action cards."
+	grid.empty_text = "No Action cards are yours yet: craft them at the dock, or find them on deployments." if only_held else "The export has no Action cards."
 	grid.set_items(items, keep)
 
 
@@ -371,7 +431,9 @@ func _show_pouch(keep: bool) -> void:
 		_shown.append({"chip": chip["key"], "card": chip})
 	for c in roster.of_types(["sphere"]):
 		var k2 := int(Rules.num(team["pouch"].get(c["name"]), 0))
-		items.append(_item(c, {"count": k2, "chosen": k2 > 0}))
+		if not _shows(c, k2 > 0):
+			continue
+		items.append(_mark_held(_item(c, {"count": k2, "chosen": k2 > 0}), c))
 		_shown.append({"chip": c["name"], "card": c})
 	grid.empty_text = ""
 	grid.set_items(items, keep)
@@ -382,9 +444,11 @@ func _show_protos(keep: bool) -> void:
 	var items := _gone_items(team["protos"], func(_n): return {"mark": "In team"})
 	for c in roster.of_types(["prototype"]):
 		var on: bool = team["protos"].has(c["name"])
-		items.append(_item(c, {"chosen": on, "mark": "In team" if on else ""}))
+		if not _shows(c, on):
+			continue
+		items.append(_mark_held(_item(c, {"chosen": on, "mark": "In team" if on else ""}), c))
 		_shown.append({"card": c})
-	grid.empty_text = "The export has no Prototype cards."
+	grid.empty_text = "You own no Prototypes yet: the dock's Exchange sells them." if only_held else "The export has no Prototype cards."
 	grid.set_items(items, keep)
 
 
@@ -394,9 +458,11 @@ func _show_consumables(keep: bool) -> void:
 	var items := _gone_items(team["consumables"].keys(), func(nm): return {"count": int(Rules.num(team["consumables"].get(nm), 0))})
 	for c in roster.of_types(["consumable"]):
 		var k := int(Rules.num(team["consumables"].get(c["name"]), 0))
-		items.append(_item(c, {"count": k, "chosen": k > 0}))
+		if not _shows(c, k > 0):
+			continue
+		items.append(_mark_held(_item(c, {"count": k, "chosen": k > 0}), c))
 		_shown.append({"card": c})
-	grid.empty_text = "The export has no Consumable cards."
+	grid.empty_text = "You own no Consumables yet: the dock's Exchange sells them." if only_held else "The export has no Consumable cards."
 	grid.set_items(items, keep)
 
 
@@ -529,34 +595,35 @@ func tap_card(i: int) -> void:
 		return
 	var c: Dictionary = what["card"]
 	var nm := str(c["name"])
+	var said := _held_note(c)          # (0.43) how much of it is yours
 	match tab:
 		"heroes":
 			var on: bool = team["heroes"].has(nm)
-			_open_sheet(CardSheet.new(c, roster.art_for(c), {"buttons": [["toggle", "Take off the team" if on else "Add to the team"]]}), func(id):
+			_open_sheet(CardSheet.new(c, roster.art_for(c), {"buttons": [["toggle", "Take off the team" if on else "Add to the team"]], "note": said}), func(id):
 				if id == "toggle":
 					toggle_hero(nm))
 		"deck":
-			var s := CardSheet.new(c, roster.art_for(c), {"stepper": {"value": StrikeTeams.copies(team, nm), "min": 0, "max": MAX_COPIES, "label": "Copies in the Deck"}})
+			var s := CardSheet.new(c, roster.art_for(c), {"stepper": {"value": StrikeTeams.copies(team, nm), "min": 0, "max": MAX_COPIES, "label": "Copies in the Deck"}, "note": said})
 			s.stepped.connect(func(v): set_copies(nm, v))
 			_open_sheet(s, func(_id): pass)
 		"carried":
 			var has: bool = team["actions"].get(carrier, []).has(nm)
 			var hero := carrier
-			_open_sheet(CardSheet.new(c, roster.art_for(c), {"buttons": [["toggle", ("Take from %s" if has else "Give to %s") % hero]]}), func(id):
+			_open_sheet(CardSheet.new(c, roster.art_for(c), {"buttons": [["toggle", ("Take from %s" if has else "Give to %s") % hero]], "note": said}), func(id):
 				if id == "toggle":
 					toggle_carried(hero, nm))
 		"pouch":
 			var key: String = what["chip"]
-			var s2 := CardSheet.new(c, roster.art_for(c) if not Rules.truthy(c.get("basic")) else null, {"stepper": {"value": int(Rules.num(team["pouch"].get(key), 0)), "min": 0, "max": MAX_CHIPS if key.begins_with("basic|") else StrikeTeams.MAX_COPIES, "label": "In the Pouch"}})
+			var s2 := CardSheet.new(c, roster.art_for(c) if not Rules.truthy(c.get("basic")) else null, {"stepper": {"value": int(Rules.num(team["pouch"].get(key), 0)), "min": 0, "max": MAX_CHIPS if key.begins_with("basic|") else StrikeTeams.MAX_COPIES, "label": "In the Pouch"}, "note": said})
 			s2.stepped.connect(func(v): set_chips(key, v))
 			_open_sheet(s2, func(_id): pass)
 		"consumables":
-			var s3 := CardSheet.new(c, roster.art_for(c), {"stepper": {"value": int(Rules.num(team["consumables"].get(nm), 0)), "min": 0, "max": MAX_CONSUMABLES, "label": "Carried into each Battle"}})
+			var s3 := CardSheet.new(c, roster.art_for(c), {"stepper": {"value": int(Rules.num(team["consumables"].get(nm), 0)), "min": 0, "max": MAX_CONSUMABLES, "label": "Carried into each Battle"}, "note": said})
 			s3.stepped.connect(func(v): set_consumables(nm, v))
 			_open_sheet(s3, func(_id): pass)
 		"protos":
 			var inn: bool = team["protos"].has(nm)
-			_open_sheet(CardSheet.new(c, roster.art_for(c), {"buttons": [["toggle", "Take off the team" if inn else "Add to the team"]]}), func(id):
+			_open_sheet(CardSheet.new(c, roster.art_for(c), {"buttons": [["toggle", "Take off the team" if inn else "Add to the team"]], "note": said}), func(id):
 				if id == "toggle":
 					toggle_proto(nm))
 

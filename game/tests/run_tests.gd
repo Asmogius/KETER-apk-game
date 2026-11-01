@@ -39,6 +39,13 @@ func _run() -> void:
 		Rules.hooks = {}
 		quit(1 if bad > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("fortythree"):
+		await _fortythree()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("fortytwo"):
 		_fortytwo()
 		Kit.fresh()
@@ -373,6 +380,7 @@ func _run() -> void:
 	_forty()
 	_fortyone()
 	_fortytwo()
+	await _fortythree()
 	_lab_set()
 	await _lab_forge_scene()
 	await _lab_workshop_scene()
@@ -5778,6 +5786,17 @@ func _eleven_scene() -> void:
 	Kit.fresh()
 
 
+## (0.43) The first node under n (n itself included) that passes the test, or null.
+func _first_of(n: Node, test: Callable) -> Node:
+	if test.call(n):
+		return n
+	for k in n.get_children():
+		var f := _first_of(k, test)
+		if f != null:
+			return f
+	return null
+
+
 func _first_icon(n: Node, id: String) -> TextureRect:
 	for c in n.get_children():
 		if c is TextureRect and c.get_meta("icon", "") == id:
@@ -8378,8 +8397,24 @@ func _twentyfive_scene() -> void:
 	var marks := {}
 	for it in ed.grid.items:
 		marks[str(it["card"]["name"])] = str(it.get("mark", ""))
-	ck("0.25 team editor: Heroes not recruited are marked; the free ones and the recruited aren't", marks.get("Test Warden") == "In team · 1 · Not recruited" and marks.get("Rictus") == "Not recruited" and marks.get("Dock Hand") == "" and marks.get(nm) == ""
+	ck("0.25 team editor (0.43: in a campaign, only your Heroes): the free ones and the recruited are shown; one not recruited only while the team has it, marked", marks.get("Test Warden") == "Not recruited" and not marks.has("Rictus") and marks.get("Dock Hand") == "" and marks.get(nm) == ""
+		and "These are your Heroes" in ed.hint.text, marks)
+	# (0.43) a practice fight's teams: every Hero, the ones not recruited marked
+	ed.closed.emit()
+	await _frames(1)
+	scene._teams_for_setup = true
+	scene.open_teams()
+	await _frames(2)
+	ts.edit(0)
+	await _frames(2)
+	ed.open_tab("heroes")
+	await _frames(1)
+	marks = {}
+	for it in ed.grid.items:
+		marks[str(it["card"]["name"])] = str(it.get("mark", ""))
+	ck("0.25 team editor: for a practice fight, Heroes not recruited are marked; the free ones and the recruited aren't", marks.get("Test Warden") == "Not recruited" and marks.get("Rictus") == "Not recruited" and marks.get("Dock Hand") == "" and marks.get(nm) == ""
 		and "Not recruited fights practice battles" in ed.hint.text, marks)
+	scene._teams_for_setup = false
 	scene.queue_free()
 	await _frames(2)
 	Dock.every_hero = true
@@ -9642,8 +9677,15 @@ func _thirtyfour_scene() -> void:
 	await _frames(2)
 	var dk: DockScreen = scene.dock_screen
 	ck("0.34 dock: a new run's dock opens on the pick of a rare card", dk.dialog is Dialog and dk.dialog.title_label.text == "Pick a rare card" and dk.dialog.buttons.size() == 3)
-	var picked: String = dk.dialog.buttons[0].text
-	dk.dialog.chosen.emit(0)
+	# (0.43) the cards themselves: each to read in full, and take
+	var choice = dk.dialog
+	ck("0.43 dock: the rare pick shows the cards themselves, a Take under each", choice is CardChoice and choice.tiles.size() == 3 and choice.buttons.all(func(b): return b.text == "Take")
+		and choice.tiles.all(func(t): return t.size == CardFace.LARGE and Dock.is_limited(t.card) and str(t.card.get("rarity", "")).to_lower() == "rare") and choice.names == scene.campaign.dock.rare_offer(), choice.names if choice is CardChoice else null)
+	var picked: String = choice.names[0]
+	choice.holders[0].pressed.emit()
+	await _frames(1)
+	ck("0.43 dock: a tap on one reads it in full, and it can be taken from there", choice.sheet != null and choice.sheet.card["name"] == picked and choice.sheet.buttons.has("take") and choice.sheet.buttons["take"].text == "Take this one")
+	choice.sheet.chosen.emit("take")
 	await _frames(1)
 	ck("0.34 dock: picked, it is in the stash, and the Stockpile shows the stash", scene.campaign.dock.owned(picked) >= 1 and dk.dialog == null and dk.row_texts().has("The stash") and dk.row_texts().any(func(t): return t.ends_with("× " + picked)))
 	dk.show_tab("craft")
@@ -9656,6 +9698,53 @@ func _thirtyfour_scene() -> void:
 	dk.show_tab("craft")
 	dk.act(["craft", "Hold the Line"])
 	ck("0.34 dock: Craft makes one for the stash", scene.campaign.dock.owned("Hold the Line") == 3 and "Crafted Hold the Line" in dk.note.text, dk.note.text)
+	# (0.43) Craft shows the cards themselves; a tap reads one, and it can be crafted from its sheet
+	var hl: int = dk.row_texts().find("Hold the Line")
+	var hl_tile = _first_of(dk._rows[hl]["row"], func(n): return n is CardTile) if hl >= 0 else null
+	ck("0.43 craft: each is its card, its copies held on it, its price and Craft under it", hl >= 0 and dk._rows[hl].get("card", {}).get("name") == "Hold the Line" and hl_tile is CardTile and hl_tile.count == 3
+		and _labels(dk._rows[hl]["row"]).has("Craft") and dk._rows[hl]["acts"] == [["craft", "Hold the Line"]] and _first_icon(dk._rows[hl]["row"], "shards") != null, _labels(dk._rows[hl]["row"]) if hl >= 0 else dk.row_texts())
+	dk.act(hl_tile.get_meta("act") if hl_tile is CardTile else ["read", -1])
+	await _frames(1)
+	ck("0.43 craft: a tap on the card reads it in full, what is held and what it costs said, Craft beside Close", dk.sheet != null and dk.sheet.card["name"] == "Hold the Line" and dk.sheet.buttons.has("0") and dk.sheet.buttons["0"].text == "Craft"
+		and not dk.sheet.buttons["0"].disabled and "you hold 3" in dk.sheet.note_label.text, dk.sheet.note_label.text if dk.sheet != null else null)
+	dk.sheet.chosen.emit("0")
+	await _frames(1)
+	ck("0.43 craft: Craft on the sheet crafts one", scene.campaign.dock.owned("Hold the Line") == 4 and dk.sheet == null and "Crafted Hold the Line" in dk.note.text, dk.note.text)
+	dk.show_tab("stockpile")
+	var sl: int = dk.row_texts().find("4 × Hold the Line")
+	ck("0.43 stockpile: the stash is its cards, each with its copies on it", sl >= 0 and dk._rows[sl].get("card", {}).get("name") == "Hold the Line" and _first_of(dk._rows[sl]["row"], func(n): return n is CardTile and n.count == 4) != null, dk.row_texts())
+	# (0.43) a campaign's Strike Teams are built from the cards that are yours
+	scene.open_teams()
+	await _frames(2)
+	var ts: TeamsScreen = scene.teams_screen
+	ts.edit(0)
+	await _frames(2)
+	var ed: TeamEditor = ts.editor
+	ed.open_tab("deck")
+	await _frames(1)
+	var cmd: Campaign = scene.campaign
+	var shown: Array = ed.grid.items.map(func(it): return str(it["card"]["name"]))
+	var team0: Dictionary = ed.team
+	var unheld: Array = scene.roster.of_types(StrikeTeams.DECK_TYPES).filter(func(cc): return Dock.is_limited(cc) and cmd.dock.owned(str(cc["name"])) == 0 and StrikeTeams.copies(team0, str(cc["name"])) == 0)
+	var commons: Array = scene.roster.of_types(StrikeTeams.DECK_TYPES).filter(func(cc): return not Dock.is_limited(cc) and Roster.type_of(cc) != "troop" and not str(cc["name"]).begins_with("Test "))
+	ck("0.43 team editor: in a campaign the Deck shows only your cards: what the stash holds, every Common card; not the rest, nor a test card the team hasn't",
+		ed.only_held and shown.has("Hold the Line") and not unheld.is_empty() and not unheld.any(func(cc): return shown.has(str(cc["name"]))) and not commons.is_empty() and commons.all(func(cc): return shown.has(str(cc["name"])))
+		and shown.all(func(n): return not n.begins_with("Test ") or StrikeTeams.copies(team0, n) > 0 or cmd.dock.owned(n) > 0) and "These are your cards" in ed.hint.text, shown)
+	var gone_at := -1
+	for i in ed.grid.items.size():
+		var cc: Dictionary = ed.grid.items[i]["card"]
+		if Dock.is_limited(cc) and cmd.dock.owned(str(cc["name"])) == 0 and StrikeTeams.copies(team0, str(cc["name"])) > 0:
+			gone_at = i
+	ck("0.43 team editor: a card the team has that isn't yours is shown, marked, so it can come out", gone_at >= 0 and str(ed.grid.items[gone_at].get("mark", "")) == "Not yours", ed.grid.items.map(func(it): return [it["card"]["name"], it.get("mark", "")]))
+	ed.tap_card(shown.find("Hold the Line"))
+	await _frames(1)
+	ck("0.43 team editor: a card's sheet says how many the stash holds", ed.sheet != null and ed.sheet.note_label.text == "You hold 4 in the stash; more copies are crafted as the team leaves.", ed.sheet.note_label.text if ed.sheet != null else null)
+	ed.sheet.chosen.emit("close")
+	await _frames(1)
+	ed.closed.emit()
+	await _frames(1)
+	scene.open_dock()
+	await _frames(2)
 	# the loadout
 	dk.show_teams()
 	dk.choose_team(0)
@@ -10406,6 +10495,97 @@ func _fortytwo() -> void:
 	var free_names: Dictionary = specials.call(false)
 	ck("0.42 test Elites: on a deployment, Instability sends District 3's own Elites and Mini-Bosses, never the test set's", not dep_names.is_empty() and not dep_names.values().has(true), dep_names)
 	ck("0.42 test Elites: a practice Battle may still draw the test set's", free_names.values().has(true), free_names)
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- 0.43: cards shown as themselves; your cards
+func _fortythree() -> void:
+	Kit.fresh()
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var r := Roster.new(x)
+	var c := Campaign.new(x, r, x.floors(), 61)
+	var dk := c.dock
+	Dock.every_card = false
+	Dock.every_hero = false
+	var first := func(test: Callable):
+		for cc in r.cards:
+			if test.call(cc):
+				return cc
+		return null
+	var common_eq = first.call(func(cc): return Roster.type_of(cc) == "equipment" and Dock.hero_rarity(cc) == 0 and not str(cc["name"]).begins_with("Test "))
+	var rare_eq = first.call(func(cc): return Roster.type_of(cc) == "equipment" and Dock.hero_rarity(cc) >= 2 and not str(cc["name"]).begins_with("Test "))
+	var common_troop = first.call(func(cc): return Roster.type_of(cc) == "troop" and Dock.hero_rarity(cc) == 0 and not ["workshop", "design", "prebuilt"].has(str(cc.get("_src", ""))) and not str(cc["name"]).begins_with("Test "))
+	var rare_troop = first.call(func(cc): return Roster.type_of(cc) == "troop" and Dock.hero_rarity(cc) >= 1 and not ["workshop", "design", "prebuilt"].has(str(cc.get("_src", ""))))
+	var design = first.call(func(cc): return str(cc.get("_src", "")) == "workshop")
+	var cons = first.call(func(cc): return Roster.type_of(cc) == "consumable")
+	var test_card = first.call(func(cc): return str(cc["name"]).begins_with("Test ") and StrikeTeams.DECK_TYPES.has(Roster.type_of(cc)) and Dock.hero_rarity(cc) == 0)
+	ck("0.43 (the cards to try)", common_eq != null and rare_eq != null and common_troop != null and rare_troop != null and design != null and cons != null and test_card != null)
+	ck("0.43 holds: a Common card, a Common Troop, your own design and a Basic Chip have no limit", dk.holds(common_eq) == -1 and dk.holds(common_troop) == -1 and dk.holds(design) == -1 and dk.holds(StrikeTeams.basic_chip("3")) == -1)
+	ck("0.43 holds: an Uncommon or rarer card is the stash's copies; an Uncommon Troop off the card list, none", dk.holds(rare_eq) == 0 and dk.holds(rare_troop) == 0)
+	dk.add_card(str(rare_eq["name"]), 2)
+	dk.add_card(str(cons["name"]), 1)
+	ck("0.43 holds: held, the copies held; a Consumable the dock keeps likewise", dk.holds(rare_eq) == 2 and dk.holds(cons) == 1)
+	ck("0.43 holds: a test card only once one is held", dk.holds(test_card) == 0)
+	ck("0.43 holds: a Hero free or recruited has no limit; another isn't yours", dk.holds(r.card_named("Dock Hand")) == -1 and dk.holds(r.card_named("Rictus")) == 0)
+	Dock.every_card = true
+	ck("0.43 holds: with every card held (the tests before 0.34), everything", dk.holds(rare_troop) == -1 and dk.holds(test_card) == -1)
+	Dock.every_card = false
+	# the team editor: only yours, in a campaign
+	var ed := TeamEditor.new()
+	root.add_child(ed)
+	ed.holds = func(cc): return dk.holds(cc)
+	ed.only_held = true
+	var t := StrikeTeams.blank("Mine")
+	t["deck"][str(rare_troop["name"])] = 2
+	ed.open(r, t)
+	ed.open_tab("deck")
+	var names: Array = ed.grid.items.map(func(it): return str(it["card"]["name"]))
+	var marks := {}
+	for it in ed.grid.items:
+		marks[str(it["card"]["name"])] = str(it.get("mark", ""))
+	ck("0.43 team editor: only your cards; one the team has that isn't yours shown, marked Not yours", names.has(str(common_eq["name"])) and names.has(str(rare_eq["name"])) and not names.has(str(test_card["name"]))
+		and marks.get(str(rare_troop["name"])) == "Not yours" and names.has(str(design["name"])), names)
+	ed.open_tab("heroes")
+	var hn: Array = ed.grid.items.map(func(it): return str(it["card"]["name"]))
+	ck("0.43 team editor: only your Heroes", hn.has("Dock Hand") and not hn.has("Rictus"), hn)
+	ed.open_tab("consumables")
+	var cn: Array = ed.grid.items.map(func(it): return str(it["card"]["name"]))
+	ck("0.43 team editor: only the Consumables you own", cn == [str(cons["name"])], cn)
+	ed.tap_card(0)
+	ck("0.43 team editor: its sheet says how many you own", ed.sheet != null and ed.sheet.note_label.text == "You own 1 at the dock; the Pack takes up to that many.", ed.sheet.note_label.text if ed.sheet != null else null)
+	ed._close_sheet()
+	ed.only_held = false
+	ed.open_tab("deck")
+	var all_names: Array = ed.grid.items.map(func(it): return str(it["card"]["name"]))
+	var am := {}
+	for it in ed.grid.items:
+		am[str(it["card"]["name"])] = str(it.get("mark", ""))
+	ck("0.43 team editor: a practice fight's team sees every card, those not yours marked", all_names.has(str(test_card["name"])) and am.get(str(rare_troop["name"])) == "Not yours" and am.get(str(common_eq["name"])) == "", all_names.size())
+	ed.queue_free()
+	# a box's cards, shown as themselves
+	var d := Dialog.new("Home", "Deployment 3 is home.", ["To the dock"])
+	root.add_child(d)
+	d.add_cards([[rare_eq, r.art_for(rare_eq)], [cons, null]], "Found")
+	ck("0.43 dialog: cards found are shown as cards, under the text", d.card_tiles.size() == 2 and d.card_tiles[0] is CardTile and d.card_tiles[0].card == rare_eq and _labels(d).has("Found"))
+	d.read_card(rare_eq, null)
+	ck("0.43 dialog: a tap on one reads it in full; Close puts it away", d.card_sheet != null and d.card_sheet.card == rare_eq)
+	d.card_sheet.chosen.emit("close")
+	ck("0.43 dialog: (closed)", d.card_sheet == null)
+	d.queue_free()
+	# a choice of cards
+	var ch := CardChoice.new("Pick one", "", [rare_eq, cons], [null, null], "Take")
+	root.add_child(ch)
+	var took := [-1]
+	ch.chosen.connect(func(k): took[0] = k)
+	ck("0.43 choice: each card large, its button under it", ch.tiles.size() == 2 and ch.tiles[0].size == CardFace.LARGE and ch.buttons.size() == 2 and ch.buttons[1].get_parent() == ch.holders[1].get_parent())
+	ch.read(1)
+	ch.sheet.chosen.emit("take")
+	ck("0.43 choice: taken from its sheet, it is chosen", took[0] == 1 and ch.sheet == null)
+	ch.queue_free()
+	await process_frame
+	Dock.every_card = true
+	Dock.every_hero = true
 	Kit.fresh()
 
 

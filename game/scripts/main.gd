@@ -272,7 +272,11 @@ func go_back() -> void:
 		top.closed.emit()
 		return
 	if top is CardSheet:
-		_close_sheet()
+		# (0.43) the fight's own sheet; any other (a team's card, the dock's) closes as its Close does
+		if top == sheet:
+			_close_sheet()
+		else:
+			top.chosen.emit("close")
 		return
 	if top is BehaviorSheet:
 		_close_behaviors()
@@ -664,6 +668,9 @@ func open_teams() -> void:
 	# a Strike Team that is out can't be changed until it is home
 	teams_screen.locked = func(t): return campaign != null and campaign.deploy.locked_team(t)
 	teams_screen.owns = func(n): return campaign == null or campaign.dock.owns(n)
+	# (0.43) a campaign's teams are built from what is yours; a practice fight's from anything, what isn't yours marked
+	teams_screen.holds = (func(c): return campaign.dock.holds(c) if campaign != null else -1) if campaign != null else Callable()
+	teams_screen.only_held = campaign != null and not _teams_for_setup
 	teams_screen.open(roster)
 
 

@@ -1,7 +1,8 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.42 keeps Dimensional
-Instability off fights below Skull 4; v0.41 put the first Cores in reach and brought Withdraw.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.43 shows a card as
+itself wherever you deal with one, and builds a campaign's Strike Teams from the
+cards you own; v0.42 kept Dimensional Instability off fights below Skull 4.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -11,6 +12,29 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.43 (the game alone; Companion 14.26 as before): **cards, not lines of
+text, and your own cards**. The campaign should feel like a game, not a tool.
+
+- **A card is shown as itself wherever you deal with one.** The pick of a rare
+  card that begins a run is the three cards, printed large, each with Take
+  under it (a tap on one reads all it says, and it can be taken from there).
+  At the dock, Craft, the Exchange's Consumables, Prototypes, pre-built Troops
+  and selling, Recruit's Heroes, the Stockpile's stash and what the dock keeps,
+  and a team's Loadout and Pack are the printed cards, their copies on them,
+  with the price and what can be done (Craft, Buy, Recruit, Sell, + and −)
+  under each; a tap on a card reads it in full, its sheet carrying the same.
+  Cards a deployment brings home are shown as cards in the Home box.
+- **A campaign's Strike Teams are built from what is yours.** The team editor
+  shows only the cards you own: every Common card (they are free), your
+  Workshop's designs, what the stash holds of the Uncommon and rarer, the
+  Consumables and Prototypes the dock keeps, and your Heroes (the free ones and
+  those recruited). A card the team already has that isn't yours stays, marked
+  in red (Not yours, Not recruited), so it can come out; a card's sheet says
+  how many you hold. Test cards are left out unless you hold one. A practice
+  fight's team, built from a Battle's setup, still sees every card, those not
+  yours marked.
+- The phone's Back closes a card being read at the dock or in the team editor.
 
 New in 0.42 (Companion 14.26): **Instability from Skull 4**. With Elites and
 Mini-Bosses in every District, the campaign lab's runs stalled once two or three

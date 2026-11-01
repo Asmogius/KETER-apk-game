@@ -191,6 +191,57 @@ func add_loot(items: Array, caption := "") -> HFlowContainer:
 	return flow
 
 
+## (0.43) Cards, shown as themselves under the text (and any amounts): each
+## printed as a tile, a tap on one reading it in full. list: [[card, art], ...].
+var card_tiles: Array = []
+var card_sheet: CardSheet = null
+
+
+func add_cards(list: Array, caption := "") -> HFlowContainer:
+	var col := text_label.get_parent()
+	var at := text_label.get_index() + 1
+	if stats != null and stats.get_parent() == col:
+		at = stats.get_index() + 1
+	if caption != "":
+		var c := Look.read(caption, UI.DIM)
+		c.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		col.add_child(c)
+		col.move_child(c, at)
+		at += 1
+	var flow := HFlowContainer.new()
+	flow.alignment = FlowContainer.ALIGNMENT_CENTER
+	flow.add_theme_constant_override("h_separation", 12)
+	flow.add_theme_constant_override("v_separation", 12)
+	col.add_child(flow)
+	col.move_child(flow, at)
+	for pair in list:
+		var card: Dictionary = pair[0]
+		var art: Texture2D = pair[1] if pair.size() > 1 else null
+		var holder := Button.new()
+		holder.flat = true
+		holder.focus_mode = Control.FOCUS_NONE
+		holder.custom_minimum_size = CardTile.SIZE
+		holder.tooltip_text = "Read %s in full" % str(card.get("name", ""))
+		holder.pressed.connect(func(): read_card(card, art))
+		var tile := CardTile.new(card, art)
+		holder.add_child(tile)
+		flow.add_child(holder)
+		card_tiles.append(tile)
+	return flow
+
+
+## One of its cards, read in full on its sheet, over the box.
+func read_card(card: Dictionary, art: Texture2D) -> void:
+	if card_sheet != null:
+		return
+	card_sheet = CardSheet.new(card, art)
+	card_sheet.chosen.connect(func(_id):
+		if card_sheet != null:
+			Motion.pop_out(card_sheet, card_sheet.get_meta("box", null))
+			card_sheet = null)
+	add_child(card_sheet)
+
+
 ## (0.12) It pops open.
 func _ready() -> void:
 	Motion.pop_in(get_meta("box"))

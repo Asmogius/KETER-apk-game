@@ -18,6 +18,11 @@ var locked: Callable = Callable()
 ## (0.25) Says whether a Hero can lead a team out (the main scene sets it):
 ## a free one, or one recruited at the dock. Practice fights take any Hero.
 var owns: Callable = Callable()
+## (0.43) How much of a card is yours (Dock.holds; the main scene sets it), and
+## whether the editor shows only those (a campaign's teams) or every card with
+## the others marked (a practice fight's).
+var holds: Callable = Callable()
+var only_held := false
 var editing := -1
 var editor: TeamEditor
 var list: TouchList
@@ -244,6 +249,8 @@ func edit(i: int, guided := false) -> void:
 		return
 	editing = i
 	editor.owns = owns
+	editor.holds = holds
+	editor.only_held = only_held
 	editor.open(roster, teams[i], guided)
 	editor.visible = true
 

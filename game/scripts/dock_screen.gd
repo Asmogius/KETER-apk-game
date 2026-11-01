@@ -19,6 +19,12 @@
 ## Exchange each thing for sale is a tile with its picture and a price tag;
 ## a section with nothing in it is one quiet line; Deploy is the gold button.
 ##
+## (0.43) A card is always shown as itself: the rare pick, Craft, the
+## Exchange's Consumables, Prototypes and pre-built Troops, Recruit's Heroes,
+## the Stockpile's stash and what the dock keeps, and a team's Loadout and Pack
+## are the printed cards, a tap on one reading it in full (its sheet carries
+## what can be done with it: Craft, Buy, Recruit...).
+##
 ## Deploy chooses a Strike Team: its Troops must be your Workshop's designs
 ## (0.35: or Common Troops, which are free),
 ## and every copy in its Deck is paid for in Troop parts as it leaves (the
@@ -36,6 +42,8 @@ signal workshop_requested
 signal teams_requested                  # (0.35) build a first Strike Team
 
 const TABS := [["stockpile", "Stockpile"], ["exchange", "Exchange"], ["recruit", "Recruit"], ["craft", "Craft"], ["reclaim", "Reclaim"], ["bounties", "Bounties"], ["upgrades", "Upgrades"]]
+## (0.43) How wide each card shown in a tab stands, with its price and chips under it.
+const CARD_COL := 176.0
 ## (0.34) The kinds of card the stash holds, in the order the Craft tab shows them.
 const STASH_KINDS := [["equipment", "Equipment"], ["command", "Command"], ["aether", "Aether"], ["action", "Action"], ["sphere", "Chips"]]
 
@@ -48,6 +56,7 @@ var tab := "stockpile"
 var pack := {}                         # what the chosen team packs: name -> how many
 var loadout := {}                      # (0.34) the chosen team as it will leave: a copy of the preset, adjusted
 var dialog: Dialog = null
+var sheet: CardSheet = null            # (0.43) a card being read in full
 
 var title: Label
 var hint: Label
@@ -71,6 +80,7 @@ var _seen_deployments := -1            # the deployments it has seen come home
 var _blink: Timer
 var _rows: Array = []                  # what each row (or tile) stands for
 var _list_of: Array = []               # (0.15) each row of the list: the entry it is, or the tiles in it
+var _read: Array = []                  # (0.43) each card shown: {card, art, note, chips}, as a tap reads it
 
 
 func _init() -> void:
@@ -188,11 +198,14 @@ func offer_rare() -> void:
 	var off: Array = dock().rare_offer()
 	if off.is_empty() or dialog != null:
 		return
-	var lines := []
+	# (0.43) the cards themselves, to read and take
+	var cs := []
+	var arts := []
 	for nm in off:
 		var c = dock().card_of(str(nm))
-		lines.append("%s · %s: %s" % [nm, UI.type_name(c) if c != null else "", _card_line(c)])
-	dialog = Dialog.new("Pick a rare card", "A new run: the stash holds a starter set of cards, and one rare card of your choice besides.\n\n" + "\n".join(lines), off, UI.GOLD)
+		cs.append(c if c is Dictionary else {"name": str(nm), "cardType": ""})
+		arts.append(roster.art_for(c) if c is Dictionary and roster != null else null)
+	dialog = CardChoice.new("Pick a rare card", "A new run: one rare card of your choice joins the starter stash. Tap a card to read all it says.", cs, arts, "Take", UI.GOLD)
 	add_child(dialog)
 	dialog.chosen.connect(func(k):
 		_close_dialog()
@@ -203,23 +216,14 @@ func offer_rare() -> void:
 		show_tab(tab))
 
 
-## What a card does, in a short line.
-static func _card_line(c) -> String:
-	if not (c is Dictionary):
-		return ""
-	var bits := []
-	for e in (c.get("entries", []) if c.get("entries") is Array else []):
-		if e is Dictionary and Rules.truthy(e.get("text")):
-			bits.append(str(e["text"]).replace("[[", "").replace("]]", ""))
-	var t := " ".join(bits)
-	return t if t.length() <= 110 else t.substr(0, 107) + "..."
-
-
 func dock() -> Dock:
 	return campaign.dock
 
 
 func _back() -> void:
+	if sheet != null:
+		_close_card()
+		return
 	if dialog != null:
 		return
 	if choosing:
@@ -282,6 +286,8 @@ func show_tab(k: String) -> void:
 	list.clear()
 	_rows = []
 	_list_of = []
+	_read = []
+	_close_card()
 	help_text = ""
 	match k:
 		"exchange": _exchange_rows()
@@ -367,16 +373,14 @@ func _stockpile_rows() -> void:
 	var kept := kept_lines()
 	if not kept.is_empty():
 		_head("Also kept here", "", "Consumables and Prototypes you own, packed for a deployment as it leaves; pre-built copies, which join the next one.")
-		for l in kept:
-			_row(l["text"], l["sub"], UI.TEXT)
+		_cards(kept)
 	# (0.34) the stash
 	var held := stash_lines()
 	if held.is_empty():
 		_quiet("The stash is empty.", "The Equipment, Command and Aether cards, Action cards and Chips a deployment takes come from here, or are crafted (the Craft tab, or as the team leaves).", "The stash")
 	else:
 		_head("The stash", "%d card%s." % [held.size(), "" if held.size() == 1 else "s"], "The Equipment, Command and Aether cards, Action cards and Chips a deployment takes come from here, or are crafted as it leaves. They go out with the team and come home with it; a wipe loses them.")
-		for l in held:
-			_row(l["text"], l["sub"], UI.TEXT)
+		_cards(held)
 	var owned := campaign.progress.owned_lines()
 	if owned.is_empty():
 		_quiet("No blueprints or chassis found yet.", "Enemies, Loot Tiles, Locked Chests, Caches and POIs can all leave one; it is yours once the team that found it is home.", "Blueprints and chassis")
@@ -398,7 +402,7 @@ func _stockpile_rows() -> void:
 			[["Restock now", ["testing", "restock"], UI.CYAN], ["Reach +1", ["testing", "reach"], UI.CYAN], ["Reset the dock", ["testing", "reset"], UI.SOFT_RED]])
 
 
-## What the dock keeps for you: [{text, sub}].
+## What the dock keeps for you: [{text, sub, card, count}] (0.43: each shown as its card).
 func kept_lines() -> Array:
 	var out := []
 	var dk := dock()
@@ -406,14 +410,21 @@ func kept_lines() -> Array:
 		var kind := dk.item_kind(n)
 		if kind != "prototype" and kind != "consumable":
 			continue                     # (0.34) the stash's cards have a section of their own
-		out.append({"text": "%d × %s" % [dk.owned(n), n], "sub": ("Prototype" if kind == "prototype" else "Consumable") + " · owned"})
+		out.append({"text": "%d × %s" % [dk.owned(n), n], "sub": ("Prototype" if kind == "prototype" else "Consumable") + " · owned",
+			"card": _card_or(dk.card_of(str(n)), str(n)), "count": dk.owned(n)})
 	for id in dk.waiting():
 		var d = campaign.workshop.get_design(id)
-		out.append({"text": "%d × %s" % [int(dk.waiting()[id]), str(d["name"]) if d != null else str(id)], "sub": "Pre-built copies · they join the next deployment"})
+		out.append({"text": "%d × %s" % [int(dk.waiting()[id]), str(d["name"]) if d != null else str(id)], "sub": "Pre-built copies · they join the next deployment",
+			"card": campaign.workshop.to_card(d) if d is Dictionary else _card_or(null, str(id)), "count": int(dk.waiting()[id])})
 	return out
 
 
-## (0.34) The stash, as lines: "2 × Recall", "Command · Common".
+## A card to show, or (none by that name) a blank one with its name.
+static func _card_or(c, name: String) -> Dictionary:
+	return c if c is Dictionary else {"name": name, "cardType": ""}
+
+
+## (0.34) The stash, as lines: "2 × Recall", "Command · Common" (0.43: each shown as its card, its copies on it).
 func stash_lines() -> Array:
 	var out := []
 	var dk := dock()
@@ -421,7 +432,7 @@ func stash_lines() -> Array:
 		var c = dk.card_of(str(n))
 		if not Dock.is_limited(c):
 			continue
-		out.append({"text": "%d × %s" % [dk.owned(n), n], "sub": "%s · %s" % [UI.type_name(c), Loot.RARITIES[Dock.hero_rarity(c)]["label"]]})
+		out.append({"text": "%d × %s" % [dk.owned(n), n], "sub": "%s · %s" % [UI.type_name(c), Loot.RARITIES[Dock.hero_rarity(c)]["label"]], "card": c, "count": dk.owned(n)})
 	return out
 
 
@@ -445,14 +456,19 @@ func _craft_rows() -> void:
 		if cs.is_empty():
 			continue
 		_head(str(kind[1]), "")
+		var row := []
 		for c in cs:
 			var nm := str(c["name"])
 			var cc = dk.craft_cost(nm)
 			if cc == null:
 				continue
 			var can: bool = not out and st["shards"] >= float(cc["shards"]) and (cc["type"] == "" or st["parts"][cc["type"]][cc["rarity"]] >= int(cc["n"]))
-			_chips_row(nm, "%s · held %d · %s" % [Loot.RARITIES[int(cc["rarity"])]["label"], dk.owned(nm), Dock.craft_text(cc["shards"], cc["type"], cc["rarity"], cc["n"])],
-				[["Craft", ["craft", nm] if can else null, UI.GOLD if can else UI.DIM]])
+			# (its parts are of its own rarity: the sheet says so in full)
+			var parts := ("+%d %s part%s" % [int(cc["n"]), str(cc["type"]).capitalize(), "" if int(cc["n"]) == 1 else "s"]) if cc["type"] != "" and int(cc["n"]) > 0 else "no parts"
+			row.append({"card": c, "count": dk.owned(nm), "sub": "%s · held %d\n%s" % [Loot.RARITIES[int(cc["rarity"])]["label"], dk.owned(nm), parts], "price": Scoring.text(cc["shards"]),
+				"note": "%s · you hold %d. Crafted from %s." % [Loot.RARITIES[int(cc["rarity"])]["label"], dk.owned(nm), Dock.craft_text(cc["shards"], cc["type"], cc["rarity"], cc["n"])],
+				"chips": [["Craft", ["craft", nm] if can else null, UI.GOLD if can else UI.DIM]]})
+		_cards(row)
 
 
 # ---------------------------------------------------------------- the Exchange
@@ -524,9 +540,9 @@ func _exchange_rows() -> void:
 		for nm in st["items"]:
 			var kind := dk.item_kind(nm)
 			var card = dk.card_of(nm)
-			cards.append({"text": str(nm), "sub": "%s · you own %d" % ["Prototype" if kind == "prototype" else "Consumable", dk.owned(nm)],
-				"picture": _card_picture(card, kind), "px": Vector2(64, 45), "price": Scoring.text(dk.item_price(nm)), "chips": [["Buy", ["buy_card", nm, 1], UI.CYAN]]})
-		_tiles(cards)
+			cards.append({"text": str(nm), "card": _card_or(card, str(nm)), "count": dk.owned(nm), "sub": "%s · you own %d" % ["Prototype" if kind == "prototype" else "Consumable", dk.owned(nm)],
+				"price": Scoring.text(dk.item_price(nm)), "chips": [["Buy", ["buy_card", nm, 1], UI.CYAN]]})
+		_cards(cards)
 	# pre-built Troops
 	if not dk.prebuilts().is_empty():
 		_head("Pre-built Troops", "", "Finished designs you can't make yet. A copy joins your next deployment, on top of its Deck, and is gone when it ends; one lost in a fight is gone for the rest of it.")
@@ -536,19 +552,23 @@ func _exchange_rows() -> void:
 			if d == null:
 				continue
 			var ch = campaign.workshop.chassis_of(d)
-			pre.append({"text": str(d["name"]), "sub": "%s · power %d · %d waiting for the next deployment" % [str(ch.get("name")) if ch != null else "?", campaign.workshop.power(d), int(dk.waiting().get(id, 0))],
-				"picture": Art.body_token(str(ch.get("bodyPlan", ""))) if ch != null else null, "price": str(dk.pre_cost(d)), "chips": [["Buy a copy", ["buy_pre", id, 1], UI.CYAN]]})
-		_tiles(pre)
+			pre.append({"text": str(d["name"]), "card": campaign.workshop.to_card(d), "count": int(dk.waiting().get(id, 0)),
+				"sub": "%s · power %d · %d waiting for the next deployment" % [str(ch.get("name")) if ch != null else "?", campaign.workshop.power(d), int(dk.waiting().get(id, 0))],
+				"price": str(dk.pre_cost(d)), "chips": [["Buy a copy", ["buy_pre", id, 1], UI.CYAN]]})
+		_cards(pre)
 	# selling what you own
 	var mine := Dock.js_keys(dk.inv["cards"]).filter(func(nm): return dk.item_kind(str(nm)) == "consumable" or dk.item_kind(str(nm)) == "prototype")
 	if not mine.is_empty():
 		_head("Sell", "", "The Exchange buys Consumables and Prototypes back at half its price.")
+		var selling := []
 		for nm in mine:
 			var each = dk.item_price(nm)
+			var c = dk.card_of(nm)
 			if not Rules.truthy(each):
-				var c = dk.card_of(nm)
 				each = Dock.num(c.get("price") if c != null else null, 10)
-			_chips_row("%d × %s" % [dk.owned(nm), nm], "", [["Sell 1 · %d" % int(floor(float(each) * float(t["sell"]))), ["sell_card", nm, 1], UI.PALE]])
+			selling.append({"text": "%d × %s" % [dk.owned(nm), nm], "card": _card_or(c, str(nm)), "count": dk.owned(nm), "sub": "you own %d" % dk.owned(nm),
+				"chips": [["Sell 1 · %d" % int(floor(float(each) * float(t["sell"]))), ["sell_card", nm, 1], UI.PALE]]})
+		_cards(selling)
 
 
 ## (0.15) A blueprint or chassis on a tile: a chassis's body plan, standing; a
@@ -562,15 +582,6 @@ func _item_picture(it) -> Texture2D:
 			if tok != null:
 				return tok
 	return Art.icon("part_aether")
-
-
-## (0.15) A Consumable or Prototype on a tile: its art, or the picture of its kind.
-func _card_picture(card, kind: String) -> Texture2D:
-	if card is Dictionary and roster != null:
-		var f := roster.art_for(card)
-		if f != null:
-			return f
-	return Art.card_standin("prototype" if kind == "prototype" else "consumable")
 
 
 # ---------------------------------------------------------------- Recruit (0.25)
@@ -598,40 +609,29 @@ func _recruit_rows() -> void:
 			var hired: bool = Rules.truthy(st["hired"].get(nm)) or dk.owns(nm)
 			offer.append(_hero_tile(c, Scoring.text(dk.hero_price(nm)) if not hired else null,
 				[["Recruited", null, UI.DIM]] if hired else [["Recruit", ["recruit", nm], UI.CYAN]]))
-		_tiles(offer)
+		_cards(offer)
 	var free := dk.hero_cards().filter(func(c): return dk.is_free(c["name"]))
 	if free.is_empty():
 		_quiet("No free Heroes.", "", "Free Heroes")
 	else:
 		_head("Free Heroes", "", "Always yours, never lost: a team led by them can always leave.")
-		_tiles(free.map(func(c): return _hero_tile(c, null, [["Always yours", null, UI.DIM]])))
+		_cards(free.map(func(c): return _hero_tile(c, null, [["Always yours", null, UI.DIM]])))
 	var mine := dk.owned_heroes().filter(func(n): return dk.card_of(n) != null)
 	if mine.is_empty():
 		_quiet("No Heroes recruited yet.", "", "Recruited")
 	else:
 		_head("Recruited", "", "Yours until a team they go out with is wiped out.")
-		_tiles(mine.map(func(n): return _hero_tile(dk.card_of(n), null, [["Yours", null, UI.DIM]])))
+		_cards(mine.map(func(n): return _hero_tile(dk.card_of(n), null, [["Yours", null, UI.DIM]])))
 
 
-## A Hero on a tile: its token, its rarity, District and roles, its numbers and its abilities.
+## A Hero as its card (0.43), with its rarity, District and roles under it.
 func _hero_tile(c: Dictionary, price, chips: Array) -> Dictionary:
 	var r := Dock.hero_rarity(c)
 	var d := Dock.hero_district(c)
-	var stats: Dictionary = c.get("stats") if c.get("stats") is Dictionary else {}
-	var nums := []
-	for k in [["hp", "HP"], ["ac", "AC"], ["move", "Move"], ["slots", "Slots"], ["ldr", "Leadership"]]:
-		if stats.get(k[0]) != null and str(stats[k[0]]) != "":
-			nums.append("%s %s" % [k[1], str(stats[k[0]])])
-	var abil := []
-	for e in (c.get("entries") if c.get("entries") is Array else []):
-		if e is Dictionary and str(e.get("name", "")) != "":
-			abil.append(str(e["name"]))
 	var roles: Array = c.get("combatRoles") if c.get("combatRoles") is Array else []
-	var tok := roster.token_for(c) if roster != null else {}
-	return {"text": str(c["name"]), "colour": rarity_colour(r), "edge": rarity_colour(r).darkened(0.3),
-		"sub": "%s · %s%s\n%s%s" % [Loot.RARITIES[r]["label"], ("District " + d) if d != "" else "any District", (" · " + ", ".join(roles)) if not roles.is_empty() else "",
-			" · ".join(nums), ("\n" + " · ".join(abil)) if not abil.is_empty() else ""],
-		"picture": tok.get("texture"), "price": price, "chips": chips}
+	return {"text": str(c["name"]), "card": c, "colour": rarity_colour(r),
+		"sub": "%s · %s%s" % [Loot.RARITIES[r]["label"], ("District " + d) if d != "" else "any District", (" · " + ", ".join(roles)) if not roles.is_empty() else ""],
+		"price": price, "chips": chips}
 
 
 # ---------------------------------------------------------------- Reclaiming
@@ -884,6 +884,103 @@ func _tiles(tiles: Array) -> void:
 	list.add_row(holder)
 
 
+## (0.43) Cards as themselves, side by side, wrapping: each the printed card
+## (its copies on it as a badge), a line or two under it, a price tag in shards,
+## and what can be done with it; a tap on the card reads it in full, its sheet
+## carrying the same. entries: [{card, art (the roster's by default), count,
+## mark, mark_colour, chosen, faded, text (the entry's name for the tests; the
+## card's by default), sub, price (or null), note (the sheet's line; sub by
+## default), chips: [[label, act (or null), colour]]}].
+func _cards(entries: Array) -> void:
+	var holder := HFlowContainer.new()
+	holder.add_theme_constant_override("h_separation", 16)
+	holder.add_theme_constant_override("v_separation", 16)
+	var group := []
+	for t in entries:
+		var c: Dictionary = t["card"] if t.get("card") is Dictionary else {"name": str(t.get("text", "")), "cardType": ""}
+		var art = t["art"] if t.has("art") else (roster.art_for(c) if roster != null and str(c.get("cardType", "")) != "" else null)
+		var col := VBoxContainer.new()
+		col.custom_minimum_size = Vector2(CARD_COL, 0)
+		col.add_theme_constant_override("separation", 6)
+		holder.add_child(col)
+		var tile := CardTile.new(c, art)
+		tile.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		tile.count = int(t.get("count", 0))
+		tile.mark = str(t.get("mark", ""))
+		if t.has("mark_colour"):
+			tile.mark_colour = t["mark_colour"]
+		tile.chosen = t.get("chosen", false)
+		tile.faded = t.get("faded", false)
+		tile.set_meta("act", ["read", _read.size()])
+		tile.set_meta("card", c)
+		var said := str(t.get("note", t.get("sub", ""))).replace("\n", " · ")
+		if t.get("price") != null and not t.has("note"):
+			said += (". " if said != "" else "") + "%s shards." % str(t["price"])
+		_read.append({"card": c, "art": art, "note": said, "chips": t.get("chips", [])})
+		col.add_child(tile)
+		if str(t.get("sub", "")) != "":
+			var sl := UI.label(str(t["sub"]), 14, UI.DIM, true)
+			sl.custom_minimum_size = Vector2(CARD_COL, 0)
+			sl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			col.add_child(sl)
+		var bottom := HFlowContainer.new()
+		bottom.alignment = FlowContainer.ALIGNMENT_CENTER
+		bottom.add_theme_constant_override("h_separation", 6)
+		bottom.add_theme_constant_override("v_separation", 6)
+		bottom.custom_minimum_size = Vector2(CARD_COL, 0)
+		col.add_child(bottom)
+		if t.get("price") != null:
+			bottom.add_child(_price_tag(str(t["price"])))
+		for ch in t.get("chips", []):
+			bottom.add_child(UI.chip(str(ch[0]), ch[2], ch[1], false, 15))
+		var entry := {"text": str(t.get("text", c.get("name", ""))), "row": col, "tile": true, "card": c,
+			"acts": t.get("chips", []).filter(func(ch): return ch[1] != null).map(func(ch): return ch[1])}
+		_rows.append(entry)
+		group.append(entry)
+	_list_of.append(group)
+	list.add_row(holder)
+
+
+## A price tag in shards: the shards' icon and the price, in gold.
+func _price_tag(price: String) -> PanelContainer:
+	var tag := PanelContainer.new()
+	tag.add_theme_stylebox_override("panel", UI.box(Color("#271f1b"), UI.GOLD, 1, 2, 6))
+	var th := HBoxContainer.new()
+	th.add_theme_constant_override("separation", 4)
+	tag.add_child(th)
+	th.add_child(UI.icon("shards", 32))
+	var pl := Look.title(price, UI.GOLD)
+	pl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	th.add_child(pl)
+	tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return tag
+
+
+## (0.43) A card shown here, read in full: its sheet, with what can be done
+## with it from here as its buttons (one that can't be done now, greyed).
+func read_card(i: int) -> void:
+	if i < 0 or i >= _read.size() or sheet != null or dialog != null:
+		return
+	var r: Dictionary = _read[i]
+	var btns := []
+	var acts := []
+	for ch in r["chips"]:
+		btns.append([str(acts.size()), str(ch[0]), ch[1] != null])
+		acts.append(ch[1])
+	sheet = CardSheet.new(r["card"], r["art"], {"buttons": btns, "note": str(r["note"])})
+	sheet.chosen.connect(func(id: String):
+		_close_card()
+		if id.is_valid_int() and int(id) < acts.size() and acts[int(id)] != null:
+			act(acts[int(id)]))
+	add_child(sheet)
+
+
+func _close_card() -> void:
+	if sheet != null:
+		Motion.pop_out(sheet, sheet.get_meta("box", null))
+		sheet = null
+
+
 ## Every tap a row offers now, as act() takes them (for the tests).
 func offers() -> Array:
 	var out := []
@@ -893,7 +990,7 @@ func offers() -> Array:
 
 
 func _on_row(i: int, at: Vector2) -> void:
-	if i < 0 or i >= list.rows().size() or dialog != null:
+	if i < 0 or i >= list.rows().size() or dialog != null or sheet != null:
 		return
 	var what = UI.act_at(list.rows()[i], at)
 	if what != null:
@@ -935,6 +1032,9 @@ func act(what: Array) -> void:
 			return
 		"teams":
 			teams_requested.emit()
+			return
+		"read":
+			read_card(int(what[1]))
 			return
 	if r.get("ok"):
 		campaign.save()
@@ -1001,6 +1101,8 @@ func show_teams() -> void:
 		team_i = -1
 	list.clear()
 	_rows = []
+	_read = []
+	_close_card()
 	tab_row.visible = false
 	title.text = "Deploy"
 	back_btn.text = "Back"
@@ -1050,13 +1152,16 @@ func _loadout_rows() -> void:
 	names.sort()
 	if names.is_empty():
 		_quiet("Nothing from the stash: its cards are all Common, and Common cards are free.")
+	var taking := []
 	for nm in names:
 		var c = dk.card_of(nm)
 		var where := _loadout_where(nm)
-		var sub := "%s · takes %d · held %d" % [UI.type_name(c) if c != null else "", int(need[nm]), dk.owned(nm)]
+		var sub := "takes %d · held %d" % [int(need[nm]), dk.owned(nm)]
+		var said := "%s · it takes %d; the stash holds %d." % [UI.type_name(c) if c != null else "", int(need[nm]), dk.owned(nm)]
 		if crafts.has(nm):
 			var cr: Dictionary = crafts[nm]
-			sub += " · %d crafted as it leaves: %s" % [int(cr["n"]), Dock.craft_text(cr["shards"], cr["type"], cr["rarity"], cr["parts"])]
+			sub += "\n%d crafted as it leaves" % int(cr["n"])
+			said += " %d crafted as it leaves: %s." % [int(cr["n"]), Dock.craft_text(cr["shards"], cr["type"], cr["rarity"], cr["parts"])]
 		var chips := []
 		if where["deck"] > 0:
 			chips.append(["−", ["ld", nm, -1], UI.TEXT])
@@ -1066,17 +1171,20 @@ func _loadout_rows() -> void:
 			chips.append(["+ Pouch", ["lp", nm, 1], UI.TEXT])
 		if where["hand"] > 0:
 			chips.append(["− carried", ["la", nm], UI.TEXT])
-		_chips_row(nm, sub, chips)
+		taking.append({"card": _card_or(c, nm), "count": int(need[nm]), "sub": sub, "note": said, "chips": chips})
+	_cards(taking)
 	# the stash's cards it doesn't take yet
 	var more := Dock.js_keys(dk.inv["cards"]).filter(func(nm):
 		var c = dk.card_of(str(nm))
 		return Dock.is_limited(c) and not need.has(str(nm)) and str(c.get("cardType", "")) != "action")
 	if not more.is_empty():
 		_head("From the stash", "", "Cards the stash holds that this loadout doesn't take. Action cards are carried by a Hero: give them one in Strike Teams.")
+		var extra := []
 		for nm in more:
 			var c = dk.card_of(str(nm))
 			var chip: bool = str(c.get("cardType", "")) == "sphere"
-			_chips_row(str(nm), "%s · held %d" % [UI.type_name(c), dk.owned(str(nm))], [["+ Pouch" if chip else "+ Deck", ["lp" if chip else "ld", str(nm), 1], UI.CYAN]])
+			extra.append({"card": c, "count": dk.owned(str(nm)), "sub": "held %d" % dk.owned(str(nm)), "chips": [["+ Pouch" if chip else "+ Deck", ["lp" if chip else "ld", str(nm), 1], UI.CYAN]]})
+		_cards(extra)
 	var acts := [["Save as preset", ["lsave"], UI.GOLD]]
 	if changed:
 		acts.append(["Back to the preset", ["lreset"], UI.PALE])
@@ -1146,12 +1254,15 @@ func _pack_rows() -> void:
 	var t: Dictionary = loadout
 	_head("Pack", ("What %s takes of what the dock keeps. Every packed Prototype joins each fight, and so does every packed Consumable; one used is gone. The rest comes home, unless the team is wiped out." % str(t["name"])) if not owned.is_empty()
 		else "Nothing kept at the dock to pack. Consumables and Prototypes are bought at the Exchange.")
+	var packing := []
 	for nm in owned:
 		var on := int(pack.get(nm, 0))
 		var have := dk.owned(nm)
 		var kind := dk.item_kind(nm)
-		_chips_row(str(nm), "%s · %d of %d packed" % ["Prototype" if kind == "prototype" else "Consumable", on, have],
-			[["−", ["pack", nm, -1] if on > 0 else null, UI.TEXT if on > 0 else UI.DIM], ["+", ["pack", nm, 1] if on < have else null, UI.TEXT if on < have else UI.DIM]])
+		packing.append({"text": str(nm), "card": _card_or(dk.card_of(str(nm)), str(nm)), "count": on, "chosen": on > 0, "sub": "%s · %d of %d packed" % ["Prototype" if kind == "prototype" else "Consumable", on, have],
+			"note": "%s · %d of the %d you own packed." % ["Prototype" if kind == "prototype" else "Consumable", on, have],
+			"chips": [["−", ["pack", nm, -1] if on > 0 else null, UI.TEXT if on > 0 else UI.DIM], ["+", ["pack", nm, 1] if on < have else null, UI.TEXT if on < have else UI.DIM]]})
+	_cards(packing)
 
 
 func set_pack(name: String, by: int) -> void:
