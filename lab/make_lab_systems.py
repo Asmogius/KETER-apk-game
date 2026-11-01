@@ -18,7 +18,7 @@ ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 import spec_data as D  # noqa: E402
 
-VERSION = "L2"
+VERSION = "L3"
 
 
 def tiers_of(a):
