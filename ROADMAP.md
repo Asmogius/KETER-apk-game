@@ -24,8 +24,10 @@ What's planned beyond the work in hand, so it isn't lost between sessions.
 - The calls made in the Lab set: its merges, the Mythic's cost, Volt-Warden Ryska's
   Leadership, the abilities that left cards.
 - Skull 6 POIs below target on both sets (the Titans' paired tier III attacks).
-- Fights from Skull 3 run 9-15 rounds on both sets, against a 5-9 target: pacing.
-- The campaign lab on the Lab set, and Workshop module designs in fights.
+- Workshop module designs in fights.
+
+(Fights from Skull 3 run 9-15 rounds on both sets, longer than the lab's 5-9 target:
+that is fine for the harder levels, decided 1 Nov 2026.)
 - Whether the Lab systems replace today's in KETER itself.
 
 ## Later
