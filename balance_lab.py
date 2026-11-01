@@ -5,6 +5,7 @@ the content the game ships with, and this gathers how they went.
   python3 balance_lab.py run  [--n 60] [--jobs 4] [--out DIR]   play the grid
   python3 balance_lab.py sum  [--out DIR]                       gather it into summary.json
   python3 balance_lab.py run --grid focus --tune notest,mix --out DIR   a what-if, on the cells it matters to
+  python3 balance_lab.py run --lab --out DIR                     the same grid on KETER Lab's card set
   python3 balance_lab.py run-camp [--runs 8] [--bots careful,casual] [--most 150] --out DIR   whole campaigns (lab_campaign.gd)
   python3 balance_lab.py sum-camp --out DIR                     gather them into camp_summary.json
 
@@ -68,7 +69,7 @@ def cell_name(c):
 
 
 def play(job):
-    c, part, n, exp, out, tune = job
+    c, part, n, exp, out, tune, lab = job
     f = out / "runs" / ("%s_p%02d.jsonl" % (cell_name(c), part))
     if f.exists() and f.stat().st_size > 0:
         return str(f), 0
@@ -81,6 +82,8 @@ def play(job):
         args.append("stage=%s" % c["stage"])
     if tune:
         args.append("tune=%s" % tune)
+    if lab:
+        args.append("lab=1")
     r = subprocess.run(args, capture_output=True, text=True, timeout=3600)
     if r.returncode != 0 or not f.exists():
         sys.stderr.write("%s part %d failed:\n%s\n" % (cell_name(c), part, (r.stdout + r.stderr)[-2000:]))
@@ -93,7 +96,7 @@ def run(a):
     out.mkdir(parents=True, exist_ok=True)
     exp = export_path(out)
     parts = max(1, a.n // PART)
-    jobs = [(c, p, PART, exp, out, a.tune) for c in cells(not a.core_grid, a.grid) for p in range(parts)]
+    jobs = [(c, p, PART, exp, out, a.tune, a.lab) for c in cells(not a.core_grid, a.grid) for p in range(parts)]
     # the slowest first, so that the last to finish isn't a long one alone
     jobs.sort(key=lambda j: -(j[0]["skull"] * (3 if j[0]["kind"] == "core" else (2 if j[0]["kind"] == "poi" else 1))))
     bad = 0
@@ -239,6 +242,7 @@ def main():
     ap.add_argument("--core-grid", action="store_true", help="only the main grid, without the extra cells")
     ap.add_argument("--grid", default="full", choices=["full", "focus", "tuned"], help="which cells: all, the careful player from Skull 3, or the main grid and District 1")
     ap.add_argument("--tune", default="", help="what-if switches for lab_fights.gd's tune= (the game is untouched)")
+    ap.add_argument("--lab", action="store_true", help="KETER Lab: the Lab card set laid over the export (lab_fights.gd lab=1)")
     ap.add_argument("--runs", type=int, default=8, help="campaigns a player")
     ap.add_argument("--bots", default="careful,casual", help="which players play campaigns")
     ap.add_argument("--most", type=int, default=150, help="deployments a campaign at most")
