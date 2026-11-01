@@ -26,6 +26,13 @@ What's planned beyond the work in hand, so it isn't lost between sessions.
 - Skull 6 POIs below target on both sets (the Titans' paired tier III attacks).
 - Workshop module designs in fights.
 - Whether the Lab systems replace today's in KETER itself.
+- **Five Districts on test floors** (found by the campaign lab, 1 Nov 2026; the shipped
+  game, either card set): outside District 3 a POI or ambush draws the TEST floors,
+  as Districts 1, 2, 4, 5 and 6 have no floor chunks of their own, and campaigns stall
+  there (one District 2 POI at Skull 2 wiped 89 of today's teams in 8 runs). Growing
+  every District's floors from District 3's chunks is the simple fix. Whole campaigns as
+  shipped: today's cards clear all six Districts in 0 runs of 8, KETER Lab in 6 (median
+  86 deployments); on District 3's floors, 6 of 8 (38.5) and 8 of 8 (33.5).
 
 (Fights from Skull 3 run 9-15 rounds on both sets, longer than the lab's 5-9 target:
 that is fine for the harder levels, decided 1 Nov 2026.)
