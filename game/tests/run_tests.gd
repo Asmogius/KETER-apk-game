@@ -39,6 +39,13 @@ func _run() -> void:
 		Rules.hooks = {}
 		quit(1 if bad > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("fortysix"):
+		_fortysix()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("fortyfive"):
 		await _fortyfive()
 		Kit.fresh()
@@ -397,6 +404,7 @@ func _run() -> void:
 	await _fortythree()
 	await _fortyfour()
 	await _fortyfive()
+	_fortysix()
 	_lab_set()
 	await _lab_forge_scene()
 	await _lab_workshop_scene()
@@ -10771,6 +10779,25 @@ func _fortyfive() -> void:
 	BlackBox.enabled = false
 	BlackBox.log_dir = "user://logs"
 	Kit.fresh()
+
+
+# ---------------------------------------------------------------- 0.46: the music's loops end inside their data
+func _fortysix() -> void:
+	# Godot plays a loop's loop_end frame, then goes back: loop_end must be a frame the stream has
+	var bad_loops := []
+	for n in Music.TRACKS:
+		for w in [Music.make(str(n)), Music.load_made(str(n))]:
+			var frames: int = (w as AudioStreamWAV).data.size() / 2
+			var tr: Dictionary = Music.TRACKS[n]
+			var count := int(Music.RATE * (60.0 / float(tr["bpm"])) * 4.0 * Music.BARS)
+			var tail_ok := true
+			for i in Music.TAIL:
+				if w.data.decode_s16((count + i) * 2) != w.data.decode_s16(i * 2):
+					tail_ok = false
+			if w.loop_mode != AudioStreamWAV.LOOP_FORWARD or w.loop_begin != 0 or w.loop_end != count - 1 or w.loop_end >= frames or frames != count + Music.TAIL or not tail_ok:
+				bad_loops.append([n, w.loop_end, frames, count])
+	ck("0.46 music: each loop ends on its last frame, inside its data, with its start again after it (made, and as kept)", bad_loops.is_empty(), bad_loops)
+	ck("0.46 sounds: none of the game's own loops (each plays once, and stops at its end)", Sound.NAMES.keys().all(func(n): return Sound.own(n).loop_mode == AudioStreamWAV.LOOP_DISABLED and Sound._make(n).loop_mode == AudioStreamWAV.LOOP_DISABLED))
 
 
 ## (Lab) KETER Lab's card set: laid over an export only in KETER Lab; each set card a

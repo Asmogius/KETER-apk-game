@@ -1,8 +1,8 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.45 opens a fight
-without the risks a phone may not survive, and keeps a black box that says what
-the game was doing if it ever closes all at once; v0.44 was faster.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.46 stops the music
+from closing the game as a fight's loop comes round; v0.45 opened a fight
+without the risks a phone may not survive, and keeps a black box.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -12,6 +12,23 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.46 (the game alone; Companion 14.26 as before): **the crash was the
+music**. Found by playing: with the music off, the game no longer closed; with it
+on, a fight's faster loop played, stopped, and the game closed.
+
+- **Each music loop now ends on its last frame.** Godot plays a loop's
+  loop_end frame and then goes back to the start (it counts it in); the
+  game's loops (0.39 to 0.45) set loop_end one past their last frame, so each
+  time a loop came round the player read one sample beyond the stream's data.
+  A computer lets that pass; a phone's memory guard can stop the game for it.
+  A fight's loop is the shortest (126 beats a minute: it comes round in under
+  8 seconds), so it struck as fights opened. Each loop also carries its first
+  32 frames again after its end, so a player that read past it would read
+  more of the loop. run_tests checks every loop, as made and as kept.
+- The rest of 0.45 stays: the music and sounds come made, no thread runs, no
+  screen read back on a phone, the black box. Low processor mode stays off for
+  now (it can come back once the phone has stayed up through fights).
 
 New in 0.45 (the game alone; Companion 14.26 as before): **a fight that opens
 safely, and a black box**. On the phone, 0.44 closed during deployment fights,

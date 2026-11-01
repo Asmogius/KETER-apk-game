@@ -146,7 +146,18 @@ static func _hz(midi: float) -> float:
 	return 440.0 * pow(2.0, (midi - 69.0) / 12.0)
 
 
+## (0.46) Frames of the loop's start kept again after its end: if anything
+## reads past the loop's last frame, it reads more of the loop, never past the
+## stream's end.
+const TAIL := 32
+
+
 ## A loop of BARS bars, as a 16-bit stream that repeats.
+## (0.46) Its loop_end is its last frame (Godot plays loop_end and then goes
+## back to the start: it counts it in). It was one past the last (0.39 to
+## 0.45), so each time a loop came round the player read one sample beyond the
+## stream's data: nothing on a computer, but a phone may stop the game for it.
+## A fight's loop comes round in under 8 seconds, as the fight opens.
 static func make(name: String) -> AudioStreamWAV:
 	var tr: Dictionary = TRACKS.get(name, TRACKS["map"])
 	var beat := 60.0 / float(tr["bpm"])
@@ -191,6 +202,10 @@ static func make(name: String) -> AudioStreamWAV:
 			drum += held * (1.0 - et / 0.18) * 0.13
 		var v := bass + arp_v + drum
 		data.encode_s16(i * 2, int(clampf(v * 0.7, -1.0, 1.0) * 32767.0))
+	# (0.46) the loop's start again after its end, read only by a player that reads past it
+	data.resize((count + TAIL) * 2)
+	for i in TAIL:
+		data.encode_s16((count + i) * 2, data.decode_s16(i * 2))
 	var w := AudioStreamWAV.new()
 	w.format = AudioStreamWAV.FORMAT_16_BITS
 	w.mix_rate = RATE
@@ -198,5 +213,5 @@ static func make(name: String) -> AudioStreamWAV:
 	w.data = data
 	w.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	w.loop_begin = 0
-	w.loop_end = count
+	w.loop_end = count - 1
 	return w
