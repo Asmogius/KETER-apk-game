@@ -62,16 +62,19 @@ func _init(stream: Loot, pools_content = null, chassis_content = null, tables_co
 
 
 static func blank() -> Dictionary:
-	return {"bp": {}, "ch": {}, "named": {}, "mod": {}, "all": false, "seen": {"enemy": {}, "district": {}, "comp": {}}}
+	return {"bp": {}, "ch": {}, "named": {}, "all": false, "seen": {"enemy": {}, "district": {}, "comp": {}}}
 
 
 ## A saved state with anything missing filled in.
 static func tidy(s) -> Dictionary:
 	var out := blank()
 	if s is Dictionary:
-		for k in ["bp", "ch", "named", "mod"]:
+		for k in ["bp", "ch", "named"]:
 			if s.get(k) is Dictionary:
 				out[k] = s[k]
+		# (Lab) the modules' researched tiers, once there are any (as progress.js keeps them)
+		if s.get("mod") is Dictionary:
+			out["mod"] = s["mod"]
 		out["all"] = Rules.truthy(s.get("all"))
 		if s.get("seen") is Dictionary:
 			for k in ["enemy", "district", "comp"]:
