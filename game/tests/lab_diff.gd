@@ -98,5 +98,29 @@ func _initialize() -> void:
 			if shown2 < 12:
 				shown2 += 1
 				print("DIFFER caps of ", JSON.stringify(g["build"]), "\n  want ", JSON.stringify(_norm(g["caps"])), "\n  got  ", JSON.stringify(_norm(c3)))
+	# the Workshop's modules
+	for g in d.get("modules", []):
+		var ch = Rules.ints(g["ch"]) if g["ch"] is Dictionary else null
+		var dd: Dictionary = Rules.ints(g["d"])
+		var kw: Dictionary = Rules.ints(g["kw"])
+		var mods: Dictionary = Rules.ints(g["mods"])
+		var mid := str(g["mid"])
+		var have := {"line": LabSystems.chassis_line(ch), "build": LabSystems.design_build(dd, ch), "points": LabSystems.design_points(dd), "check": LabSystems.design_check(dd, ch, kw, mods),
+			"cost": LabSystems.design_cost(dd, ch), "card": LabSystems.design_card(dd, ch), "guess": LabSystems.design_guess(Rules.ints(g["legacy"]), ch), "level": LabSystems.module_level(mid, kw, mods),
+			"open": [1, 2, 3].map(func(t): return LabSystems.module_open(mid, t, kw, mods)),
+			"free": [LabSystems.is_free_module("A1", 1), LabSystems.is_free_module("A1", 2), LabSystems.is_free_module("S1", 0), LabSystems.is_free_module(mid, 1)],
+			"research": LabSystems.module_research(mid, kw, mods, g["sh"], Rules.ints(g["pr"]))}
+		var want = _norm(g["out"])
+		var got = _norm(have)
+		if JSON.stringify(want) == JSON.stringify(got):
+			ok += 1
+		else:
+			bad += 1
+			if shown2 < 16:
+				shown2 += 1
+				for k in (want as Dictionary):
+					if JSON.stringify(want[k]) != JSON.stringify(got.get(k)):
+						print("DIFFER a Workshop design's ", k, "\n  want ", JSON.stringify(want[k]).substr(0, 400), "\n  got  ", JSON.stringify(got.get(k)).substr(0, 400))
+						break
 	print("LAB MATCH %d  DIFFER %d" % [ok, bad])
 	quit(1 if bad > 0 else 0)

@@ -164,6 +164,14 @@ func refresh() -> void:
 		_add(UI.label("This design's chassis is missing from the export.", 18, UI.SOFT_RED, true))
 	else:
 		_add(_chassis_row(ch))
+		if Rules.truthy(d.get("lab")):
+			_module_rows(ch)
+			_look_rows()
+			list.scroll_by(keep)
+			_result()
+			return
+		if Workshop.lab_on() and not locked and not Rules.truthy(d.get("prebuilt")):
+			_add(_note_row("A design made before the Lab: it keeps working as it is. Convert gives it the nearest modules, to change and keep.", [["Convert to modules", ["convert"], UI.CYAN]]))
 		var abilities: Array = d.get("abilities", [])
 		for i in abilities.size():
 			_add(_ability_row(i, abilities[i], ch))
@@ -176,6 +184,74 @@ func refresh() -> void:
 		_look_rows()
 	list.scroll_by(keep)
 	_result()
+
+
+## (Lab) A row of words, and chips to tap beside them.
+func _note_row(text: String, chips: Array) -> Control:
+	var row := PanelContainer.new()
+	row.add_theme_stylebox_override("panel", UI.box(Color("#181c19"), UI.LINE, 1, 6, 12))
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	row.add_child(v)
+	if text != "":
+		v.add_child(UI.label(text, 16, UI.PALE, true))
+	if not chips.is_empty():
+		var f := HFlowContainer.new()
+		f.add_theme_constant_override("h_separation", 8)
+		f.add_theme_constant_override("v_separation", 8)
+		for c in chips:
+			f.add_child(UI.chip(str(c[0]), c[2], c[1], c.size() > 3 and c[3], 15))
+		v.add_child(f)
+	return row
+
+
+## (Lab) The design's modules: each library ability at a tier; the open slot shows what it can take.
+var lab_open := -1
+
+
+func _module_rows(ch: Dictionary) -> void:
+	var D := LabSystems.data()
+	var ln := LabSystems.chassis_line(ch)
+	var cp := LabSystems.caps(LabSystems.design_build(d, ch))
+	var kw := ws().kw_owned()
+	var mods := Workshop.full_mods() if Rules.truthy(d.get("prebuilt")) else ws().mod_owned()
+	var card := ws().to_card(d)
+	_add(_note_row("A Lab design: the chassis is a %s %s %s, which takes up to %d module%s at tier %s at most (one a Passive or Aura). A module is a library ability: its numbers and text are fixed." % [
+		str(ln["size"]).capitalize(), str(ln["rarity"]).capitalize(), str(D["roleName"][ln["role"]]), int(cp["abilities"]), "" if int(cp["abilities"]) == 1 else "s", LabSystems.ROMAN[int(cp["tier"])]], []))
+	var ms: Array = d.get("modules", []) if d.get("modules") is Array else []
+	for i in ms.size():
+		var m: Array = ms[i]
+		var a = LabSystems.ability(m[0])
+		var lv := LabSystems.module_level(m[0], kw, mods)
+		var e: Dictionary = card["entries"][i + 1] if (card.get("entries", []) as Array).size() > i + 1 else {}
+		var chips := [[(str(m[0]) + " · " + str(a["name"])) if a != null else str(m[0]), ["mod_open", i], UI.CYAN, lab_open == i]]
+		for t in range(1, mini(3, (a["tiers"] as Array).size() if a != null else 1) + 1):
+			chips.append([LabSystems.ROMAN[t] + ("" if t <= lv else " (not open)"), ["mod_tier", i, t], UI.CYAN if t <= lv else UI.DIM, int(Rules.num(m[1], 1)) == t])
+		if not locked:
+			chips.append(["Remove", ["mod_del", i], UI.SOFT_RED])
+		var words := (str(a["does"]) + " ") if a != null else ""
+		if Rules.truthy(e.get("damage")):
+			words += "%s damage · " % str(e["damage"])
+		if Rules.truthy(e.get("energyCost")):
+			words += "%s Energy · " % str(e["energyCost"])
+		words += Keywords.render(str(e.get("text", ""))) if e.get("text") != null else ""
+		_add(_note_row(words, chips if not locked else chips.filter(func(c): return str(c[1][0]) != "mod_del")))
+		if lab_open == i and not locked:
+			for kd in [["attack", "Attacks"], ["support", "Support"], ["passive", "Passives"], ["aura", "Auras"]]:
+				var opts := []
+				for x in D["library"]:
+					if str(x["kind"]) != kd[0]:
+						continue
+					var shut: bool = not (x["roles"] as Array).has(ln["role"]) or (x.get("min") != null and LabSystems.rarity_rank(ln["rarity"]) < LabSystems.rarity_rank(x["min"]))
+					var xl := LabSystems.module_level(x["id"], kw, mods)
+					opts.append([str(x["id"]) + " · " + str(x["name"]) + ("" if shut else (" · " + (("tier " + LabSystems.ROMAN[xl]) if xl > 0 else "no blueprint"))), null if shut else ["mod_pick", i, x["id"]], UI.DIM if shut else UI.CYAN, str(x["id"]) == str(m[0])])
+				_add(_note_row(str(kd[1]), opts))
+	if ms.is_empty():
+		_add(_note_row("No modules yet: it fights with its basic attack. Heavy Blow I and Mend I are free; the rest open with the blueprints you find.", []))
+	if not locked and ms.size() < int(cp["abilities"]):
+		_add(_note_row("", [["+ Add a module", ["mod_add"], UI.CYAN]]))
+	if ms.any(func(m): return LabSystems.ability(m[0]) != null and str(LabSystems.ability(m[0])["tiers"][0]["text"]).contains("{token}")):
+		_add(_note_row("Token it brings", (D["tokens"] as Array).map(func(t): return [str(t), ["mod_token", t], UI.CYAN, str(d.get("token", "Scuttlebot")) == t])))
 
 
 func _add(c: Control) -> void:
@@ -408,9 +484,15 @@ func _result() -> void:
 	fill.anchor_right = frac
 	fill.anchor_bottom = 1.0
 	bar.add_child(fill)
+	# (Lab) a Lab design's points aren't capped: its rarity caps the tiers instead
+	bar.visible = not Rules.truthy(d.get("lab"))
 	result.add_child(bar)
-	result.add_child(UI.label("Power %d / %s" % [chk["power"], Scoring.text(chk["cap"])], 20, UI.TEXT))
-	result.add_child(UI.label("Abilities %d / %s" % [chk["abilities"], Scoring.text(chk["abilityCap"])], 17, UI.PALE))
+	if Rules.truthy(d.get("lab")):
+		result.add_child(UI.label("Points %d" % chk["power"], 20, UI.TEXT))
+		result.add_child(UI.label("Modules %d / %s" % [chk["abilities"], Scoring.text(chk["abilityCap"])], 17, UI.PALE))
+	else:
+		result.add_child(UI.label("Power %d / %s" % [chk["power"], Scoring.text(chk["cap"])], 20, UI.TEXT))
+		result.add_child(UI.label("Abilities %d / %s" % [chk["abilities"], Scoring.text(chk["abilityCap"])], 17, UI.PALE))
 	if chk["ok"]:
 		result.add_child(UI.label("Fits, and you own everything it uses.", 17, UI.GREEN, true))
 	else:
@@ -490,6 +572,45 @@ func act(what: Array) -> void:
 			ask_ability_name(int(what[1]))
 		"look":
 			d["skin"] = {"skin": what[1], "variant": what[2]}
+			save()
+		# (Lab) modules
+		"convert":
+			d = ws().convert(d)
+			save()
+		"mod_open":
+			lab_open = -1 if lab_open == int(what[1]) else int(what[1])
+			refresh()
+		"mod_pick":
+			var ms: Array = d["modules"]
+			ms[int(what[1])] = [str(what[2]), 1]
+			lab_open = -1
+			save()
+		"mod_tier":
+			d["modules"][int(what[1])][1] = int(what[2])
+			save()
+		"mod_del":
+			d["modules"].remove_at(int(what[1]))
+			lab_open = -1
+			save()
+		"mod_add":
+			var ln := LabSystems.chassis_line(ch)
+			var kw := ws().kw_owned()
+			var mods := Workshop.full_mods() if Rules.truthy(d.get("prebuilt")) else ws().mod_owned()
+			var used := {}
+			for m in d.get("modules", []):
+				used[str(m[0])] = true
+			var pick := "S1"
+			for x in LabSystems.data()["library"]:
+				if not used.has(str(x["id"])) and (x["roles"] as Array).has(ln["role"]) and x.get("min") == null and LabSystems.module_level(x["id"], kw, mods) >= 1:
+					pick = str(x["id"])
+					break
+			if not (d.get("modules") is Array):
+				d["modules"] = []
+			d["modules"].append([pick, 1])
+			lab_open = (d["modules"] as Array).size() - 1
+			save()
+		"mod_token":
+			d["token"] = str(what[1])
 			save()
 
 

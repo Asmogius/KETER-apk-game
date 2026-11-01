@@ -232,6 +232,9 @@ func _blueprint_rows() -> void:
 	var on := p.unlock_all()
 	_add(_panel("Testing: everything unlocked · " + ("on" if on else "off"), [["While it is on, every chassis and blueprint can be used, and nothing new drops. Switched off, a design that uses what you haven't found can't deploy.", UI.DIM]],
 		UI.GOLD if on else UI.LINE, "Tap to turn " + ("off" if on else "on"), UI.CYAN), {"text": "testing", "testing": true})
+	# (Lab) the modules: each library ability, the tier open to you, and research for the next
+	if Workshop.lab_on():
+		_module_rows(out, st)
 	var owned := p.catalog().filter(func(b): return p.state["bp"].has(b["name"]) and int(Rules.num(p.state["bp"][b["name"]], 0)) >= 1)
 	if owned.is_empty():
 		_add(UI.label("No blueprints found yet. Enemies, Loot Tiles, Locked Chests, Caches and POIs can all leave one.", 16, UI.DIM, true), {"text": "none found"})
@@ -251,6 +254,30 @@ func _blueprint_rows() -> void:
 				_add(_panel(str(b["name"]), [[sub, UI.PALE]], Color(cat["colour"]), tag, UI.CYAN if (st["shards"] >= price and not out) else UI.DIM), {"text": str(b["name"]), "research": b["name"]})
 			else:
 				_add(_panel(str(b["name"]), [[sub, UI.PALE]], Color(cat["colour"]), "Highest level" if b["levels"] > 1 else "", UI.DIM), {"text": str(b["name"])})
+
+
+func _module_rows(out: bool, st: Dictionary) -> void:
+	var D := LabSystems.data()
+	var kw := ws().kw_owned()
+	var mods := ws().mod_owned()
+	var prices: Array = ws().progress.research_default
+	_head_row("Modules")
+	_add(UI.label("KETER Lab designs are built of modules. A module opens to the tier of the best blueprint that opens it, and its next tier can be researched here.", 16, UI.DIM, true), {"text": "modules"})
+	for kd in [["attack", "Attack modules"], ["support", "Support modules"], ["passive", "Passive modules"], ["aura", "Aura modules"]]:
+		_head_row(str(kd[1]))
+		for a in D["library"]:
+			if str(a["kind"]) != kd[0]:
+				continue
+			var lv := LabSystems.module_level(a["id"], kw, mods)
+			var top := mini(3, (a["tiers"] as Array).size())
+			var keys: Array = D.get("modules", {}).get("keywords", {}).get(str(a["id"]), [])
+			var sub := ("tier %s of %s" % [LabSystems.ROMAN[lv], LabSystems.ROMAN[top]] if lv > 0 else "not open") + (" · tier I free" if LabSystems.is_free_module(a["id"], 1) else "") + ((" · opened by " + ", ".join(keys)) if not keys.is_empty() else "")
+			if lv >= 1 and lv < top:
+				var r := LabSystems.module_research(a["id"], kw, mods, st["shards"], prices)
+				var tag := ("Research tier %s · %d shards" % [LabSystems.ROMAN[lv + 1], int(r.get("price", 0))]) if not out else "At the dock"
+				_add(_panel(str(a["id"]) + " · " + str(a["name"]), [[sub, UI.PALE]], UI.LINE, tag, UI.CYAN if (r["ok"] and not out) else UI.DIM), {"text": str(a["name"]), "module": a["id"]})
+			else:
+				_add(_panel(str(a["id"]) + " · " + str(a["name"]), [[sub, UI.PALE]], UI.LINE, "Highest tier" if lv >= top else "", UI.DIM), {"text": str(a["name"])})
 
 
 func _export_rows() -> void:
@@ -295,6 +322,8 @@ func tap_row(r: Dictionary) -> void:
 		show_tab("blueprints")
 	elif r.has("research"):
 		ask_research(str(r["research"]))
+	elif r.has("module"):
+		research_module(str(r["module"]))
 	elif r.has("card"):
 		ask_copy_in(r["card"])
 
@@ -334,6 +363,20 @@ func ask_research(kw: String) -> void:
 		_close_dialog()
 		if k == 0 and can:
 			research(kw))
+
+
+## (Lab) A module's next tier, researched here.
+func research_module(id: String) -> void:
+	var r := ws().research_module(id, campaign.deploy.stock, campaign.deploy.active())
+	var a = LabSystems.ability(id)
+	if r["ok"]:
+		campaign.deploy.stock = Loot.norm(campaign.deploy.stock)
+		campaign.designs_changed()
+		campaign.save()
+		_say("Researched %s tier %s for %d shards." % [str(a["name"]) if a != null else id, LabSystems.ROMAN[int(r["level"])], int(r["price"])])
+	else:
+		_say(str(r["why"]) + ".", true)
+	show_tab("blueprints")
 
 
 func research(kw: String) -> void:

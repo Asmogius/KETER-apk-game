@@ -62,14 +62,14 @@ func _init(stream: Loot, pools_content = null, chassis_content = null, tables_co
 
 
 static func blank() -> Dictionary:
-	return {"bp": {}, "ch": {}, "named": {}, "all": false, "seen": {"enemy": {}, "district": {}, "comp": {}}}
+	return {"bp": {}, "ch": {}, "named": {}, "mod": {}, "all": false, "seen": {"enemy": {}, "district": {}, "comp": {}}}
 
 
 ## A saved state with anything missing filled in.
 static func tidy(s) -> Dictionary:
 	var out := blank()
 	if s is Dictionary:
-		for k in ["bp", "ch", "named"]:
+		for k in ["bp", "ch", "named", "mod"]:
 			if s.get(k) is Dictionary:
 				out[k] = s[k]
 		out["all"] = Rules.truthy(s.get("all"))

@@ -722,3 +722,223 @@ static func guess(card: Dictionary) -> Variant:
 				if d["tokens"].has(tok) and takes:
 					b["token"] = tok
 	return b
+
+
+# ---------------------------------------------------------------- the Workshop's modules (lab.js, Phase 3)
+static func _md() -> Dictionary:
+	return data().get("modules", {}) if data().get("modules") is Dictionary else {}
+
+
+## A chassis as a line of the Troop table: its own "lab" line, or read from what it was made with.
+static func chassis_line(ch) -> Dictionary:
+	var d := data()
+	var c: Dictionary = ch if ch is Dictionary else {}
+	var own: Dictionary = c.get("lab") if c.get("lab") is Dictionary else {}
+	if d["troop"].has(str(own.get("role", ""))) and d["size"].has(str(own.get("size", ""))) and d["rarity"].has(str(own.get("rarity", ""))):
+		return {"role": str(own["role"]), "size": str(own["size"]), "rarity": str(own["rarity"])}
+	var subs := []
+	for x in (c.get("subtypes") if c.get("subtypes") is Array else []):
+		subs.append(str(x).to_lower())
+	var st: Dictionary = c.get("stats") if c.get("stats") is Dictionary else {}
+	var role := "brute"
+	if subs.has("support") and not subs.has("melee") and not subs.has("ranged") and not subs.has("cyber"):
+		role = "support"
+	elif subs.has("ranged") or subs.has("cyber"):
+		role = "shooter"
+	else:
+		role = "skirmisher" if _num0(st.get("move")) >= 5 else "brute"
+	var hp := _num0(st.get("hp"))
+	var base := float(d["troop"][role]["hp"])
+	var ratio: float = float(hp) / base if base > 0 else 1.0
+	var size := "heavy" if ratio >= 1.25 else ("light" if ratio <= 0.6 else "standard")
+	var cap := _num0(c.get("powerCap"))
+	var rarity := "common"
+	for r in _md().get("chassisRarity", []):
+		if cap <= int(r[0]):
+			rarity = str(r[1])
+			break
+	return {"role": role, "size": size, "rarity": rarity}
+
+
+static func is_free_module(id, tier) -> bool:
+	for f in _md().get("free", []):
+		if str(f[0]) == str(id) and int(Rules.num(tier, 1) if Rules.truthy(tier) else 1) <= int(f[1]):
+			return true
+	return false
+
+
+static func _lvl(v) -> int:
+	return clampi(int(floor(Rules.num(v, 0))) if v != null else 0, 0, 3)
+
+
+static func module_level(id, kw, mods) -> int:
+	var k: Dictionary = kw if kw is Dictionary else {}
+	var m: Dictionary = mods if mods is Dictionary else {}
+	var lv := _lvl(m.get(str(id)))
+	for name in _md().get("keywords", {}).get(str(id), []):
+		var o := _lvl(k.get(str(name)))
+		if o > lv:
+			lv = o
+	for f in _md().get("free", []):
+		if str(f[0]) == str(id) and int(f[1]) > lv:
+			lv = int(f[1])
+	return lv
+
+
+static func module_open(id, tier, kw, mods) -> bool:
+	return module_level(id, kw, mods) >= maxi(1, int(floor(Rules.num(tier, 1))) if tier != null else 1)
+
+
+## Researching a module's next tier: from tier I, for the research prices.
+static func module_research(id, kw, mods, shards, prices) -> Dictionary:
+	var a = ability(id)
+	if a == null:
+		return {"ok": false, "why": "No such module"}
+	var have := module_level(id, kw, mods)
+	var next := have + 1
+	var top := mini(3, (a["tiers"] as Array).size())
+	if have < 1:
+		return {"ok": false, "why": "Its first tier has to be found (a blueprint that opens it)"}
+	if next > top:
+		return {"ok": false, "why": "Already at its highest tier"}
+	var pr: Array = prices if prices is Array else [0, 60, 120]
+	var price := maxi(0, int(floor(Rules.num(pr[next - 1], 0))) if next - 1 < pr.size() else 0)
+	var sh := int(Rules.num(shards, 0))
+	if sh < price:
+		return {"ok": false, "why": "Needs %d shards; you have %d" % [price, sh], "price": price}
+	return {"ok": true, "level": next, "price": price}
+
+
+static func design_build(d, ch) -> Dictionary:
+	var ln := chassis_line(ch)
+	var dd: Dictionary = d if d is Dictionary else {}
+	var b := {"type": "troop", "role": ln["role"], "size": ln["size"], "rarity": ln["rarity"], "abilities": (dd.get("modules") if dd.get("modules") is Array else []).duplicate(true)}
+	if Rules.truthy(dd.get("token")):
+		b["token"] = dd["token"]
+	return b
+
+
+static func design_points(d) -> int:
+	var p := 0
+	var dd: Dictionary = d if d is Dictionary else {}
+	for m in (dd.get("modules") if dd.get("modules") is Array else []):
+		var a = ability(m[0])
+		if a == null:
+			continue
+		var t: Dictionary = a["tiers"][_clamp_tier(m[1], (a["tiers"] as Array).size()) - 1]
+		p += int(Rules.num(t.get("p"), 0))
+	return p
+
+
+static func design_check(d, ch, kw, mods) -> Array:
+	if not (ch is Dictionary):
+		return ["its chassis is missing"]
+	var out := check(design_build(d, ch))
+	var dd: Dictionary = d if d is Dictionary else {}
+	for m in (dd.get("modules") if dd.get("modules") is Array else []):
+		var a = ability(m[0])
+		if a == null:
+			continue
+		var t := maxi(1, int(floor(Rules.num(m[1], 1))) if m[1] != null else 1)
+		var lv := module_level(m[0], kw, mods)
+		if lv < t:
+			out.append("%s %s isn't open yet%s" % [a["name"], ROMAN[mini(3, t)], (" (you have tier %s)" % ROMAN[lv]) if lv > 0 else " (no blueprint for it found)"])
+	return out
+
+
+static func design_cost(d, ch) -> Dictionary:
+	var c: Dictionary = _md().get("cost", {"perPoint": 0.5, "tier2": 1, "tier3": 1})
+	var p := design_points(d)
+	var chd: Dictionary = ch if ch is Dictionary else {}
+	var base := maxi(0, int(floor(Rules.num(chd.get("cost", {}).get("troop") if chd.get("cost") is Dictionary else 0, 0))))
+	var per: float = float(c["perPoint"]) if (c.get("perPoint") is float or c.get("perPoint") is int) else 0.0
+	var parts := [base + int(ceil(p * per)), 0, 0, 0, 0, 0]
+	var lines := [{"label": "Chassis %d + %d points × %s" % [base, p, _numtext(c.get("perPoint"))], "parts": [parts[0], 0, 0, 0, 0, 0]}]
+	var dd: Dictionary = d if d is Dictionary else {}
+	var t2 := int(Rules.num(c.get("tier2"), 0))
+	var t3 := int(Rules.num(c.get("tier3"), 0))
+	for m in (dd.get("modules") if dd.get("modules") is Array else []):
+		var a = ability(m[0])
+		if a == null:
+			continue
+		var t := _clamp_tier(m[1], (a["tiers"] as Array).size())
+		if t == 2 and t2 != 0:
+			parts[1] += t2
+			lines.append({"label": str(a["name"]) + " II", "parts": [0, t2, 0, 0, 0, 0]})
+		if t == 3 and t3 != 0:
+			parts[2] += t3
+			lines.append({"label": str(a["name"]) + " III", "parts": [0, 0, t3, 0, 0, 0]})
+	return {"parts": parts, "points": p, "lines": lines}
+
+
+## (a number as lab.js writes it: 0.5, 1)
+static func _numtext(v) -> String:
+	var f: float = float(v) if (v is float or v is int) else 0.0
+	return str(int(f)) if f == floor(f) else str(f)
+
+
+const DMK := [{"hp": 0, "ac": 0, "move": 0}, {"hp": 3, "ac": 1, "move": 0}, {"hp": 6, "ac": 2, "move": 1}]
+
+
+static func design_card(d, ch) -> Dictionary:
+	var chd: Dictionary = ch if ch is Dictionary else {}
+	var dd: Dictionary = d if d is Dictionary else {}
+	var r := compile(design_build(dd, chd))
+	var cc: Dictionary = r["card"] if r.get("card") is Dictionary else {"stats": {}, "entries": [], "combatRoles": []}
+	var mk := clampi(int(floor(Rules.num(dd.get("mk"), 1))) if Rules.truthy(dd.get("mk")) else 1, 1, 3)
+	var up: Dictionary = DMK[mk - 1]
+	var st: Dictionary = (cc.get("stats", {}) as Dictionary).duplicate(true)
+	if st.has("hp"):
+		st["hp"] = str(_num0(st["hp"]) + int(up["hp"]))
+	if st.has("ac"):
+		st["ac"] = str(_num0(st["ac"]) + int(up["ac"]))
+		st["int"] = st["ac"]
+	if st.has("move"):
+		st["move"] = str(_num0(st["move"]) + int(up["move"]))
+	var dist := str(chd.get("district", "")) if chd.get("district") != null else ""
+	var ae: Dictionary = chd.get("aether") if chd.get("aether") is Dictionary else {}
+	var did := str(dd.get("id", "")) if dd.get("id") != null else ""
+	var card := {"id": "WS-" + did.substr(3).to_upper(), "cardType": "troop", "name": str(dd["name"]) if Rules.truthy(dd.get("name")) else "Untitled design",
+		"affinities": [{"district": dist, "level": 0}] if dist != "" else [], "archetypes": [], "rarity": cc.get("rarity") if Rules.truthy(cc.get("rarity")) else null, "level": 1, "stats": st,
+		"aetherCost": {"generic": _num0(ae.get("generic")), "affinity": _num0(ae.get("affinity")), "affinity2": 0},
+		"combatRoles": cc.get("combatRoles", []), "entries": cc.get("entries", []), "design": dd.get("id") if Rules.truthy(dd.get("id")) else null,
+		"chassis": chd.get("id") if Rules.truthy(chd.get("id")) else (dd.get("chassis") if Rules.truthy(dd.get("chassis")) else null), "chassisName": str(chd.get("name", "")) if chd.get("name") != null else "",
+		"lab": cc.get("lab")}
+	if mk > 1:
+		card["mk"] = mk
+	return card
+
+
+## A design made before the Lab, as the nearest modules (Convert).
+static func design_guess(d, ch) -> Array:
+	var ln := chassis_line(ch)
+	var b := {"type": "troop", "role": ln["role"], "size": ln["size"], "rarity": ln["rarity"], "abilities": []}
+	var cp := caps(b)
+	var seen := {}
+	var passives := 0
+	var plain := 0
+	var melee: bool = str(data()["roleAttack"][ln["role"]]) == "melee"
+	var dd: Dictionary = d if d is Dictionary else {}
+	for a in (dd.get("abilities") if dd.get("abilities") is Array else []):
+		if not (a is Dictionary) or b["abilities"].size() >= int(cp["abilities"]):
+			continue
+		var pas := str(a.get("kind", "")) == "passive"
+		var role := "" if pas else (str(a.get("role", "")) if a.get("role") != null else "").to_lower()
+		var att := not pas and (role == "melee" or role == "ranged" or role == "cyber")
+		var id := nearest_ability({"kind": "Passive" if pas else "Active", "role": role, "damage": "1" if att else null, "text": str(a.get("text", "")) if a.get("text") != null else ""}, melee)
+		if id == "":
+			plain += 1
+			if plain < 2:
+				continue
+			id = "A1" if melee else "A13"
+		var ab = ability(id)
+		if ab == null or seen.has(id) or not (ab["roles"] as Array).has(ln["role"]) or (ab.get("min") != null and rarity_rank(ln["rarity"]) < rarity_rank(ab["min"])):
+			continue
+		var is_p: bool = str(ab["kind"]) == "passive" or str(ab["kind"]) == "aura"
+		if is_p and passives >= int(cp["passives"]):
+			continue
+		seen[id] = true
+		if is_p:
+			passives += 1
+		b["abilities"].append([id, 1])
+	return b["abilities"]
