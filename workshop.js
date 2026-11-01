@@ -60,7 +60,33 @@
   var STARTER={id:"ds_starter", name:"Frame Trooper", chassis:"ch_test_general", starter:true,
     abilities:[{name:"Carbine", kind:"action", role:"Ranged", energy:1, range:4, hit:6, ap:4, text:"[[target enemy]] takes [[damage 1]]."}],
     notes:"The built-in starter: a few free copies every deployment."};
-  function all(){ var m=read(STORE,{}); m=(m && typeof m==="object") ? m : {}; if(!m[STARTER.id]) m[STARTER.id]=clone(STARTER); return m; }
+  /* (Lab) KETER Lab's Workshop (the Lab switch): a design is a chassis plus modules, library
+     abilities at a tier (lab.js). The starter is one too: the General chassis's basic attack. */
+  var LB=function(){ return window.KETER_LAB; };
+  function labOn(){ try{ return !!(LB() && LB().on()); }catch(e){ return false; } }
+  var LAB_STARTER={id:"ds_starter", name:"Frame Trooper", chassis:"ch_test_general", starter:true, lab:1, modules:[],
+    notes:"The built-in starter: a few free copies every deployment."};
+  function all(){ var m=read(STORE,{}); m=(m && typeof m==="object") ? m : {};
+    /* the starter as the switch has it, keeping its Mark */
+    var mk=m[STARTER.id]&&m[STARTER.id].mk, lab=labOn();
+    if(!m[STARTER.id] || !!m[STARTER.id].lab!==lab){ m[STARTER.id]=clone(lab?LAB_STARTER:STARTER); if(mk) m[STARTER.id].mk=mk; }
+    return m; }
+  /* (Lab) what the player owns, as the modules read it: each keyword blueprint's level, each module's researched tier */
+  function kwOwned(){ var out={}, X=P(), K=(LB()&&LB().data().modules||{}).keywords||{}; if(!X) return out;
+    var s=X.state(); Object.keys(K).forEach(function(id){ K[id].forEach(function(k){ if(out[k]==null) out[k]=Math.min(3, X.owned(k,s)); }); }); return out; }
+  function modOwned(){ var X=P(); if(!X) return {}; var s=X.state(); if(s.all){ var all={}; (LB().data().library||[]).forEach(function(a){ all[a.id]=3; }); return all; } return JSON.parse(JSON.stringify(s.mod||{})); }
+  function fullMods(){ var all={}; (LB().data().library||[]).forEach(function(a){ all[a.id]=3; }); return all; }
+  /* (Lab) researching a module's next tier, at the dock, for the research prices */
+  function researchModule(id){
+    if(window.KETER_DEPLOY && window.KETER_DEPLOY.active()) return {ok:false, why:"The dock is closed while a Strike Team is out"};
+    var st=L().stock(), r=LB().moduleResearch(id, kwOwned(), modOwned(), st.shards, tables().researchDefault||[0,60,120]);
+    if(!r.ok) return r;
+    st.shards-=r.price; L().setStock(st);
+    var s=P().state(); s.mod=s.mod||{}; s.mod[id]=r.level; P().save(s);
+    var a=LB().ability(id);
+    try{ var h=JSON.parse(localStorage.getItem("keter-app-stockpile-log")||"[]"); h.unshift({t:new Date().toISOString(), why:"Researched "+(a?a.name:id)+" tier "+LB().ROMAN[r.level], bag:{shards:-r.price, parts:{}}}); localStorage.setItem("keter-app-stockpile-log",JSON.stringify(h.slice(0,30))); }catch(e){}
+    return r;
+  }
   /* a design out on a deployment, or the starter, is not changed here */
   function locked(id){ return id===STARTER.id || !!(window.KETER_DEPLOY && window.KETER_DEPLOY.lockedDesign(id)); }
   function list(){ var m=all(); return Object.keys(m).map(function(k){ return m[k]; }).filter(function(d){ return !d.prebuilt; }).sort(function(a,b){ return String(a.name).localeCompare(String(b.name)); }); }
@@ -100,8 +126,11 @@
   }
   function blank(chassisId){
     var ch=CH()&&CH().get(chassisId);
+    if(labOn()) return {id:null, name:"New design", chassis:chassisId, lab:1, modules:[], notes:""};
     return {id:null, name:"New design", chassis:chassisId, abilities:[blankAbility(ch,"action")], notes:""};
   }
+  /* (Lab) a design made before, as the nearest modules */
+  function convert(d){ var c=clone(d); c.lab=1; c.modules=LB().designGuess(c, chassisOf(c)); delete c.abilities; return c; }
   /* the most a chassis lets an attack's range or AP be; a to-hit can be as high as 20 */
   function maxOf(ch, k){ if(k==="hit") return 20; var m={range:"maxRange", ap:"maxAP"}[k]; return Math.max(0, num(ch&&ch[m], {range:6,ap:6}[k])); }
   /* Handbook 16.0: a lower to-hit is better, so a chassis sets the best (lowest)
@@ -144,10 +173,11 @@
     var h=Math.min(21,Math.max(1,hit)), b=Math.min(20,Math.max(1,base));
     return (21-h)/(21-b);
   }
-  function power(d, t){ var ch=chassisOf(d); t=t||tables(); return (d.abilities||[]).reduce(function(s,a){ return s+abilityPower(a,ch,t); },0); }
+  function power(d, t){ if(d && d.lab && LB()) return LB().designPoints(d); var ch=chassisOf(d); t=t||tables(); return (d.abilities||[]).reduce(function(s,a){ return s+abilityPower(a,ch,t); },0); }
 
   /* ---- the fit check: the chassis's, the numbers, the blueprints ---- */
   function check(d){
+    if(d && d.lab && LB()) return labCheck(d);
     var ch=chassisOf(d), t=tables(), reasons=[];
     if(!ch) return {ok:false, reasons:["its chassis is missing"], power:0, cap:0};
     var abs=(d.abilities||[]).map(function(a){ return {text:a.text||"", role:a.kind==="passive"?"":String(a.role||"").toLowerCase(), power:abilityPower(a,ch,t)}; });
@@ -175,8 +205,18 @@
     return {ok:!reasons.length, reasons:reasons, power:c.power, cap:c.cap, abilities:c.abilities, abilityCap:c.abilityCap, missing:miss};
   }
 
+  /* (Lab) a Lab design's check: the build's rules and the modules not open yet; a pre-built's fit only */
+  function labCheck(d){
+    var ch=chassisOf(d), X=P();
+    var reasons=LB().designCheck(d, ch, kwOwned(), d.prebuilt?fullMods():modOwned());
+    if(ch && X && !d.prebuilt && !X.hasChassis(ch.id)) reasons.push("this chassis has not been found yet");
+    var b=LB().designBuild(d, ch||{}), cp=LB().caps(b);
+    return {ok:!reasons.length, reasons:reasons, power:LB().designPoints(d), cap:cp.abilities*(LB().data().tierPrice[String(cp.tier)]||0),
+      abilities:(d.modules||[]).length, abilityCap:cp.abilities, missing:[], line:LB().chassisLine(ch||{}), caps:cp};
+  }
   /* ---- what a copy costs, in Troop parts ---- */
   function cost(d, t){
+    if(d && d.lab && LB()){ var lc=LB().designCost(d, chassisOf(d)); return {parts:lc.parts, power:lc.points, lines:lc.lines}; }
     t=t||tables(); var ch=chassisOf(d), parts=[0,0,0,0,0,0], p=power(d,t);
     parts[0]=Math.ceil(num(ch&&ch.cost&&ch.cost.troop,0)+t.rate*p);
     var lines=[{label:"Chassis "+num(ch&&ch.cost&&ch.cost.troop,0)+" + "+t.rate+" × power "+p, parts:[parts[0],0,0,0,0,0]}];
@@ -201,6 +241,11 @@
 
   /* ---- a design as a Troop card ---- */
   function toCard(d){
+    if(d && d.lab && LB()){
+      var lc=LB().designCard(d, chassisOf(d)), lk=null; try{ lk=window.KETER_SKINS?window.KETER_SKINS.picsOfDesign(d):null; }catch(e){}
+      lc.pixelArt=(lk&&lk.art)||d.pixelArt||undefined; lc.pixelToken=(lk&&lk.token)||d.pixelToken||undefined;
+      return lc;
+    }
     var ch=chassisOf(d)||{}, st=ch.stats||{}, att=function(a){ return isAttack(a); };
     var dist=String(ch.district||"");
     /* v13.0: its look is a skin of its body plan */
@@ -227,5 +272,6 @@
 
   window.KETER_WORKSHOP={MK:MK, MK_COST:MK_COST, MK_NAME:MK_NAME, mkOf:mkOf, mkCost:mkCost, mkText:mkText, upgrade:upgrade, PROJECTILES:PROJECTILES, STORE:STORE, WS_KEY:WS_KEY, DEFAULTS:DEFAULTS, ROLES:ROLES, tables:tables, saveTables:saveTables, resetTables:resetTables,
     STARTER:STARTER, locked:locked, list:list, prebuilts:prebuilts, prebuiltCards:prebuiltCards, get:get, put:put, remove:remove, blank:blank, blankAbility:blankAbility, chassisOf:chassisOf, maxOf:maxOf, bestHit:bestHit, leastOf:leastOf, fieldsFor:fieldsFor, isAttack:isAttack,
-    abilityPower:abilityPower, power:power, check:check, cost:cost, affordable:affordable, toCard:toCard, cards:cards};
+    abilityPower:abilityPower, power:power, check:check, cost:cost, affordable:affordable, toCard:toCard, cards:cards,
+    labOn:labOn, LAB_STARTER:LAB_STARTER, kwOwned:kwOwned, modOwned:modOwned, researchModule:researchModule, convert:convert};
 })();

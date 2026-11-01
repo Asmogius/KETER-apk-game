@@ -49,6 +49,7 @@ func _run() -> void:
 	if OS.get_cmdline_user_args().has("lab"):
 		_lab_set()
 		await _lab_forge_scene()
+		await _lab_workshop_scene()
 		Kit.fresh()
 		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
 		Rules.hooks = {}
@@ -374,6 +375,7 @@ func _run() -> void:
 	_fortytwo()
 	_lab_set()
 	await _lab_forge_scene()
+	await _lab_workshop_scene()
 	await _setup()
 	await _team_setup()
 	await _builder()
@@ -10534,3 +10536,70 @@ func _lab_forge_scene() -> void:
 	await _frames(1)
 	LabSet.reset()
 	Kit.fresh()
+
+
+## (Lab) KETER Lab's Workshop: a design is a chassis plus modules, opened by the blueprints you hold.
+func _lab_workshop_scene() -> void:
+	Kit.fresh()
+	LabSet.force(true)
+	var scene: Node2D = load("res://scenes/main.tscn").instantiate()
+	root.add_child(scene)
+	await process_frame
+	scene.load_export(FIXTURE)
+	var wsn: WorkshopScreen = scene.workshop_screen
+	var ed: DesignEditor = wsn.editor
+	scene.open_dock()
+	scene.open_workshop()
+	await _frames(2)
+	var ws: Workshop = wsn.ws()
+	var st: Dictionary = ws.get_design("ds_starter")
+	ck("Lab workshop: the starter is a Lab design too, its basic attack alone", Rules.truthy(st.get("lab")) and (st.get("modules", []) as Array).is_empty() and ws.to_card(st)["entries"].map(func(e): return e["name"]) == ["Shot"]
+		and ws.check(st)["ok"], [st, ws.check(st)["reasons"]])
+	ws.progress.state["bp"]["Burst"] = 2
+	ws.progress.state["bp"]["Rooted"] = 1
+	ws.progress.state["ch"]["ch_skitter_frame"] = true
+	scene.campaign.deploy.stock["shards"] = 200
+	wsn.tap_row({"chassis": "ch_skitter_frame"})
+	await _frames(2)
+	ck("Lab workshop: a new design is a Lab design, no modules yet", ed.visible and Rules.truthy(ed.d.get("lab")) and (ed.d.get("modules", []) as Array).is_empty(), ed.d)
+	ed.act(["mod_add"])
+	ck("Lab workshop: + Add a module takes the first open one a Skirmisher can use: Heavy Blow I, free", ed.d["modules"] == [["A1", 1]], ed.d["modules"])
+	ed.act(["mod_open", 0])
+	ed.act(["mod_pick", 0, "A2"])
+	ed.act(["mod_tier", 0, 2])
+	var chk := ws.check(ed.d)
+	ck("Lab workshop: Cleave, opened by Burst; tier II is over an Uncommon chassis's cap", ed.d["modules"] == [["A2", 2]] and not chk["ok"] and chk["reasons"].any(func(r): return str(r).contains("tier cap")), chk["reasons"])
+	ed.act(["mod_tier", 0, 1])
+	chk = ws.check(ed.d)
+	var cost := ws.cost(ed.d)
+	var card := ws.to_card(ed.d)
+	ck("Lab workshop: at tier I it fits; a copy costs the chassis's 4 and half Cleave's 4 points, in Common parts", chk["ok"] and cost["parts"] == [6, 0, 0, 0, 0, 0]
+		and card["entries"].map(func(e): return e["name"]) == ["Strike", "Cleave I"] and str(card["stats"]["hp"]) == str(LabSystems.line("troop", "skirmisher", "standard", "uncommon")["hp"]), [chk["reasons"], cost, card["entries"]])
+	ed.act(["mod_add"])
+	ed.act(["mod_pick", 1, "A5"])
+	chk = ws.check(ed.d)
+	ck("Lab workshop: a module no blueprint has opened can't go out", not chk["ok"] and chk["reasons"].any(func(r): return str(r).contains("Stagger I isn't open yet")), chk["reasons"])
+	ed.act(["mod_del", 1])
+	ed.close()
+	await _frames(1)
+	# research: Snare, opened by Rooted, to tier II
+	wsn.research_module("A7")
+	ck("Lab workshop: a module's next tier is researched for shards", int(ws.progress.state["mod"].get("A7", 0)) == 2 and int(scene.campaign.deploy.stock["shards"]) == 140, [ws.progress.state.get("mod"), scene.campaign.deploy.stock["shards"]])
+	wsn.research_module("A5")
+	ck("Lab workshop: not one no blueprint has opened", not ws.progress.state["mod"].has("A5") and int(scene.campaign.deploy.stock["shards"]) == 140)
+	wsn.show_tab("blueprints")
+	ck("Lab workshop: the Blueprints tab lists the modules", wsn.row_texts().has("Snare") and wsn.row_texts().has("Heavy Blow"), wsn.row_texts().slice(0, 12))
+	# a design made before the Lab
+	var old_id := ws.put({"id": null, "name": "Old Gunner", "chassis": "ch_test_general", "abilities": [{"name": "Spray", "kind": "action", "role": "Ranged", "energy": 1, "range": 4, "hit": 6, "ap": 4, "text": "[[Burst 2]]."}]})
+	wsn.edit(ws.get_design(old_id))
+	await _frames(1)
+	ck("Lab workshop: a design made before keeps working, and offers Convert", not Rules.truthy(ed.d.get("lab")) and _labels(ed).any(func(l): return l.begins_with("A design made before the Lab")), _labels(ed).slice(0, 6))
+	ed.act(["convert"])
+	ck("Lab workshop: Convert gives it the nearest modules: Rapid Fire, for its Burst", Rules.truthy(ed.d.get("lab")) and ed.d["modules"] == [["A12", 1]] and not ed.d.has("abilities")
+		and Rules.truthy(ws.get_design(old_id).get("lab")), ed.d)
+	scene.queue_free()
+	await _frames(2)
+	LabSet.reset()
+	Kit.fresh()
+	var plain := Workshop.new(Progress.new(Loot.new(null, 1), null, null, null), null)
+	ck("Lab workshop: outside KETER Lab the starter is as it was", not Rules.truthy(plain.get_design("ds_starter").get("lab")) and not (plain.get_design("ds_starter").get("abilities", []) as Array).is_empty())

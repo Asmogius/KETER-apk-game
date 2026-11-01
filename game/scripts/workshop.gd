@@ -180,16 +180,80 @@ static func chassis_check(ch: Dictionary, design: Dictionary) -> Dictionary:
 
 
 # ---------------------------------------------------------------- designs
+## (Lab) In KETER Lab a design is a chassis plus modules, library abilities at a
+## tier (LabSystems; workshop.js's Lab branch). The starter is one too: the
+## General chassis's basic attack.
+const LAB_STARTER := {"id": "ds_starter", "name": "Frame Trooper", "chassis": "ch_test_general", "starter": true, "lab": 1, "modules": [],
+	"notes": "The built-in starter: a few free copies every deployment."}
+
+
+static func lab_on() -> bool:
+	return LabSet.active()
+
+
 func starter() -> Dictionary:
-	return STARTER.duplicate(true)
+	return LAB_STARTER.duplicate(true) if lab_on() else STARTER.duplicate(true)
 
 
-## Every design, the starter included: id -> design.
+## Every design, the starter included: id -> design. (Lab) The starter as the build has it, keeping its Mark.
 func all() -> Dictionary:
 	var m := designs.duplicate()
-	if not m.has(STARTER["id"]):
+	var st = m.get(STARTER["id"])
+	if not (st is Dictionary) or Rules.truthy(st.get("lab")) != lab_on():
+		var mk = st.get("mk") if st is Dictionary else null
 		m[STARTER["id"]] = starter()
+		if Rules.truthy(mk):
+			m[STARTER["id"]]["mk"] = mk
 	return m
+
+
+## (Lab) What the player owns, as the modules read it: each keyword blueprint's level, each module's researched tier.
+func kw_owned() -> Dictionary:
+	var out := {}
+	if progress == null:
+		return out
+	var ks: Dictionary = LabSystems.data().get("modules", {}).get("keywords", {})
+	for id in ks:
+		for k in ks[id]:
+			if not out.has(str(k)):
+				out[str(k)] = mini(3, progress.owned(str(k)))
+	return out
+
+
+func mod_owned() -> Dictionary:
+	if progress != null and progress.unlock_all():
+		return full_mods()
+	return (progress.state.get("mod", {}) as Dictionary).duplicate(true) if progress != null and progress.state.get("mod") is Dictionary else {}
+
+
+static func full_mods() -> Dictionary:
+	var all_ := {}
+	for a in LabSystems.data().get("library", []):
+		all_[str(a["id"])] = 3
+	return all_
+
+
+## (Lab) Researching a module's next tier, at the dock, for the research prices.
+func research_module(id: String, stock: Dictionary, team_out := false) -> Dictionary:
+	if team_out:
+		return {"ok": false, "why": "The dock is closed while a Strike Team is out"}
+	var r := LabSystems.module_research(id, kw_owned(), mod_owned(), stock.get("shards", 0), progress.research_default if progress != null else [0, 60, 120])
+	if not r["ok"]:
+		return r
+	stock["shards"] = int(Rules.num(stock.get("shards"), 0)) - int(r["price"])
+	if not (progress.state.get("mod") is Dictionary):
+		progress.state["mod"] = {}
+	progress.state["mod"][id] = int(r["level"])
+	return r
+
+
+## (Lab) A design made before, as the nearest modules.
+func convert(d: Dictionary) -> Dictionary:
+	var c := d.duplicate(true)
+	c["lab"] = 1
+	c["modules"] = LabSystems.design_guess(c, chassis_of(c))
+	c.erase("abilities")
+	return c
 
 
 ## The starter, or a design out on a deployment, is not changed here.
@@ -350,6 +414,8 @@ func blank_ability(ch, kind: String) -> Dictionary:
 
 
 func blank(chassis_id: String) -> Dictionary:
+	if lab_on():
+		return {"id": null, "name": "New design", "chassis": chassis_id, "lab": 1, "modules": [], "notes": ""}
 	return {"id": null, "name": "New design", "chassis": chassis_id, "abilities": [blank_ability(progress.chassis.get(chassis_id), "action")], "notes": ""}
 
 
@@ -429,6 +495,8 @@ static func hit_factor(hit: float, base: float) -> float:
 
 
 func power(d: Dictionary) -> int:
+	if Rules.truthy(d.get("lab")):
+		return LabSystems.design_points(d)
 	var total := 0
 	for a in (d["abilities"] if d.get("abilities") is Array else []):
 		total += ability_power(a)
@@ -440,6 +508,8 @@ func power(d: Dictionary) -> int:
 ## numbers, and the blueprints and chassis you own.
 ## {ok, reasons, power, cap, abilities, abilityCap, missing}.
 func check(d: Dictionary) -> Dictionary:
+	if Rules.truthy(d.get("lab")):
+		return _lab_check(d)
 	var ch = chassis_of(d)
 	if ch == null:
 		return {"ok": false, "reasons": ["its chassis is missing"], "power": 0, "cap": 0, "abilities": 0, "abilityCap": 0, "missing": []}
@@ -482,7 +552,22 @@ func check(d: Dictionary) -> Dictionary:
 
 # ---------------------------------------------------------------- what a copy costs
 ## In Troop parts by rarity: {parts: [6], power, lines: [{label, parts}]}.
+## (Lab) A Lab design's check: the build's rules and the modules not open yet; a pre-built's fit only.
+func _lab_check(d: Dictionary) -> Dictionary:
+	var ch = chassis_of(d)
+	var reasons := LabSystems.design_check(d, ch, kw_owned(), full_mods() if Rules.truthy(d.get("prebuilt")) else mod_owned())
+	if ch is Dictionary and progress != null and not Rules.truthy(d.get("prebuilt")) and not progress.has_chassis(ch.get("id")):
+		reasons.append("this chassis has not been found yet")
+	var b := LabSystems.design_build(d, ch if ch is Dictionary else {})
+	var cp := LabSystems.caps(b)
+	return {"ok": reasons.is_empty(), "reasons": reasons, "power": LabSystems.design_points(d), "cap": int(cp["abilities"]) * int(LabSystems.data()["tierPrice"].get(str(cp["tier"]), 0)),
+		"abilities": (d.get("modules", []) as Array).size() if d.get("modules") is Array else 0, "abilityCap": int(cp["abilities"]), "missing": [], "line": LabSystems.chassis_line(ch if ch is Dictionary else {}), "caps": cp}
+
+
 func cost(d: Dictionary) -> Dictionary:
+	if Rules.truthy(d.get("lab")):
+		var lc := LabSystems.design_cost(d, chassis_of(d))
+		return {"parts": lc["parts"], "power": lc["points"], "lines": lc["lines"]}
 	var ch = chassis_of(d)
 	var parts := [0, 0, 0, 0, 0, 0]
 	var p := power(d)
@@ -544,6 +629,16 @@ static func cost_text(parts: Array) -> String:
 
 # ---------------------------------------------------------------- a design as a Troop card
 func to_card(d: Dictionary) -> Dictionary:
+	if Rules.truthy(d.get("lab")):
+		var lc := LabSystems.design_card(d, chassis_of(d))
+		var lk = skins.pics_of_design(d) if skins != null else null
+		var pa = lk.get("art") if lk is Dictionary and Rules.truthy(lk.get("art")) else d.get("pixelArt")
+		var pt = lk.get("token") if lk is Dictionary and Rules.truthy(lk.get("token")) else d.get("pixelToken")
+		if Rules.truthy(pa):
+			lc["pixelArt"] = pa
+		if Rules.truthy(pt):
+			lc["pixelToken"] = pt
+		return lc
 	var ch = chassis_of(d)
 	var c: Dictionary = ch if ch is Dictionary else {}
 	var st: Dictionary = c["stats"] if c.get("stats") is Dictionary else {}

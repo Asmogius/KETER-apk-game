@@ -43,7 +43,7 @@
         return '<div class="wsitem" style="border-left-color:'+dd.color+'"><b>'+esc(d.name)+'</b>'+
           (d.starter?'<i class="wsstarter">Starter · '+free+' free copies every deployment · copy it to make your own</i>':'')+
           (out?'<i class="wslock">Out on a deployment · changes wait until it comes home</i>':'')+
-          '<i>'+esc(ch?ch.name:"(missing chassis)")+' · power '+cost.power+' / '+(ch?ch.powerCap:"?")+' · '+(c.ok?'<span class="wsok">fits</span>':'<span class="wsbad">does not fit</span>')+'</i>'+
+          '<i>'+esc(ch?ch.name:"(missing chassis)")+(d.lab?' · '+(d.modules||[]).length+' module'+((d.modules||[]).length===1?'':'s')+' · '+cost.power+' points':' · power '+cost.power+' / '+(ch?ch.powerCap:"?")+(W().labOn&&W().labOn()?' · <i class="wsbad">made before the Lab</i>':''))+' · '+(c.ok?'<span class="wsok">fits</span>':'<span class="wsbad">does not fit</span>')+'</i>'+
           /* (v14.22) a design costing only Common parts goes out free; and its Mark */
           (cost.parts.every(function(x,r){ return r===0||!x; }) && localStorage.getItem("keter-test-paid-commons")!=="1"?'<i class="wsok">Free to take out: it costs only Common parts</i>':'<i>One copy: '+costText(cost.parts)+' · you could pay for '+n+'</i>')+
           '<i>'+W().MK_NAME[W().mkOf(d)-1]+(W().mkOf(d)<3?' · Mk '+(W().mkOf(d)===1?'II':'III')+' for '+W().mkText(W().mkCost(d))+' Troop parts':' · the highest Mark')+'</i>'+
@@ -97,13 +97,40 @@
         '<i>HP '+st.hp+' · AC '+st.ac+' · MS '+st.move+' · NRG '+st.nrg+' · INT '+st.int+' · DMG '+st.dmg+'</i>'+
         '<i>Attacks up to range '+W().maxOf(ch,"range")+' and AP '+W().maxOf(ch,"ap")+', to-hit '+W().bestHit(ch)+' at best · deploys for '+num(ch.aether&&ch.aether.generic,1)+' Aether'+(num(ch.aether&&ch.aether.affinity,0)?' + '+ch.aether.affinity+' of its District':'')+'</i>'+
         '<i>Power cap '+ch.powerCap+' · '+ch.abilityCap+' abilit'+(ch.abilityCap==1?"y":"ies")+' · you can use '+own+' of its '+(ch.allowed||[]).length+' keywords</i></div>'+
+      (d.lab?labLineHTML(ch):(W().labOn&&W().labOn()&&!d.prebuilt&&!(d.id&&W().locked(d.id))?'<p class="wslockbar">A design made before the Lab: it keeps working as it is. Convert gives it the nearest modules, to change and keep.</p><div class="pxrow"><button class="ghost primary" id="wsConvert">Convert to modules</button></div>':''))+
+      (d.lab?'<div id="wsMods"></div><div class="pxrow"><button class="ghost" id="wsAddMod">Add a module</button></div>':
       '<div id="wsAbs"></div>'+
-      '<div class="pxrow"><button class="ghost" id="wsAddAct">Add an Action</button><button class="ghost" id="wsAddPas">Add a Passive</button></div>'+
+      '<div class="pxrow"><button class="ghost" id="wsAddAct">Add an Action</button><button class="ghost" id="wsAddPas">Add a Passive</button></div>')+
       '<div id="wsResult" class="chresult"></div>'+
       '<div id="wsLook">'+lookHTML(d)+'</div>'+
       (d.prebuilt?'<p class="wslockbar">A pre-built Troop for the Exchange. Only its fit is checked, not what the player owns.</p>':'<p class="pxnote">Designs can be changed only at the dock. A design out on a deployment is locked until it comes home.</p>')+
       '<div class="pxrow"><button class="ghost" id="wsDelete">Delete this design</button></div></div>';
-    drawAbs(); drawResult(); paintLooks(); lockView();
+    if(d.lab) drawMods(); else drawAbs(); drawResult(); paintLooks(); lockView();
+  }
+  /* ---- (Lab) a design of modules ---- */
+  function LB(){ return window.KETER_LAB; }
+  function labLineHTML(ch){
+    var ln=LB().chassisLine(ch), c=W().check(CUR), d=LB().data();
+    return '<p class="pxnote">A Lab design: the chassis is a line of the Troop table, <b>'+esc(d.roleName[ln.role])+' · '+esc(ln.size.charAt(0).toUpperCase()+ln.size.slice(1))+' · '+esc(ln.rarity.charAt(0).toUpperCase()+ln.rarity.slice(1))+'</b>, '+
+      'which takes up to '+c.caps.abilities+' module'+(c.caps.abilities===1?'':'s')+' at tier '+LB().ROMAN[c.caps.tier]+' at most (one a Passive or Aura). A module is a library ability: its numbers and text are fixed.</p>';
+  }
+  function drawMods(){
+    var h=$("wsMods"); if(!h) return;
+    var ch=W().chassisOf(CUR), ln=LB().chassisLine(ch||{}), D=LB().data(), kw=W().kwOwned(), mods=CUR.prebuilt?null:W().modOwned(), card=W().toCard(CUR);
+    var kinds=[["attack","Attacks"],["support","Support"],["passive","Passives"],["aura","Auras"]];
+    h.innerHTML=(CUR.modules||[]).map(function(m,i){
+      var a=LB().ability(m[0]), lv=CUR.prebuilt?3:LB().moduleLevel(m[0], kw, mods), e=(card.entries||[])[i+1]||{};
+      var opts=kinds.map(function(k){ return '<optgroup label="'+k[1]+'">'+D.library.filter(function(x){ return x.kind===k[0]; }).map(function(x){
+        var shut=x.roles.indexOf(ln.role)<0 || (x.min && D.rarities.indexOf(ln.rarity)<D.rarities.indexOf(x.min)), xl=CUR.prebuilt?3:LB().moduleLevel(x.id, kw, mods);
+        return '<option value="'+x.id+'"'+(x.id===m[0]?' selected':'')+(shut&&x.id!==m[0]?' disabled':'')+'>'+esc(x.id+' · '+x.name+(shut?' (not for this chassis)':(xl?' · tier '+LB().ROMAN[xl]+' open':' · no blueprint yet')))+'</option>'; }).join('')+'</optgroup>'; }).join('');
+      var tiers=''; for(var t=1;t<=Math.min(3,a?a.tiers.length:3);t++) tiers+='<option value="'+t+'"'+(+m[1]===t?' selected':'')+'>'+LB().ROMAN[t]+(t>lv?' (not open)':'')+'</option>';
+      return '<div class="wsab"><div class="pxrow wsabtop"><select data-wsmod="'+i+'" aria-label="Module">'+opts+'</select><select data-wsmodtier="'+i+'" aria-label="Tier">'+tiers+'</select>'+
+        '<button class="ghost pxic" data-wsdelmod="'+i+'" aria-label="Remove">✕</button></div>'+
+        '<p class="pxnote">'+(a?esc(a.does):'')+' '+(e.damage?'<b>'+esc(e.damage)+' damage</b> ':'')+(e.energyCost?esc(e.energyCost)+' Energy · ':'')+esc((window.KETER_KW&&window.KETER_KW.render)?window.KETER_KW.render(e.text||''):(e.text||''))+'</p></div>';
+    }).join('')+((CUR.modules||[]).some(function(m){ var a=LB().ability(m[0]); return a && /\{token\}/.test(a.tiers[0].text); })?
+      '<label class="chf"><span>Token it brings</span><select data-wstoken="1">'+D.tokens.map(function(t){ return '<option'+((CUR.token||'Scuttlebot')===t?' selected':'')+'>'+esc(t)+'</option>'; }).join('')+'</select></label>':'')+
+      (!(CUR.modules||[]).length?'<p class="pxnote">No modules yet: it fights with its basic attack. Heavy Blow I and Mend I are free; the rest open with the blueprints you find.</p>':'');
+    var add=$("wsAddMod"); if(add) add.style.display=(CUR.modules||[]).length<W().check(CUR).caps.abilities?'':'none';
   }
   /* v13.0: its look, a skin of its body plan; those that suit its roles first */
   function lookHTML(d){
@@ -158,9 +185,10 @@
     var h=$("wsResult"); if(!h) return;
     var c=W().check(CUR), cost=W().cost(CUR), n=W().affordable(CUR), pct=Math.min(100,Math.round(100*c.power/Math.max(1,c.cap)));
     var R=L().RARITIES;
-    h.innerHTML='<div class="chbar"><div style="width:'+pct+'%;background:'+(c.power>c.cap?"var(--danger,#ff4a52)":"var(--cyan)")+'"></div></div>'+
-      '<div class="chrow"><span>Power</span><b>'+c.power+' / '+c.cap+'</b></div>'+
-      '<div class="chrow"><span>Abilities</span><b>'+c.abilities+' / '+c.abilityCap+'</b></div>'+
+    h.innerHTML=(CUR.lab?'<div class="chrow"><span>Points</span><b>'+c.power+'</b></div>':
+      '<div class="chbar"><div style="width:'+pct+'%;background:'+(c.power>c.cap?"var(--danger,#ff4a52)":"var(--cyan)")+'"></div></div>'+
+      '<div class="chrow"><span>Power</span><b>'+c.power+' / '+c.cap+'</b></div>')+
+      '<div class="chrow"><span>'+(CUR.lab?'Modules':'Abilities')+'</span><b>'+c.abilities+' / '+c.abilityCap+'</b></div>'+
       (c.ok?'<p class="chok">✓ This design fits, and you own everything it uses.</p>':'<p class="chbad">✗ '+esc(c.reasons.join("; "))+'.</p>')+
       '<p class="pxsub">One copy costs</p><table class="wscost">'+cost.lines.map(function(l){
         return '<tr><td>'+esc(l.label)+'</td><td>'+costText(l.parts)+'</td></tr>'; }).join("")+
@@ -186,13 +214,27 @@
           (price!=null?'<button class="ghost'+(st.shards>=price&&!out?" primary":"")+'" data-wsres="'+esc(b.name)+'"'+(st.shards>=price&&!out?"":" disabled")+'>Research level '+next+' · '+price+' shards</button>':'')+'</div>';
       }).join("")+'</div>';
     }).join("");
-    return '<p class="wsstock">'+st.shards+' Aether shards</p>'+(out?'<p class="wslockbar">Research happens at the dock, which is closed while a Strike Team is out.</p>':'')+
+    var mods=(W().labOn&&W().labOn())?modsHTML(st, out):'';
+    return '<p class="wsstock">'+st.shards+' Aether shards</p>'+(out?'<p class="wslockbar">Research happens at the dock, which is closed while a Strike Team is out.</p>':'')+mods+
       '<p class="pxnote">Target words, damage, heal and turns are yours from the start. Every other keyword is a blueprint: its first level is found as loot, and levels 2 and 3 are found or researched here.</p>'+
       (MSG?'<p class="wsmsg">'+esc(MSG)+'</p>':'')+
       (known.length?rows:'<p class="pxnote">No blueprints found yet. The Codex says where to look.</p>')+
       (dev()?'<div class="wsdev"><p class="pxsub">Dev Mode</p><div class="pxrow">'+
         '<button class="ghost'+(s.all?" primary":"")+'" id="wsAll">Testing: every blueprint and chassis unlocked · '+(s.all?"on":"off")+'</button>'+
         '<button class="ghost" id="wsReset">Reset progress</button></div></div>':'');
+  }
+
+  /* (Lab) the modules: each library ability, the tier open to you, and research for the next */
+  function modsHTML(st, out){
+    var D=LB().data(), kw=W().kwOwned(), mods=W().modOwned(), prices=W().tables().researchDefault||[0,60,120];
+    var kinds=[["attack","Attack modules"],["support","Support modules"],["passive","Passive modules"],["aura","Aura modules"]];
+    return '<p class="pxsub">Modules</p><p class="pxnote">KETER Lab designs are built of modules. A module opens to the tier of the best blueprint that opens it (shown beside it), and its next tier can be researched here.</p>'+
+      kinds.map(function(k){ return '<p class="pxsub">'+k[1]+'</p><div class="wsbps">'+D.library.filter(function(a){ return a.kind===k[0]; }).map(function(a){
+        var lv=LB().moduleLevel(a.id, kw, mods), r=LB().moduleResearch(a.id, kw, mods, st.shards, prices), top=Math.min(3,a.tiers.length);
+        var keys=((D.modules||{}).keywords||{})[a.id]||[];
+        return '<div class="wsbp"><b>'+esc(a.id+' · '+a.name)+'</b><i>'+(lv?'tier '+LB().ROMAN[lv]+' of '+LB().ROMAN[top]:'not open')+(LB().isFreeModule(a.id,1)?' · tier I free':'')+(keys.length?' · opened by '+esc(keys.join(", ")):'')+'</i>'+
+          (lv>=1&&lv<top&&r.price!=null?'<button class="ghost'+(r.ok&&!out?" primary":"")+'" data-wsmodres="'+esc(a.id)+'"'+(r.ok&&!out?"":" disabled")+'>Research tier '+LB().ROMAN[lv+1]+' · '+r.price+' shards</button>':'')+'</div>';
+      }).join('')+'</div>'; }).join('');
   }
 
   /* ---- the Workshop's tables ---- */
@@ -258,6 +300,7 @@
         if(confirm("Raise "+dm.name+" to "+W().MK_NAME[to-1]+"? +"+g.hp+" Health, +"+g.ac+" Armor Class"+(g.move?", +"+g.move+" Movement":"")+" in all, for "+W().mkText(mc)+" Troop parts.")){ var ur=W().upgrade(a); MSG=ur.ok?(dm.name+" raised to "+W().MK_NAME[ur.mk-1]+"."):ur.why; draw(); } return; }
       if((a=t.getAttribute("data-wsdel"))){ if(confirm("Delete this design? Decks that use it lose it.")){ W().remove(a); draw(); } return; }
       if((a=t.getAttribute("data-wsres"))){ var r=P().research(a); MSG=r.ok?("Researched "+a+" level "+r.level+" for "+r.price+" shards."):r.why; draw(); return; }
+      if((a=t.getAttribute("data-wsmodres"))){ var rm=W().researchModule(a), am=LB().ability(a); MSG=rm.ok?("Researched "+(am?am.name:a)+" tier "+LB().ROMAN[rm.level]+" for "+rm.price+" shards."):rm.why; draw(); return; }
       if(id==="wsAll"){ P().setUnlockAll(!P().unlockAll()); draw(); return; }
       if(id==="wsReset"){ if(confirm("Reset progress? Every blueprint and chassis found, and everything discovered, is forgotten. Designs and the stockpile stay.")){ P().reset(); draw(); } return; }
       if(id==="wsTabReset"){ if(confirm("Put the Workshop’s tables back to their starting values?")){ W().resetTables(); draw(); } return; }
@@ -265,6 +308,13 @@
     }
     if(id==="wsBack"){ if(!W().locked(CUR.id)) flush(); if(CUR.prebuilt) TAB="prebuilt"; CUR=null; draw(); return; }
     if(id==="wsCopyThis"){ var cp=W().get(CUR.id)||CUR; cp=JSON.parse(JSON.stringify(cp)); cp.id=null; delete cp.starter; cp.name=cp.name+" copy"; var nid=W().put(cp); CUR=nid?W().get(nid):null; draw(); return; }
+    if(id==="wsConvert"){ CUR=W().convert(CUR); flush(); draw(); return; }
+    if(id==="wsAddMod"){
+      var lnA=LB().chassisLine(W().chassisOf(CUR)||{}), kwA=W().kwOwned(), mdA=CUR.prebuilt?null:W().modOwned(), used={};
+      (CUR.modules||[]).forEach(function(m){ used[m[0]]=1; });
+      var pickA=LB().data().library.filter(function(x){ return !used[x.id] && x.roles.indexOf(lnA.role)>=0 && !x.min && (CUR.prebuilt || LB().moduleLevel(x.id, kwA, mdA)>=1); })[0];
+      CUR.modules=CUR.modules||[]; CUR.modules.push([pickA?pickA.id:"S1", 1]); drawMods(); drawResult(); scheduleSave(); return; }
+    if((a=t.getAttribute("data-wsdelmod"))!==null){ CUR.modules.splice(+a,1); drawMods(); drawResult(); scheduleSave(); return; }
     if(id==="wsAddAct"||id==="wsAddPas"){ CUR.abilities.push(W().blankAbility(W().chassisOf(CUR), id==="wsAddPas"?"passive":"action")); drawAbs(); drawResult(); scheduleSave(); return; }
     if((a=t.getAttribute("data-wsdelab"))!==null){ CUR.abilities.splice(+a,1); drawAbs(); drawResult(); scheduleSave(); return; }
     if((a=t.getAttribute("data-wsbuild"))!==null && window.KETER_BUILDER){
@@ -297,6 +347,9 @@
       return;
     }
     if((a=el.getAttribute("data-wsproj"))!==null){ CUR.abilities[+a].projectile=el.value; scheduleSave(); return; }
+    if((a=el.getAttribute("data-wsmod"))!==null){ CUR.modules[+a][0]=el.value; drawMods(); drawResult(); scheduleSave(); return; }
+    if((a=el.getAttribute("data-wsmodtier"))!==null){ CUR.modules[+a][1]=parseInt(el.value,10)||1; drawMods(); drawResult(); scheduleSave(); return; }
+    if(el.hasAttribute("data-wstoken")){ CUR.token=el.value; drawMods(); drawResult(); scheduleSave(); return; }
     if((a=el.getAttribute("data-wsrole"))!==null){ var ab=CUR.abilities[+a]; ab.role=el.value; drawAbs(); drawResult(); scheduleSave(); return; }
   });
 
