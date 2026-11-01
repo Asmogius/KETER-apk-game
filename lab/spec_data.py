@@ -84,14 +84,14 @@ HERO_RARITY = {
 
 # Enemies by Skull Level 1-6, Standard size. Enemies have no rarity.
 ENEMY = {
-    "brute":      {"hp": [18, 26, 34, 42, 52, 62], "ac": [6, 8, 10, 11, 12, 13], "ms": [3] * 6, "dmg": [5, 6, 8, 9, 11, 12], "rng": [1] * 6, "hit": [None] * 6, "ap": [1, 2, 3, 4, 5, 6]},
-    "skirmisher": {"hp": [12, 18, 24, 30, 36, 42], "ac": [8, 10, 12, 13, 14, 15], "ms": [5] * 6, "dmg": [4, 5, 6, 8, 9, 10], "rng": [1] * 6, "hit": [None] * 6, "ap": [2, 3, 4, 5, 6, 7]},
-    "shooter":    {"hp": [14, 20, 26, 32, 40, 48], "ac": [6, 8, 10, 11, 12, 13], "ms": [3] * 6, "dmg": [4, 5, 7, 8, 10, 11], "rng": [4, 4, 5, 5, 6, 6], "hit": [9, 9, 8, 8, 7, 7], "ap": [1, 2, 3, 4, 5, 6]},
-    "support":    {"hp": [14, 20, 26, 32, 40, 48], "ac": [6, 8, 10, 11, 12, 13], "ms": [3] * 6, "dmg": [2, 3, 4, 5, 6, 7], "rng": [3] * 6, "hit": [9, 9, 9, 8, 8, 8], "ap": [1, 1, 2, 2, 3, 3]},
+    "brute":      {"hp": [18, 24, 28, 34, 40, 46], "ac": [6, 8, 10, 11, 12, 13], "ms": [3] * 6, "dmg": [5, 6, 8, 9, 11, 12], "rng": [1] * 6, "hit": [None] * 6, "ap": [1, 2, 3, 4, 5, 6]},
+    "skirmisher": {"hp": [12, 16, 20, 24, 28, 32], "ac": [8, 10, 12, 13, 14, 15], "ms": [5] * 6, "dmg": [4, 5, 6, 8, 9, 10], "rng": [1] * 6, "hit": [None] * 6, "ap": [2, 3, 4, 5, 6, 7]},
+    "shooter":    {"hp": [14, 18, 22, 26, 30, 34], "ac": [6, 8, 10, 11, 12, 13], "ms": [3] * 6, "dmg": [4, 5, 7, 8, 10, 11], "rng": [4, 4, 5, 5, 6, 6], "hit": [9, 9, 8, 8, 7, 7], "ap": [1, 2, 3, 4, 5, 6]},
+    "support":    {"hp": [14, 18, 22, 26, 30, 34], "ac": [6, 8, 10, 11, 12, 13], "ms": [3] * 6, "dmg": [2, 3, 4, 5, 6, 7], "rng": [3] * 6, "hit": [9, 9, 9, 8, 8, 8], "ap": [1, 1, 2, 2, 3, 3]},
 }
 ENEMY_SIZE = {"light": {"hp": 0.5, "ac": 0, "ms": 1, "dmg": -1, "note": "swarms and husks"},
               "standard": {"hp": 1.0, "ac": 0, "ms": 0, "dmg": 0, "note": "the ordinary Enemy"},
-              "heavy": {"hp": 1.4, "ac": 1, "ms": -1, "dmg": 2, "note": "Titans"}}
+              "heavy": {"hp": 1.3, "ac": 1, "ms": -1, "dmg": 2, "note": "Titans"}}
 ENEMY_TIER = [1, 1, 2, 2, 3, 3]          # the highest ability tier at Skull 1..6
 ENEMY_ABILITIES = [1, 1, 2, 2, 2, 2]     # how many library abilities at Skull 1..6
 GRADE = {"enemy": {"hp": 1, "ac": 0, "dmg": 0, "ap": 0, "abilities": 0, "tier": 0, "note": "drawn from the Enemy Card Piles"},
