@@ -28,6 +28,8 @@
 ## Mk II and Mk III as Troop parts allow. Every fight is played by
 ## lab_player.gd, careful or casual; one still going at round 40 is lost.
 ## It makes no designs in the Workshop: its Troops are the free ones.
+## lab=1 plays it as KETER Lab, on the Lab card set (the Frame Trooper then a
+## Lab design too: its basic attack alone).
 ## What-ifs (lab only, the game is untouched): d3floors=1 fights every
 ## District's floors on battlefields grown from District 3's chunks, as if
 ## every District had content of its own like District 3's; keepheroes=1 keeps
@@ -78,7 +80,7 @@ func _initialize() -> void:
 
 
 func _args() -> Dictionary:
-	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": "", "d3floors": "0", "keepheroes": "0", "keepcards": "0", "retreat": "1", "cores": "", "bold": "0", "d3foes": "0", "inst": ""}
+	var o := {"export": "", "bot": "careful", "seed": "1", "most": "150", "out": "", "d3floors": "0", "keepheroes": "0", "keepcards": "0", "retreat": "1", "cores": "", "bold": "0", "d3foes": "0", "inst": "", "lab": "0"}
 	for a in OS.get_cmdline_user_args():
 		var kv := str(a).split("=", true, 1)
 		if kv.size() == 2:
@@ -89,6 +91,9 @@ func _args() -> Dictionary:
 func _run() -> void:
 	var o := _args()
 	Kit.fresh()
+	# (KETER Lab) lab=1: the run is KETER Lab's, the Lab card set laid over the export
+	if str(o["lab"]) == "1":
+		LabSet.force(true)
 	# a real run: Heroes and cards are only what it has; Common designs go out free
 	Dock.every_hero = false
 	Dock.every_card = false
