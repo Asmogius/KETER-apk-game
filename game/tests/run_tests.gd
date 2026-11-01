@@ -39,6 +39,13 @@ func _run() -> void:
 		Rules.hooks = {}
 		quit(1 if bad > 0 else 0)
 		return
+	if OS.get_cmdline_user_args().has("fortyfour"):
+		await _fortyfour()
+		Kit.fresh()
+		print("\nGAME PASS %d  FAIL %d" % [ok, bad])
+		Rules.hooks = {}
+		quit(1 if bad > 0 else 0)
+		return
 	if OS.get_cmdline_user_args().has("fortythree"):
 		await _fortythree()
 		Kit.fresh()
@@ -381,6 +388,7 @@ func _run() -> void:
 	_fortyone()
 	_fortytwo()
 	await _fortythree()
+	await _fortyfour()
 	_lab_set()
 	await _lab_forge_scene()
 	await _lab_workshop_scene()
@@ -10587,6 +10595,96 @@ func _fortythree() -> void:
 	await process_frame
 	Dock.every_card = true
 	Dock.every_hero = true
+	Kit.fresh()
+
+
+# ---------------------------------------------------------------- 0.44: speed
+func _fortyfour() -> void:
+	Kit.fresh()
+	var x := KeterExport.new()
+	x.open(FIXTURE)
+	var r := Roster.new(x)
+	var c := Campaign.new(x, r, x.floors(), 71)
+	var w := c.world
+	# the District Cores, kept while what they come from is the same
+	var cores := w.cores()
+	ck("0.44 cores: asked again, the same Cores, kept", is_same(w.cores(), cores) and not cores.is_empty())
+	var levels: Array = w.tables["coreSkulls"]
+	levels[0] = 1
+	var lower := w.cores()
+	levels[0] = 4
+	ck("0.44 cores: a Core Skull Level changed in place is noticed (worked out again)", not is_same(lower, cores) and w.cores() == cores, [lower, cores])
+	# the World Map: its ground a layer of its own, drawn again only when what is known changes
+	var mv := MapView.new()
+	root.add_child(mv)
+	mv.show_world(w)
+	await process_frame
+	await process_frame
+	ck("0.44 map: the ground is a layer of its own, behind; worked out once for the map", mv.ground != null and mv.ground.show_behind_parent and mv.ground.get_index() == 0 and not mv._geo.is_empty()
+		and mv._geo["open"].size() == w.map["tiles"].size())
+	var geo: Dictionary = mv._geo
+	var drawn := mv._ground_key
+	mv.selected = str(w.map["tiles"].keys()[0])
+	mv.refresh()
+	ck("0.44 map: a tile chosen draws the map again, not its ground", mv._ground_key == drawn and mv._ground_sig() == drawn and is_same(mv._geo, geo))
+	var spare := ""
+	for k in w.map["tiles"]:
+		if not w.known(k) and str(k) != w.dock():
+			spare = str(k)
+			break
+	var seen_before: int = mv._live["seen"].size()
+	w.state["known"][spare] = 1
+	mv.refresh()
+	await process_frame
+	await process_frame
+	ck("0.44 map: a tile coming to be known draws the ground again, it seen; the map's own work kept", mv._ground_key != drawn and mv._live["seen"].has(spare) and is_same(mv._geo, geo)
+		and (mv._live["seen"].size() == seen_before + 1 or seen_before == w.map["tiles"].size()), [seen_before, mv._live["seen"].size()])
+	var lines_ok: bool = mv._geo["edges"].size() == 12 * mv._geo["open"].size() and mv._geo["borders"].size() % 2 == 0 and mv._geo["rises"].size() % 2 == 0
+	ck("0.44 map: the edges, borders and rises are lists of lines, drawn in one go each", lines_ok, [mv._geo["edges"].size(), mv._geo["open"].size()])
+	mv.queue_free()
+	# a card's face laid out once
+	var card: Dictionary = r.cards[0]
+	var lay := CardFace.layout(card, CardTile.SIZE, false)
+	ck("0.44 card face: laid out once for a card and a size, and kept", is_same(CardFace.layout(card, CardTile.SIZE, false), lay) and not is_same(CardFace.layout(card, CardFace.LARGE, false), lay)
+		and lay["name"] != "" and lay["lines"] is Array)
+	var changed := card.duplicate(true)
+	changed["name"] = "A Different Name"
+	ck("0.44 card face: a card changed is laid out afresh", CardFace.layout(changed, CardTile.SIZE, false)["name"] == "A Different Name" and CardFace.layout(card, CardTile.SIZE, false)["name"] != "A Different Name")
+	# a grid of cards: the same cards again keep their tiles
+	var g := CardGrid.new()
+	g.size = Vector2(1000, 600)
+	root.add_child(g)
+	var items := []
+	for cc in r.cards.slice(0, 12):
+		items.append({"card": cc, "art": null, "count": 0})
+	g.set_items(items)
+	var tiles := g.tiles.duplicate()
+	var again := items.map(func(it): return it.duplicate())
+	again[3]["count"] = 2
+	again[3]["chosen"] = true
+	g.set_items(again)
+	ck("0.44 grid: the same cards again keep their tiles; what changed shows", g.tiles.size() == 12 and range(12).all(func(i): return is_same(g.tiles[i], tiles[i])) and g.tiles[3].count == 2 and g.tiles[3].chosen and g.tiles[2].count == 0)
+	var other := again.duplicate()
+	other.remove_at(0)
+	g.set_items(other)
+	ck("0.44 grid: other cards make the tiles anew", g.tiles.size() == 11 and not is_same(g.tiles[0], tiles[0]))
+	g.set_items(items, false)
+	ck("0.44 grid: and starting over makes them anew too", not is_same(g.tiles[0], tiles[0]) or g.tiles.size() == 12)
+	g.queue_free()
+	# the sounds, made off the main thread
+	var snd := Sound.new()
+	root.add_child(snd)
+	ck("0.44 sounds: a sound asked for before the thread is done is made there and then", Sound.stream("hit") is AudioStreamWAV and Sound.stream("nonsense") == null)
+	for i in 120:
+		if snd._task < 0:
+			break
+		await process_frame
+	ck("0.44 sounds: and the thread makes the rest", snd._task < 0 and Sound.NAMES.keys().all(func(n): return Sound.streams.get(n) is AudioStreamWAV), Sound.streams.keys())
+	snd.queue_free()
+	await process_frame
+	Sound.load_all()
+	# the screen drawn only when something changes
+	ck("0.44 project: the screen is drawn only when something on it changes (low processor mode)", bool(ProjectSettings.get_setting("application/run/low_processor_mode", false)))
 	Kit.fresh()
 
 

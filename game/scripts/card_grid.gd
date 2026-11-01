@@ -27,7 +27,15 @@ func columns() -> int:
 
 
 ## Shows these cards, keeping the place scrolled to unless told to start over.
+## (0.44) The same cards again, in the same order (a copy added, a card
+## chosen): the tiles there are kept, and only those that changed are drawn
+## again, rather than every tile made anew.
 func set_items(list: Array, keep_place := true) -> void:
+	if keep_place and _same_cards(list):
+		items = list
+		for i in items.size():
+			_dress(tiles[i], items[i])
+		return
 	var was := scroll if keep_place else 0.0
 	items = list
 	clear()
@@ -43,22 +51,39 @@ func set_items(list: Array, keep_place := true) -> void:
 			box.add_child(row)
 		var it: Dictionary = items[i]
 		var t := CardTile.new(it["card"], it.get("art"))
-		t.count = int(it.get("count", 0))
-		t.mark = str(it.get("mark", ""))
-		if it.has("mark_colour"):
-			t.mark_colour = it["mark_colour"]
-		t.plain = it.get("plain", false)
-		t.chosen = it.get("chosen", false)
-		t.faded = it.get("faded", false)
-		t.gone = it.get("gone", false)
-		if it.has("foot"):
-			t.foot = str(it["foot"])
+		_dress(t, it)
 		row.add_child(t)
 		tiles.append(t)
 	for r in box.get_children():
 		_ignore(r)
 	_layout()
 	scroll_by(was)
+
+
+## Whether these are the cards shown now, the same ones in the same order (and laid out as they are).
+func _same_cards(list: Array) -> bool:
+	if list.size() != items.size() or list.size() != tiles.size() or list.is_empty() or columns() != _columns:
+		return false
+	for i in list.size():
+		if not is_same(list[i]["card"], items[i]["card"]) or not is_instance_valid(tiles[i]):
+			return false
+	return true
+
+
+## A tile as its item has it: its copies, ribbon, marks and art; drawn again only if any of it changed.
+func _dress(t: CardTile, it: Dictionary) -> void:
+	var was := [t.art, t.count, t.mark, t.mark_colour, t.plain, t.chosen, t.faded, t.gone, t.foot]
+	t.art = it.get("art")
+	t.count = int(it.get("count", 0))
+	t.mark = str(it.get("mark", ""))
+	t.mark_colour = it["mark_colour"] if it.has("mark_colour") else UI.CYAN
+	t.plain = it.get("plain", false)
+	t.chosen = it.get("chosen", false)
+	t.faded = it.get("faded", false)
+	t.gone = it.get("gone", false)
+	t.foot = str(it["foot"]) if it.has("foot") else t.base_foot
+	if was != [t.art, t.count, t.mark, t.mark_colour, t.plain, t.chosen, t.faded, t.gone, t.foot]:
+		t.queue_redraw()
 
 
 func _on_resized() -> void:

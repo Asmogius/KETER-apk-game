@@ -21,6 +21,7 @@ var chosen := false            # outlined in cyan
 var faded := false             # can't be used here just now
 var gone := false              # the export no longer has this card
 var foot := ""                 # the bottom line
+var base_foot := ""            # (0.44) the card's own bottom line (foot_for), worked out once
 var face_down := false         # (0.19) its back shows: dealt, not yet turned
 var _font: Font
 
@@ -33,7 +34,8 @@ func _init(c: Dictionary = {}, picture: Texture2D = null) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_font = Look.font()
-	foot = foot_for(c)
+	base_foot = foot_for(c)
+	foot = base_foot
 
 
 ## What a card's bottom line says: a Unit's Leadership or Unit Slots and

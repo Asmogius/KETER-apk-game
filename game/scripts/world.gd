@@ -247,6 +247,11 @@ func unique_at(k) -> Variant:
 # ---------------------------------------------------------------- (0.38) the District Cores
 var _cores := {}
 var _cores_id := ""
+## (0.44) What the Cores were last worked out from, by identity: the map, its
+## tile count, the Unique POIs, their count, the tables' Core Skull Levels and
+## their hash. While it all holds, the Cores stand, without building their id
+## (which cost a map's draw some 20 ms a time, a tile at a time).
+var _cores_seen: Array = []
 
 
 ## Each District's Core: its tile farthest from the dock (the first by name of
@@ -256,6 +261,11 @@ var _cores_id := ""
 ## below it, or, with none there, its farthest tile.
 func cores() -> Dictionary:
 	var tiles: Dictionary = map.get("tiles", {})
+	var cs = tables.get("coreSkulls")
+	if not _cores_seen.is_empty() and is_same(_cores_seen[0], map) and _cores_seen[1] == tiles.size() and is_same(_cores_seen[2], uniques) and _cores_seen[3] == uniques.size() \
+			and is_same(_cores_seen[4], cs) and _cores_seen[5] == (cs.hash() if cs is Array else 0) and is_same(_cores_seen[6], tables):
+		return _cores
+	_cores_seen = [map, tiles.size(), uniques, uniques.size(), cs, cs.hash() if cs is Array else 0, tables]
 	var taken := {}
 	var ids := []
 	for u in uniques:

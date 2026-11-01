@@ -10,6 +10,14 @@
 ## Where the export carries map art from the Pixel Studio (a District's
 ## ground, its things, an icon, the Hangar, rubble), it takes the place of the
 ## game's own.
+##
+## (0.44) Drawn in two layers, for speed: the ground (each tile's ground, the
+## scanlines over the unknown, the thin edges) behind, drawn again only when
+## what the team knows changes, or the map goes far off or comes near; and the
+## rest (the Districts' borders, the rises in Skull Level, what stands on the
+## tiles), drawn again for a zoom. What never changes for a map (each tile's
+## place, its ground's corners in its picture, its edges, what it holds) is
+## worked out once; what changes with what is known, once each time it does.
 class_name MapView
 extends Node2D
 
@@ -40,6 +48,22 @@ var _marker_to := Vector2.ZERO
 var _tween: Tween = null
 var _scan: ImageTexture = null
 var _drawn_zoom := 1.0           # (0.15) the zoom it was last drawn at: lines and icons keep their size on the screen
+var ground: Ground               # (0.44) the ground layer, behind
+var _geo := {}                   # (0.44) what never changes for a map: worked out once (_ensure_geo)
+var _geo_key: Array = []         # what _geo was worked out for
+var _live := {}                  # (0.44) what is drawn of what the team knows: worked out when it changes
+var _live_key := 0
+var _ground_key := 0             # (0.44) what the ground was last drawn for
+var _ground_far := false         # whether it was drawn far off
+
+
+## (0.44) The ground, drawn apart, behind the rest (see above).
+class Ground extends Node2D:
+	var view: MapView
+
+	func _draw() -> void:
+		if view != null:
+			view._draw_ground(self)
 
 
 ## The team's marker, the chosen tile and the way to it: drawn apart from the
@@ -102,6 +126,10 @@ class Marker extends Node2D:
 
 
 func _init() -> void:
+	ground = Ground.new()
+	ground.view = self
+	ground.show_behind_parent = true
+	add_child(ground)
 	marker = Marker.new()
 	marker.view = self
 	add_child(marker)
@@ -115,6 +143,9 @@ func _init() -> void:
 func _process(_delta: float) -> void:
 	if world != null and is_visible_in_tree() and absf(_zoom() - _drawn_zoom) > 0.02:
 		queue_redraw()
+		# (0.44) the ground only as the map goes far off or comes near (its shade and edges change)
+		if (_zoom() < 0.45) != _ground_far:
+			ground.queue_redraw()
 
 
 ## Puts a map up. data: the export, whose map art (if any) Art has read.
@@ -126,9 +157,19 @@ func show_world(w: World, _data: KeterExport = null) -> void:
 
 
 ## Everything is drawn again: something has been seen, cleared or chosen.
+## (0.44) The ground only when what it shows has changed.
 func refresh() -> void:
 	queue_redraw()
 	marker.queue_redraw()
+	if world != null and _ground_sig() != _ground_key:
+		ground.queue_redraw()
+
+
+## (0.44) What the ground shows hangs on: the world, its map, the export's
+## pictures, what is known (the world's state) and its tables.
+func _ground_sig() -> int:
+	return hash([world.get_instance_id() if world != null else 0, world.map["tiles"].size() if world != null else 0, Art.serial,
+		world.state.hash() if world != null else 0, world.tables.hash() if world != null else 0])
 
 
 func centre_of(k) -> Vector2:
@@ -200,17 +241,16 @@ static func pick_from(list: Array, tile_key: String) -> Variant:
 	return list[h % list.size()]
 
 
-## (0.15) A tile's ground: its picture clipped to the tile's hexagon. f: how
-## bright (darker farther out, and where nobody has looked).
-func _ground(tile: Dictionary, c: Vector2, f: float) -> void:
+## (0.15) A tile's ground: its picture clipped to the tile's hexagon.
+## (0.44) Worked out once (where the hexagon's corners fall in the picture),
+## then drawn as often as needed by _paint_ground.
+static func _prep_ground(tile: Dictionary, c: Vector2) -> Dictionary:
 	var tex: Texture2D = tile["texture"]
-	var col := Color(f, f, f)
 	if tile.get("rect", false):
 		# a picture of yours that isn't a hexagon of hex pixels: over the tile, as it is
 		var w := Hex.SQ3 * SIZE * 1.02
 		var h := 2.0 * SIZE * 1.02
-		draw_texture_rect(tex, Rect2(c.x - w / 2.0, c.y - h / 2.0, w, h), false, col)
-		return
+		return {"rect": Rect2(c.x - w / 2.0, c.y - h / 2.0, w, h), "tex": tex}
 	var pts := Hex.corners(c, SIZE)
 	# where the hexagon's corners fall in the picture: its middle, CLIP corner-lengths out
 	var sr := (Hex.SQ3 * float(int(tile.get("side", 9)) - 1) + 0.5) * float(tile["s"])
@@ -226,21 +266,29 @@ func _ground(tile: Dictionary, c: Vector2, f: float) -> void:
 		var a := deg_to_rad(60.0 * i - 30.0)
 		var p := region.position + mid + Vector2(cos(a), sin(a)) * sr
 		uvs.append(p / full)
-	draw_polygon(pts, PackedColorArray([col, col, col, col, col, col]), uvs, atlas)
+	return {"pts": pts, "uvs": uvs, "tex": atlas}
+
+
+## A tile's ground, as worked out: f, how bright (darker farther out, and where nobody has looked).
+static func _paint_ground(ci: CanvasItem, g: Dictionary, f: float) -> void:
+	var col := Color(f, f, f)
+	if g.has("rect"):
+		ci.draw_texture_rect(g["tex"], g["rect"], false, col)
+	else:
+		ci.draw_polygon(g["pts"], PackedColorArray([col, col, col, col, col, col]), g["uvs"], g["tex"])
 
 
 ## Faint scanlines over a tile (what the team hasn't seen yet).
-func _scanlines(c: Vector2) -> void:
+func _scanlines(ci: CanvasItem, pts: PackedVector2Array) -> void:
 	if _scan == null:
 		var img := Image.create(1, 3, false, Image.FORMAT_RGBA8)
 		img.fill(Color(0, 0, 0, 0))
 		img.set_pixel(0, 0, Color(0, 0, 0, 0.32))
 		_scan = ImageTexture.create_from_image(img)
-	var pts := Hex.corners(c, SIZE)
 	var uvs := PackedVector2Array()
 	for p in pts:
 		uvs.append(Vector2(p.x, p.y / 3.0))
-	draw_polygon(pts, PackedColorArray([Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE]), uvs, _scan)
+	ci.draw_polygon(pts, PackedColorArray([Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE]), uvs, _scan)
 
 
 ## How far in the map is drawn: 1 at the usual zoom.
@@ -248,24 +296,25 @@ func _zoom() -> float:
 	return maxf(0.05, get_global_transform_with_canvas().get_scale().x) if is_inside_tree() else 1.0
 
 
-func _draw() -> void:
-	if world == null:
+## (0.44) What never changes for a map, worked out once: every tile in its
+## radius, its centre and corners, its ground (rubble where it is closed), the
+## thing that may stand on it, what it holds; the edges round the tiles, the
+## Districts' borders and the rises in Skull Level, each as one list of lines.
+func _ensure_geo() -> void:
+	var th := world.tables.hash()
+	if _geo_key.size() == 5 and _geo_key[0] == world.get_instance_id() and is_same(_geo_key[1], world.map) and _geo_key[2] == world.map["tiles"].size() and _geo_key[3] == Art.serial and _geo_key[4] == th:
 		return
+	_geo_key = [world.get_instance_id(), world.map, world.map["tiles"].size(), Art.serial, th]
+	_live_key = 0
 	var s := SIZE
 	var r := world.radius()
 	var dock := world.dock()
-	var z := _zoom()
-	_drawn_zoom = z
-	var far := z < 0.45                       # the whole map: lighter lines, lighter shade
-	var dim := UNKNOWN if not far else 0.7
-	var skulls := {}
-	var districts := {}
-	var stand := []                           # what stands on tiles, drawn after the ground, back to front
-	var known_any := world.known_count() > 0
 	var rubble := Art.rubble()
 	var grounds := {}
 	var things := {}
-	# the ground
+	var closed := []
+	var open := []
+	var by_key := {}
 	for q in range(-r, r + 1):
 		for rr in range(maxi(-r, -q - r), mini(r, -q + r) + 1):
 			var k := World.key(q, rr)
@@ -273,78 +322,144 @@ func _draw() -> void:
 			var t = world.tile(k)
 			if t == null:
 				var rub = pick_from(rubble, k)
-				if rub != null:
-					_ground(rub, c, 0.8)
-				else:
-					draw_colored_polygon(Hex.corners(c, s), BLOCKED)
+				closed.append({"pts": Hex.corners(c, s), "g": _prep_ground(rub, c) if rub != null else null})
 				continue
-			var sk := world.skull_of(k)
-			skulls[k] = sk
 			var d := world.district_of(k)
-			districts[k] = d
 			if not grounds.has(d):
 				grounds[d] = Art.map_ground(d)
-			var seen: bool = k == dock or world.known(k) or not known_any
-			# (0.39) the ground a little quieter, so what stands on it reads first
-			var f := (1.0 - 0.07 * (sk - 1)) * (1.0 if seen else dim) * GROUND
 			var g = pick_from(grounds[d], k)
-			if g != null:
-				_ground(g, c, f)
-			else:
-				var col := Color(World.DCOL.get(d, World.DCOL[""]))
-				draw_colored_polygon(Hex.corners(c, s), Color(col.r * f, col.g * f, col.b * f))
-			if not seen:
-				_scanlines(c)
-			# a District's things, on one empty tile in five (0.39: only where the team has seen, so the unknown stays calm)
-			if seen and k != dock and world.content_at(k) == null and d != "" and _hash(k + "p") % PROP_SHARE == 0:
+			var content = world.content_at(k) if k != dock else null
+			var e := {"k": k, "c": c, "sk": world.skull_of(k), "d": d, "g": _prep_ground(g, c) if g != null else null, "pts": Hex.corners(c, s),
+				"dock": k == dock, "content": content, "prop": null}
+			if content == null and k != dock and d != "" and _hash(k + "p") % PROP_SHARE == 0:
 				if not things.has(d):
 					things[d] = Art.map_props(d)
 				var pr = pick_from(things[d], k)
 				if pr != null and pr["texture"] != null:
-					stand.append({"y": c.y, "prop": pr, "c": c, "f": (1.0 if seen else dim)})
-	# thin dark edges round every tile (fainter when the whole map is in view)
-	var edge := Color(INK.r, INK.g, INK.b, 0.25 if far else 0.6)
-	for k in skulls:
-		var pts := Hex.corners(centre_of(k), s)
-		pts.append(pts[0])
-		draw_polyline(pts, edge, -1.0)
-	# each District's border, a light line; each rise in Skull Level, light dashes
-	var border := Color(0.945, 0.95, 1.0, 0.45)
-	var rise := Color(1.0, 0.94, 0.54, 0.45 if far else 0.6)
-	var lw := (1.0 if far else 2.0) / z
-	for k in skulls:
-		var a := World.parse(k)
+					e["prop"] = pr
+			if content != null:
+				# (0.38) a District Core wears the Unique POI's star
+				e["kind"] = "unique" if content.get("unique") is Dictionary or Rules.truthy(content.get("core")) else str(content["kind"])
+			open.append(e)
+			by_key[k] = e
+	# thin dark edges round every tile
+	var edges := PackedVector2Array()
+	for e in open:
+		var pts: PackedVector2Array = e["pts"]
+		for i in 6:
+			edges.append(pts[i])
+			edges.append(pts[(i + 1) % 6])
+	# each District's border; each rise in Skull Level, as dashes
+	var borders := PackedVector2Array()
+	var rises := PackedVector2Array()
+	for e in open:
+		var a := World.parse(e["k"])
 		for i in 6:
 			var n := World.key(a.x + Hex.DIRS[i].x, a.y + Hex.DIRS[i].y)
-			if not skulls.has(n):
+			if not by_key.has(n):
 				continue
-			var e := Hex.shared_edge(a, a + Hex.DIRS[i], s)
-			if e.size() != 2:
+			var ne: Dictionary = by_key[n]
+			var ed := Hex.shared_edge(a, a + Hex.DIRS[i], s)
+			if ed.size() != 2:
 				continue
-			if str(n) > str(k) and districts[k] != districts[n] and districts[k] != "" and districts[n] != "":
-				draw_line(e[0], e[1], border, lw)
-			if skulls[n] > skulls[k]:
+			if str(n) > str(e["k"]) and e["d"] != ne["d"] and e["d"] != "" and ne["d"] != "":
+				borders.append(ed[0])
+				borders.append(ed[1])
+			if ne["sk"] > e["sk"]:
 				for f in [0.12, 0.44, 0.76]:
-					draw_line(e[0].lerp(e[1], f), e[0].lerp(e[1], f + 0.16), rise, lw)
-	# what tiles hold, where known, on plates; the dock, the Hangar; things standing
-	for k in skulls:
-		var is_dock: bool = k == dock
-		var c := centre_of(k)
-		if is_dock:
+					rises.append(ed[0].lerp(ed[1], f))
+					rises.append(ed[0].lerp(ed[1], f + 0.16))
+	_geo = {"open": open, "closed": closed, "edges": edges, "borders": borders, "rises": rises}
+
+
+## (0.44) What is drawn of what the team knows, worked out when it changes:
+## which tiles are seen, and what stands on them, back to front.
+func _ensure_live() -> void:
+	var sig := hash([world.state.hash(), _geo_key[4]])
+	if sig == _live_key and not _live.is_empty():
+		return
+	_live_key = sig
+	var known_any := world.known_count() > 0
+	var seen := {}
+	var stand := []                           # what stands on tiles, drawn after the ground, back to front
+	var glyphs := []                          # the dock's house, with no Hangar to show
+	for e in _geo["open"]:
+		var k: String = e["k"]
+		var sn: bool = e["dock"] or world.known(k) or not known_any
+		if sn:
+			seen[k] = true
+		# a District's things, on one empty tile in five (0.39: only where the team has seen, so the unknown stays calm)
+		if sn and e["prop"] != null:
+			stand.append({"y": e["c"].y, "prop": e["prop"], "c": e["c"], "f": 1.0})
+	# what tiles hold, where known, on plates; the dock, the Hangar
+	for e in _geo["open"]:
+		var c: Vector2 = e["c"]
+		if e["dock"]:
 			var hg := Art.hangar()
 			if not hg.is_empty():
 				stand.append({"y": c.y + 0.5, "hangar": hg, "c": c})
 			else:
-				_glyph("dock", c, INK)
+				glyphs.append(c)              # (drawn before what stands, as it always was)
 			continue
-		var content = world.content_at(k)
-		if content == null or not world.known(k):
+		if e["content"] == null or not world.known(e["k"]):
 			continue
-		# (0.38) a District Core wears the Unique POI's star
-		var kind := "unique" if content.get("unique") is Dictionary or Rules.truthy(content.get("core")) else str(content["kind"])
-		stand.append({"y": c.y + 0.25, "icon": kind, "c": c, "cleared": world.is_cleared(k)})
+		stand.append({"y": c.y + 0.25, "icon": e["kind"], "c": c, "cleared": world.is_cleared(e["k"])})
 	stand.sort_custom(func(a, b): return a["y"] < b["y"])
-	for e in stand:
+	_live = {"seen": seen, "stand": stand, "glyphs": glyphs}
+
+
+## (0.44) The ground layer: each tile's ground, scanlines over the unknown, the thin edges.
+func _draw_ground(ci: CanvasItem) -> void:
+	if world == null:
+		return
+	_ensure_geo()
+	_ensure_live()
+	_ground_key = _ground_sig()
+	var far := _zoom() < 0.45                 # the whole map: lighter lines, lighter shade
+	_ground_far = far
+	var dim := UNKNOWN if not far else 0.7
+	for e in _geo["closed"]:
+		if e["g"] != null:
+			_paint_ground(ci, e["g"], 0.8)
+		else:
+			ci.draw_colored_polygon(e["pts"], BLOCKED)
+	var seen: Dictionary = _live["seen"]
+	for e in _geo["open"]:
+		var sn := seen.has(e["k"])
+		# (0.39) the ground a little quieter, so what stands on it reads first
+		var f := (1.0 - 0.07 * (int(e["sk"]) - 1)) * (1.0 if sn else dim) * GROUND
+		if e["g"] != null:
+			_paint_ground(ci, e["g"], f)
+		else:
+			var col := Color(World.DCOL.get(e["d"], World.DCOL[""]))
+			ci.draw_colored_polygon(e["pts"], Color(col.r * f, col.g * f, col.b * f))
+		if not sn:
+			_scanlines(ci, e["pts"])
+	# thin dark edges round every tile (fainter when the whole map is in view)
+	if not _geo["edges"].is_empty():
+		ci.draw_multiline(_geo["edges"], Color(INK.r, INK.g, INK.b, 0.25 if far else 0.6), -1.0)
+
+
+## The top layer: the Districts' borders, the rises, and what stands on the
+## tiles, back to front (the ground is drawn behind, by its own layer).
+func _draw() -> void:
+	if world == null:
+		return
+	_ensure_geo()
+	_ensure_live()
+	var s := SIZE
+	var z := _zoom()
+	_drawn_zoom = z
+	var far := z < 0.45
+	# each District's border, a light line; each rise in Skull Level, light dashes
+	var lw := (1.0 if far else 2.0) / z
+	if not _geo["borders"].is_empty():
+		draw_multiline(_geo["borders"], Color(0.945, 0.95, 1.0, 0.45), lw)
+	if not _geo["rises"].is_empty():
+		draw_multiline(_geo["rises"], Color(1.0, 0.94, 0.54, 0.45 if far else 0.6), lw)
+	for c in _live["glyphs"]:
+		_glyph("dock", c, INK)
+	for e in _live["stand"]:
 		var c: Vector2 = e["c"]
 		if e.has("prop"):
 			var pr: Dictionary = e["prop"]

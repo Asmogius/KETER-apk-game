@@ -192,6 +192,68 @@ static func _px(ci: CanvasItem, r: Rect2, c: Color) -> void:
 	ci.draw_rect(Rect2(r.position.round(), r.size.round()), c)
 
 
+## (0.44) What a face says, laid out for its size, kept: a card's colours, its
+## cost gems, its name and kind line fitted, its rules box's lines wrapped and
+## its numbers. Working these out (the rules' keywords, every word measured)
+## was most of a face's cost, every time it was drawn; now it is once a card
+## and size. Keyed by the card as it is (a card changed is laid out afresh).
+static var _layouts := {}
+const LAYOUTS_MAX := 1500
+
+
+static func layout(card: Dictionary, size: Vector2, gone: bool) -> Dictionary:
+	var key := [card, size, gone]
+	var got = _layouts.get(key)
+	if got != null:
+		return got
+	var big := size.x >= 300.0
+	var p := 4.0 if big else 2.0
+	var face := Look.font()
+	var body := Look.body() if big else Look.font()
+	var name_size := Look.TITLE if big else Look.SMALL
+	var body_size := Look.BODY if big else Look.SMALL
+	var t := Roster.type_of(card)
+	var col := colours(card)
+	var inner_w := size.x - p * 4.0
+	var inner_h := size.y - p * 4.0
+	var band_h := (52.0 if big else 24.0)
+	var gem_s := 2.0 if big else 1.0
+	var gems := cost_gems(card)
+	var xcost := StrikeTeams.DECK_TYPES.has(t) and Roster.card_var(Roster.hand_card(card))
+	# the name: the band's width less the gems (and an X), right to left
+	var gx := inner_w - p * 2.0
+	if xcost:
+		gx -= face.get_string_size("X", HORIZONTAL_ALIGNMENT_LEFT, -1, name_size).x + p * 2.0
+	var shown := 0
+	for g in gems:
+		shown += maxi(0, mini(int(g[1]), 6 - shown))
+	gx -= 7.0 * gem_s * shown
+	var nl: Array = wrap_lines(face, name_size, str(card.get("name", "")), gx - p * 4.0, 1)
+	# what kind of card
+	var kind := "Not in this export" if gone else UI.type_name(card)
+	var d := district_of(card)
+	if not gone and d != "":
+		kind += " · D" + d
+	if big and not gone:
+		kind = CardSheet.kind_line(card)
+	var kl: Array = wrap_lines(body, body_size, kind, inner_w - p * 6.0, 1)
+	# the rules box, under the art window
+	var kh := (26.0 if big else 16.0)
+	var scale := 5.0 if big else 2.0
+	var y := band_h + p * 2.0 + kh + p + 45.0 * scale + p * 3.0
+	var bottom_h := (40.0 if big else 18.0)
+	var box := Vector2(inner_w - p * 4.0, inner_h - y - bottom_h - p * 3.0)
+	var lh := (25.0 if big else 15.0)
+	var max_lines := maxi(1, int((box.y - p * 2.0) / lh))
+	var lines: Array = wrap_words(body, body_size, rules_words(card), box.x - p * 6.0, max_lines)
+	var out := {"t": t, "dark": col[0], "lite": col[1], "gems": gems, "xcost": xcost, "name": str(nl[0]) if not nl.is_empty() else "",
+		"kind": str(kl[0]) if not kl.is_empty() else "", "lines": lines, "stats": stat_line(card)}
+	if _layouts.size() >= LAYOUTS_MAX:
+		_layouts.clear()
+	_layouts[[card.duplicate(true), size, gone]] = out
+	return out
+
+
 ## Paints the face into rect. opts: chosen, faded, gone, count, mark, mark_colour, plain, foot.
 static func paint(ci: CanvasItem, rect: Rect2, card: Dictionary, art: Texture2D, opts: Dictionary = {}) -> void:
 	var big := rect.size.x >= 300.0
@@ -200,13 +262,13 @@ static func paint(ci: CanvasItem, rect: Rect2, card: Dictionary, art: Texture2D,
 	var body := Look.body() if big else Look.font()
 	var name_size := Look.TITLE if big else Look.SMALL
 	var body_size := Look.BODY if big else Look.SMALL
-	var t := Roster.type_of(card)
-	var col := colours(card)
-	var dark: Color = col[0]
-	var lite: Color = col[1]
 	var gone: bool = opts.get("gone", false)
 	var chosen: bool = opts.get("chosen", false)
 	var r := Rect2(rect.position.round(), rect.size.round())
+	var lay := layout(card, r.size, gone)            # (0.44) what it says, laid out once
+	var t: String = lay["t"]
+	var dark: Color = lay["dark"]
+	var lite: Color = lay["lite"]
 	# the frame: a dark rim, the District's keyline, the card
 	_px(ci, r, Color("#0e0c0c"))
 	_px(ci, r.grow(-p), (UI.CYAN if chosen else (UI.RED if gone else lite)))
@@ -220,8 +282,8 @@ static func paint(ci: CanvasItem, rect: Rect2, card: Dictionary, art: Texture2D,
 	# cost gems, right to left
 	var gx := band.end.x - p * 2.0
 	var gem_s := 2.0 if big else 1.0
-	var gems := cost_gems(card)
-	var xcost := StrikeTeams.DECK_TYPES.has(t) and Roster.card_var(Roster.hand_card(card))
+	var gems: Array = lay["gems"]
+	var xcost: bool = lay["xcost"]
 	if xcost:
 		var xw := face.get_string_size("X", HORIZONTAL_ALIGNMENT_LEFT, -1, name_size).x
 		gx -= xw
@@ -238,21 +300,12 @@ static func paint(ci: CanvasItem, rect: Rect2, card: Dictionary, art: Texture2D,
 				ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 			shown += 1
 	# the name
-	var name_w := gx - band.position.x - p * 4.0
 	var nm := str(card.get("name", ""))
-	var nl: Array = wrap_lines(face, name_size, nm, name_w, 1)
-	ci.draw_string(face, Vector2(band.position.x + p * 3.0, band.position.y + band_h * 0.74).round(), str(nl[0]) if not nl.is_empty() else "", HORIZONTAL_ALIGNMENT_LEFT, -1, name_size, UI.SOFT_RED if gone else UI.TEXT)
+	ci.draw_string(face, Vector2(band.position.x + p * 3.0, band.position.y + band_h * 0.74).round(), lay["name"], HORIZONTAL_ALIGNMENT_LEFT, -1, name_size, UI.SOFT_RED if gone else UI.TEXT)
 	# what kind of card
 	var y := band.end.y + p * 2.0
-	var kind := "Not in this export" if gone else UI.type_name(card)
-	var d := district_of(card)
-	if not gone and d != "":
-		kind += " · D" + d
-	if big and not gone:
-		kind = "Not in this export" if gone else CardSheet.kind_line(card)
-	var kl: Array = wrap_lines(body, body_size, kind, inner.size.x - p * 6.0, 1)
 	var kh := (26.0 if big else 16.0)
-	ci.draw_string(body, Vector2(inner.position.x + p * 3.0, y + kh * 0.8).round(), str(kl[0]) if not kl.is_empty() else "", HORIZONTAL_ALIGNMENT_LEFT, -1, body_size, UI.SOFT_RED if gone else UI.type_colour(card))
+	ci.draw_string(body, Vector2(inner.position.x + p * 3.0, y + kh * 0.8).round(), lay["kind"], HORIZONTAL_ALIGNMENT_LEFT, -1, body_size, UI.SOFT_RED if gone else UI.type_colour(card))
 	y += kh + p
 	# the art window: the District's colour behind, the art at a whole number of its pixels
 	var scale := 5.0 if big else 2.0
@@ -301,14 +354,13 @@ static func paint(ci: CanvasItem, rect: Rect2, card: Dictionary, art: Texture2D,
 	y = win.end.y + p * 3.0
 	# the rules box
 	var foot := str(opts.get("foot", ""))
-	var stats := stat_line(card)
+	var stats: String = lay["stats"]
 	var bottom_h := (40.0 if big else 18.0)
 	var box := Rect2(inner.position.x + p * 2.0, y, inner.size.x - p * 4.0, inner.end.y - y - bottom_h - p * 3.0)
 	_px(ci, box, Color("#0e0c0c"))
 	_px(ci, box.grow(-p), Color("#282c3c") if not big else Color("#1b2027"))
 	var lh := (25.0 if big else 15.0)
-	var max_lines := maxi(1, int((box.size.y - p * 2.0) / lh))
-	var lines: Array = wrap_words(body, body_size, rules_words(card), box.size.x - p * 6.0, max_lines)
+	var lines: Array = lay["lines"]
 	var space := body.get_string_size(" ", HORIZONTAL_ALIGNMENT_LEFT, -1, body_size).x
 	for i in lines.size():
 		var x := box.position.x + p * 3.0

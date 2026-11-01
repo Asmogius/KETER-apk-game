@@ -20,11 +20,18 @@ static var mine := {}                   # name -> true: yours, from the sounds f
 static var played: Array = []           # every sound asked for, muted or not (the tests read it)
 
 var _players: Array[AudioStreamPlayer] = []
+## (0.44) The game's own sounds are made off the main thread as the game starts
+## (they cost it some 70 ms, every start); yours are read at once. One asked
+## for before they are ready is made there and then.
+static var _made := {}
+static var _mutex := Mutex.new()
+var _task := -1
 
 
 func _init() -> void:
 	host = self
-	load_all()
+	load_mine()
+	_task = WorkerThreadPool.add_task(_make_all, false, "the game's sounds")
 
 
 func _ready() -> void:
@@ -33,6 +40,63 @@ func _ready() -> void:
 		p.volume_db = -8.0
 		add_child(p)
 		_players.append(p)
+
+
+func _process(_d: float) -> void:
+	if _task >= 0 and WorkerThreadPool.is_task_completed(_task):
+		WorkerThreadPool.wait_for_task_completion(_task)
+		_task = -1
+		_take_made()
+		set_process(false)
+
+
+func _exit_tree() -> void:
+	if _task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_task)
+		_task = -1
+		_take_made()
+
+
+## (0.44) Every one of the game's own, made off the main thread.
+static func _make_all() -> void:
+	var out := {}
+	for n in NAMES:
+		out[n] = _make(n)
+	_mutex.lock()
+	_made = out
+	_mutex.unlock()
+
+
+## What the thread made, taken in (where a sound isn't there already: yours stay).
+static func _take_made() -> void:
+	_mutex.lock()
+	for n in _made:
+		if not streams.has(n):
+			streams[n] = _made[n]
+	_made = {}
+	_mutex.unlock()
+
+
+## Yours, from the sounds folder, in place of the game's own; the game's own as they are made.
+static func load_mine() -> void:
+	streams = {}
+	mine = {}
+	for n in NAMES:
+		var f: String = DIR + n + ".wav"
+		if FileAccess.file_exists(f):
+			var w := AudioStreamWAV.load_from_buffer(FileAccess.get_file_as_bytes(f))
+			if w != null:
+				streams[n] = w
+				mine[n] = true
+
+
+## A sound, made now if the thread hasn't made it yet.
+static func stream(n: String) -> AudioStream:
+	if not streams.has(n) and NAMES.has(n):
+		_take_made()
+		if not streams.has(n):
+			streams[n] = _make(n)
+	return streams.get(n)
 
 
 ## The game's own sounds, then yours over them where there are any.
@@ -54,14 +118,17 @@ static func play(n: String) -> void:
 	played.append(n)
 	if played.size() > 400:
 		played = played.slice(-200)
-	if not Motion.sound or host == null or not streams.has(n) or not host.is_inside_tree():
+	if not Motion.sound or host == null or not NAMES.has(n) or not host.is_inside_tree():
+		return
+	var st := stream(n)
+	if st == null:
 		return
 	for p in host._players:
 		if not p.playing:
-			p.stream = streams[n]
+			p.stream = st
 			p.play()
 			return
-	host._players[0].stream = streams[n]
+	host._players[0].stream = st
 	host._players[0].play()
 
 

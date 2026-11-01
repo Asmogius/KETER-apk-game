@@ -1,8 +1,9 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.43 shows a card as
-itself wherever you deal with one, and builds a campaign's Strike Teams from the
-cards you own; v0.42 kept Dimensional Instability off fights below Skull 4.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.44 is faster: the
+World Map, card grids and the team editor do a fraction of the work, and the
+screen is drawn only when something changes; v0.43 shows a card as itself
+wherever you deal with one.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -12,6 +13,42 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.44 (the game alone; Companion 14.26 as before): **speed**. Measured
+first (tests/perf.gd, below), then the slowest things made cheaper; nothing
+looks or plays differently (the map and the cards were compared pixel for
+pixel, before and after).
+
+- **The World Map** did all its work on every redraw (some 60 ms on a desktop
+  computer, several times that on a phone), and redrew on every step of a
+  pinch and every tap. Now it is two layers: the ground (each tile's ground,
+  the scanlines over the unknown, the edges), drawn again only when what the
+  team knows changes, and the rest (borders, rises, what stands on the tiles),
+  drawn again for a zoom; what never changes for a map is worked out once, and
+  its lines are drawn in one go. A zoom step: 26 ms on average (80 at worst) to
+  under 1; a tap: 81 ms to 6; a step that shows new tiles: 62 ms to 6.
+- **The District Cores** were looked up a tile at a time by building a key of
+  the map, the Unique POIs and the tables each time (20 µs a call, thousands a
+  map); now they are kept while those are the same.
+- **A card's face** (on a tile, in a hand, on a sheet) laid its rules out
+  every time it was drawn: its keywords coloured, every word measured. Now its
+  name, kind line, rules lines and numbers are laid out once for a card and a
+  size and kept. A grid of every card: 167 ms to 63 (14 the second time).
+- **The team editor** made its whole grid again for every copy added or card
+  chosen; now the tiles stay and only those that changed are drawn again
+  (110 ms to 15).
+- **The game's sounds** are made on another thread as it starts, not before
+  its first frame (some 70 ms).
+- **The screen is drawn only when something on it changes** (Godot's low
+  processor mode): a menu, the dock or a quiet board no longer redraws 60
+  times a second, which spares the phone's battery and keeps it cool, so it
+  doesn't slow itself down.
+
+How to measure: `godot --headless --path . --script res://tests/perf.gd --
+export=<zip>` times the boot, the dock's tabs, the team editor, a grid of
+every card, the World Map, a fight and the rules' Enemy turns (headless, so a
+frame's time is the scripts' work, not the GPU's); `tests/perf_boot.gd`
+times each script's loading and each screen's making.
 
 New in 0.43 (the game alone; Companion 14.26 as before): **cards, not lines of
 text, and your own cards**. The campaign should feel like a game, not a tool.
