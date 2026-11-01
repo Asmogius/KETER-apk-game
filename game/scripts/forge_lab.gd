@@ -160,7 +160,7 @@ static func rows(card: Dictionary, open: int) -> Array:
 		var now := int(Rules.num(ac.get("generic"), 0)) + int(Rules.num(ac.get("affinity"), 0)) + int(Rules.num(ac.get("affinity2"), 0))
 		out.append(["row", "Suggested cost: %d Aether (it costs %d)" % [int(sug), now], [] if now == int(sug) else [["Use it", ["lab", "cost"], UI.CYAN, false]]])
 	for p in r.get("problems", []):
-		out.append(["row", "✗ " + str(p), []])
+		out.append(["row", "Breaks a rule: " + str(p), []])
 	if (r.get("problems", []) as Array).is_empty():
 		out.append(["row", "The build keeps every rule.", []])
 	return out
