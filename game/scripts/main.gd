@@ -2106,6 +2106,7 @@ func run_enemy_phase() -> void:
 		if e == null or Rules.truthy(e.get("down")):
 			continue
 		board.mark_units(battle, "", {}, id)
+		BlackBox.mark("an Enemy acts: %s" % str(e.get("name", "?")))
 		await _follow(Battle.tile_of(e))
 		await _wait(0.25)
 		# its whole turn is decided here; the beats play it back as it went

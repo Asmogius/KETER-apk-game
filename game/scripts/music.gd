@@ -10,7 +10,7 @@
 class_name Music
 extends Node
 
-const RATE := 16000
+const RATE := 22050                  # (0.47) the sounds' rate (16000 to 0.46)
 const BARS := 4
 ## Each loop: its tempo, its key (a MIDI note), the chords (steps from the key,
 ## a bar each), the arpeggio's steps over a chord, and its drums.
@@ -42,7 +42,19 @@ func _init() -> void:
 func _ready() -> void:
 	player = AudioStreamPlayer.new()
 	player.volume_db = -80.0
+	player.finished.connect(_on_finished)
 	add_child(player)
+
+
+## (0.47) A loop played to its end: again, from the start (the engine doesn't loop it).
+var _rounds := 0
+func _on_finished() -> void:
+	if current == "" or Motion.music == "off" or not streams.has(current) or player.stream != streams[current]:
+		return
+	_rounds += 1
+	if _rounds <= 3:
+		BlackBox.mark("music: the %s loop came round (%d)" % [current, _rounds])
+	player.play()
 
 
 ## (0.45) The game going: its loops are let go.
@@ -103,6 +115,8 @@ func _process(_dt: float) -> void:
 
 
 func _start(name: String) -> void:
+	BlackBox.mark("music: the %s loop started" % name)
+	_rounds = 0
 	player.stream = streams[name]
 	player.volume_db = -40.0
 	player.play()
@@ -146,18 +160,12 @@ static func _hz(midi: float) -> float:
 	return 440.0 * pow(2.0, (midi - 69.0) / 12.0)
 
 
-## (0.46) Frames of the loop's start kept again after its end: if anything
-## reads past the loop's last frame, it reads more of the loop, never past the
-## stream's end.
-const TAIL := 32
-
-
-## A loop of BARS bars, as a 16-bit stream that repeats.
-## (0.46) Its loop_end is its last frame (Godot plays loop_end and then goes
-## back to the start: it counts it in). It was one past the last (0.39 to
-## 0.45), so each time a loop came round the player read one sample beyond the
-## stream's data: nothing on a computer, but a phone may stop the game for it.
-## A fight's loop comes round in under 8 seconds, as the fight opens.
+## A loop of BARS bars, as a 16-bit stream.
+## (0.47) It doesn't loop in the engine: it plays to its end and stops, as the
+## sounds do, and the Music node plays it again (_on_finished). On the phone the
+## game closed as a fight's loop came round (under 8 seconds in), even with its
+## loop end inside its data (0.46); a stream that plays once and stops is what
+## the sounds do all the time there, and they never have. The rate is theirs too.
 static func make(name: String) -> AudioStreamWAV:
 	var tr: Dictionary = TRACKS.get(name, TRACKS["map"])
 	var beat := 60.0 / float(tr["bpm"])
@@ -202,16 +210,10 @@ static func make(name: String) -> AudioStreamWAV:
 			drum += held * (1.0 - et / 0.18) * 0.13
 		var v := bass + arp_v + drum
 		data.encode_s16(i * 2, int(clampf(v * 0.7, -1.0, 1.0) * 32767.0))
-	# (0.46) the loop's start again after its end, read only by a player that reads past it
-	data.resize((count + TAIL) * 2)
-	for i in TAIL:
-		data.encode_s16((count + i) * 2, data.decode_s16(i * 2))
 	var w := AudioStreamWAV.new()
 	w.format = AudioStreamWAV.FORMAT_16_BITS
 	w.mix_rate = RATE
 	w.stereo = false
 	w.data = data
-	w.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	w.loop_begin = 0
-	w.loop_end = count - 1
+	w.loop_mode = AudioStreamWAV.LOOP_DISABLED
 	return w

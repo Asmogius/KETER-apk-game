@@ -10342,7 +10342,7 @@ func _thirtynine_scene() -> void:
 	ck("0.39 guide: Skip puts it away too", scene.coach == null and Motion.coached)
 	# the music
 	var loop := Music.make("fight")
-	ck("0.39 music: a fight's loop is made, 4 bars at its tempo, and repeats", loop.loop_mode == AudioStreamWAV.LOOP_FORWARD and loop.mix_rate == Music.RATE
+	ck("0.39 music: a fight's loop is made, 4 bars at its tempo (0.47: played once, the Music node plays it again)", loop.loop_mode == AudioStreamWAV.LOOP_DISABLED and loop.mix_rate == Music.RATE
 		and abs(loop.data.size() / 2.0 / Music.RATE - 4 * 4 * 60.0 / Music.TRACKS["fight"]["bpm"]) < 0.01, loop.data.size())
 	ck("0.39 music: the four loops", Music.TRACKS.keys() == ["home", "map", "fight", "boss"])
 	Motion.set_music("high")
@@ -10781,23 +10781,46 @@ func _fortyfive() -> void:
 	Kit.fresh()
 
 
-# ---------------------------------------------------------------- 0.46: the music's loops end inside their data
+# ---------------------------------------------------------------- 0.46, 0.47: the music plays once, and is played again
 func _fortysix() -> void:
-	# Godot plays a loop's loop_end frame, then goes back: loop_end must be a frame the stream has
-	var bad_loops := []
+	# (0.47) no loop in the engine: each track plays to its end and stops, as the sounds do, at their rate
+	var bad := []
 	for n in Music.TRACKS:
 		for w in [Music.make(str(n)), Music.load_made(str(n))]:
-			var frames: int = (w as AudioStreamWAV).data.size() / 2
 			var tr: Dictionary = Music.TRACKS[n]
 			var count := int(Music.RATE * (60.0 / float(tr["bpm"])) * 4.0 * Music.BARS)
-			var tail_ok := true
-			for i in Music.TAIL:
-				if w.data.decode_s16((count + i) * 2) != w.data.decode_s16(i * 2):
-					tail_ok = false
-			if w.loop_mode != AudioStreamWAV.LOOP_FORWARD or w.loop_begin != 0 or w.loop_end != count - 1 or w.loop_end >= frames or frames != count + Music.TAIL or not tail_ok:
-				bad_loops.append([n, w.loop_end, frames, count])
-	ck("0.46 music: each loop ends on its last frame, inside its data, with its start again after it (made, and as kept)", bad_loops.is_empty(), bad_loops)
+			if w.loop_mode != AudioStreamWAV.LOOP_DISABLED or w.data.size() / 2 != count or w.mix_rate != Sound.RATE:
+				bad.append([n, w.loop_mode, w.data.size() / 2, count, w.mix_rate])
+	ck("0.47 music: each track plays once and stops (the engine doesn't loop it), at the sounds' rate (made, and as kept)", bad.is_empty(), bad)
 	ck("0.46 sounds: none of the game's own loops (each plays once, and stops at its end)", Sound.NAMES.keys().all(func(n): return Sound.own(n).loop_mode == AudioStreamWAV.LOOP_DISABLED and Sound._make(n).loop_mode == AudioStreamWAV.LOOP_DISABLED))
+	# the Music node plays it again when it ends; not once it is put away or another is wanted
+	BlackBox.enabled = true
+	SafeFile.remove(BlackBox.path)
+	BlackBox.begin("0.47")
+	var mu := Music.new()
+	root.add_child(mu)
+	Music.auto = true
+	var was: String = Motion.music
+	Motion.music = "high"
+	mu.want("fight")
+	mu.player.stop()
+	mu.player.finished.emit()
+	var steps: Array = BlackBox.read().get("trail", []).map(func(t): return str(t["step"]))
+	ck("0.47 music: a track that ends is played again from the start, and the black box says so", mu.player.playing and mu.player.stream == mu.streams["fight"] and steps.has("music: the fight loop started") and steps.has("music: the fight loop came round (1)"), steps)
+	mu.want("map")
+	var map_stream: AudioStream = mu.player.stream
+	mu.player.stop()
+	mu.streams.erase("fight")
+	mu.player.finished.emit()
+	ck("0.47 music: what plays again is what is wanted now", mu.player.stream == map_stream and mu.player.playing)
+	Motion.music = "off"
+	mu.player.stop()
+	mu.player.finished.emit()
+	ck("0.47 music: with the music off, an ended track isn't played again", not mu.player.playing)
+	Motion.music = was
+	Music.auto = false
+	mu.queue_free()
+	BlackBox.enabled = false
 
 
 ## (Lab) KETER Lab's card set: laid over an export only in KETER Lab; each set card a

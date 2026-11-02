@@ -1,8 +1,8 @@
 # KETER, the game
 
-This is the Godot project for KETER, the video game. **v0.46 stops the music
-from closing the game as a fight's loop comes round; v0.45 opened a fight
-without the risks a phone may not survive, and keeps a black box.** You build a Strike Team in the game (its Heroes, its Deck, the
+This is the Godot project for KETER, the video game. **v0.47 plays the music
+the way the sounds play, once through and again, so no loop comes round in the
+engine; v0.46 moved a loop's end inside its data.** You build a Strike Team in the game (its Heroes, its Deck, the
 Action cards each Hero carries, its Aether Pouch, its Prototypes and its
 Consumables), and send it out from the dock onto the World Map. It walks tile
 by tile, fights the ambushes it meets and the POIs it enters, opens Caches,
@@ -12,6 +12,18 @@ drawn into your hand each round, and your cards to play. Its Troops are your
 own designs, built in the Workshop from the chassis and blueprints your teams
 bring home. What they bring home is spent at the dock, at the Exchange and
 on upgrades, and its Bounty Board pays for the Enemies they bring down.
+
+New in 0.47 (the game alone; Companion 14.26 as before): **the music plays
+once, and again**. 0.46 still closed: the black box said a fight opened at
+23:40:32 and the game closed at 23:40:40, as the Enemies' turn began, with no
+error from the engine: just as the fight's 7.6-second loop came round.
+
+- **No loop in the engine.** Each track is made to play once through and
+  stop, as the sounds do (which never close the game); when it ends, the Music
+  node plays it again from the start. The engine's loop never comes round.
+- **The music's rate is the sounds'** (22050 a second; it was 16000).
+- **The black box says more**: each loop started and its first three times
+  round, and each Enemy as it acts.
 
 New in 0.46 (the game alone; Companion 14.26 as before): **the crash was the
 music**. Found by playing: with the music off, the game no longer closed; with it
